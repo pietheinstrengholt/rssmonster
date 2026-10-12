@@ -19,7 +19,7 @@ test('Windows produces separate installer and portable artifacts', () => {
   assert.equal(configuration.portable.artifactName, '${productName}-Portable-${version}-${arch}.${ext}');
 });
 
-for (const omitted of [null, 'parser', 'migration', 'migration-helper', 'inference', 'storage', 'crawler', 'tray']) {
+for (const omitted of [null, 'parser', 'migration', 'historical-migration', 'migration-helper', 'baseline-mysql', 'baseline-sqlite', 'baseline-bootstrap', 'baseline-definition', 'history-mysql', 'history-sqlite', 'migration-lock', 'migration-schema', 'migration-state', 'migration-runner', 'migration-converter', 'migration-scope', 'migration-seeder', 'seeder-scope', 'inference', 'storage', 'crawler', 'tray']) {
   test(`packaged runtime ${omitted ? `rejects missing ${omitted}` : 'contains parser and ESM migrations'}`, async () => {
     const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-package-regression-'));
     try {
@@ -28,6 +28,8 @@ for (const omitted of [null, 'parser', 'migration', 'migration-helper', 'inferen
       const resources = path.join(directory, 'resources');
       await Promise.all([source, migrations, resources].map(dir => mkdir(dir)));
       await writeFile(path.join(migrations, '20260911000000-settings.mjs'), 'export const up = () => {};');
+      await mkdir(path.join(migrations, 'pre-2.4'));
+      await writeFile(path.join(migrations, 'pre-2.4/20260810000000-baseline-core.js'), '');
       const files = ['desktop/service-process.js', 'server/src/workers/aiWorker.js',
         'desktop/settings.js', 'desktop/background.js', 'desktop/api.js', 'desktop/tray.js', 'desktop/crawl-process.js',
         'server/src/workers/nightlyArchiving.js', 'server/scripts/runSemanticPipeline.js'];
@@ -37,7 +39,22 @@ for (const omitted of [null, 'parser', 'migration', 'migration-helper', 'inferen
       if (omitted !== 'inference') files.push('inference/src/index.js');
       if (omitted !== 'parser') files.push('node_modules/feedsmith/dist/node_modules/trousse/dist/is.mjs');
       if (omitted !== 'migration') files.push('server/migrations/20260911000000-settings.mjs');
+      if (omitted !== 'historical-migration') files.push('server/migrations/pre-2.4/20260810000000-baseline-core.js');
       if (omitted !== 'migration-helper') files.push('server/migrations/lib/articleStateMigration.mjs');
+      if (omitted !== 'baseline-mysql') files.push('server/migrations/lib/baseline24-mysql.json');
+      if (omitted !== 'baseline-sqlite') files.push('server/migrations/lib/baseline24-sqlite.json');
+      if (omitted !== 'baseline-bootstrap') files.push('server/migrations/lib/baseline24Bootstrap.mjs');
+      if (omitted !== 'baseline-definition') files.push('server/migrations/lib/baseline24Definition.mjs');
+      if (omitted !== 'history-mysql') files.push('server/migrations/lib/history24-mysql.json');
+      if (omitted !== 'history-sqlite') files.push('server/migrations/lib/history24-sqlite.json');
+      if (omitted !== 'migration-lock') files.push('server/config/migrationLock.js');
+      if (omitted !== 'migration-schema') files.push('server/config/migrationSchema.js');
+      if (omitted !== 'migration-state') files.push('server/config/migrationState.js');
+      if (omitted !== 'migration-runner') files.push('server/config/migrateDatabase.js');
+      if (omitted !== 'migration-converter') files.push('server/utils/baselineMigrationTable.cjs');
+      if (omitted !== 'migration-scope') files.push('server/migrations/package.json');
+      if (omitted !== 'migration-seeder') files.push('server/seeders/20260520104500-island-taxonomy.js');
+      if (omitted !== 'seeder-scope') files.push('server/seeders/package.json');
       for (const file of files) {
         await mkdir(path.dirname(path.join(source, file)), { recursive: true });
         await writeFile(path.join(source, file), 'export {};');

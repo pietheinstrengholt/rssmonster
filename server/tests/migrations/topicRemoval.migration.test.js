@@ -3,31 +3,31 @@ import { afterAll, describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
 import { scoreArticlesFromIslandsForUser } from '../../services/score/scoreArticlesFromIslands.js';
 import { computeRecommended } from '../../services/recommendations/recommendedScore.js';
-import { up, down } from '../../migrations/20260914000000-remove-topics.mjs';
-import { up as addEmbeddingModels } from '../../migrations/20260915000000-add-aggregate-embedding-models.mjs';
-import { up as addInteractionClocks } from '../../migrations/20260914001000-add-article-interaction-timestamps.mjs';
-import { renameReadingStateColumns } from '../../migrations/20261012000000-standardize-saved-opened-original.mjs';
-import { up as standardizeToneScore } from '../../migrations/20261012002000-standardize-tone-score.mjs';
-import { up as addInterestScoredAt } from '../../migrations/20260915001000-add-interest-scored-at.mjs';
-import { up as addPersonalizationRefreshedAt } from '../../migrations/20260915002000-add-personalization-refreshed-at.mjs';
-import { up as addAnalysisProvenance } from '../../migrations/20260917000000-add-article-analysis-provenance.mjs';
-import { up as addIslandBehaviorTime } from '../../migrations/20260917001000-add-island-behavior-time.mjs';
-import { up as addIslandSupport } from '../../migrations/20260919001000-add-island-support-article-ids.mjs';
-import { up as addIslandMuted } from '../../migrations/20260925001000-add-island-muted-ind.mjs';
-import { up as addFeedSourceAffinity } from '../../migrations/20260925002000-add-feed-source-affinity.mjs';
-import { up as addOriginalSource } from '../../migrations/20260922000000-add-article-original-source.mjs';
-import { up as addAuthors } from '../../migrations/20260922001000-add-article-authors.mjs';
-import { up as addPinnedItems } from '../../migrations/20260923006000-add-sidebar-pinned-items.mjs';
-import { up as addFeedAuthentication } from '../../migrations/20260923008000-add-feed-authentication.mjs';
-import { up as expandFeedAuthentication } from '../../migrations/20260923009000-expand-feed-authentication-password.mjs';
-import { up as addCategoryClusteringBehavior } from '../../migrations/20260922002000-add-category-clustering-behavior.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260914000000-remove-topics.mjs';
+import { up as addEmbeddingModels } from '../../migrations/pre-2.4/20260915000000-add-aggregate-embedding-models.mjs';
+import { up as addInteractionClocks } from '../../migrations/pre-2.4/20260914001000-add-article-interaction-timestamps.mjs';
+import { renameReadingStateColumns } from '../../migrations/pre-2.4/20261012000000-standardize-saved-opened-original.mjs';
+import { up as standardizeToneScore } from '../../migrations/pre-2.4/20261012002000-standardize-tone-score.mjs';
+import { up as addInterestScoredAt } from '../../migrations/pre-2.4/20260915001000-add-interest-scored-at.mjs';
+import { up as addPersonalizationRefreshedAt } from '../../migrations/pre-2.4/20260915002000-add-personalization-refreshed-at.mjs';
+import { up as addAnalysisProvenance } from '../../migrations/pre-2.4/20260917000000-add-article-analysis-provenance.mjs';
+import { up as addIslandBehaviorTime } from '../../migrations/pre-2.4/20260917001000-add-island-behavior-time.mjs';
+import { up as addIslandSupport } from '../../migrations/pre-2.4/20260919001000-add-island-support-article-ids.mjs';
+import { up as addIslandMuted } from '../../migrations/pre-2.4/20260925001000-add-island-muted-ind.mjs';
+import { up as addFeedSourceAffinity } from '../../migrations/pre-2.4/20260925002000-add-feed-source-affinity.mjs';
+import { up as addOriginalSource } from '../../migrations/pre-2.4/20260922000000-add-article-original-source.mjs';
+import { up as addAuthors } from '../../migrations/pre-2.4/20260922001000-add-article-authors.mjs';
+import { up as addPinnedItems } from '../../migrations/pre-2.4/20260923006000-add-sidebar-pinned-items.mjs';
+import { up as addFeedAuthentication } from '../../migrations/pre-2.4/20260923008000-add-feed-authentication.mjs';
+import { up as expandFeedAuthentication } from '../../migrations/pre-2.4/20260923009000-expand-feed-authentication-password.mjs';
+import { up as addCategoryClusteringBehavior } from '../../migrations/pre-2.4/20260922002000-add-category-clustering-behavior.mjs';
 
-import { up as addBriefingHotArticles } from '../../migrations/20260925000000-add-briefing-include-hot-articles.mjs';
+import { up as addBriefingHotArticles } from '../../migrations/pre-2.4/20260925000000-add-briefing-include-hot-articles.mjs';
 
 import { resetDatabase } from '../helpers/resetDb.js';
 
 const qi = db.sequelize.getQueryInterface();
-const directory = new URL('../../migrations/', import.meta.url);
+const directory = new URL('../../migrations/pre-2.4/', import.meta.url);
 
 async function installHistoricalSchema() {
   if (db.sequelize.getDialect() === 'mysql' && db.sequelize.getDatabaseName() !== 'rssmonstertest') {

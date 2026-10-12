@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
 const migration = require(
-  '../../migrations/20260904003000-add-feed-source-config.js'
+  '../../migrations/pre-2.4/20260904003000-add-feed-source-config.js'
 );
 
 describe('feed source config migration', () => {

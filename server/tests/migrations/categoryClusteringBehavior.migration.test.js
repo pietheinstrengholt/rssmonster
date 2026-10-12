@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260922002000-add-category-clustering-behavior.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260922002000-add-category-clustering-behavior.mjs';
 
 it('keeps existing and future categories null and preserves rows through rollback', async () => {
   const query = db.sequelize.getQueryInterface();

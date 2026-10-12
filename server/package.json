@@ -33,6 +33,7 @@
     "dev": "node --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./services --watch-path=./utils --watch-path=./config bootstrap.js",
     "debug": "node --inspect --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./services --watch-path=./utils --watch-path=./config bootstrap.js",
     "db": "node scripts/migrateDatabase.js",
+    "db:status": "node scripts/databaseStatus.js",
     "crawl": "NODE_ENV=production node scripts/runSemanticPipeline.js",
     "crawl:recover": "NODE_ENV=production node scripts/recoverCrawlRuns.js",
     "semantic:repair": "NODE_ENV=production node scripts/repairSemanticPipeline.js",

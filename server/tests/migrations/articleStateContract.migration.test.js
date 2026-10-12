@@ -1,7 +1,7 @@
 import { DataTypes, Sequelize } from 'sequelize';
 import { describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20261012000000-standardize-saved-opened-original.mjs';
+import { up, down } from '../../migrations/pre-2.4/20261012000000-standardize-saved-opened-original.mjs';
 
 describe('saved/opened-original contract migration', () => {
   it.each(['configured', 'sqlite'])('preserves state, clocks, expressions and receipts on %s, including a retry', async dialect => {

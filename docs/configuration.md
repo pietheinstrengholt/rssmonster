@@ -153,17 +153,17 @@ DB_USERNAME=rssmonster
 DB_PASSWORD=replace-with-a-strong-password
 ```
 
-Use MySQL or MariaDB for higher write concurrency, multiple active users,
-background AI processing, or other demanding workloads. Set `DB_DIALECT=mysql`
-for MySQL 8.4 or `DB_DIALECT=mariadb` for MariaDB 11.4. Both use the five
-connection values above; the default port is `3306`. RSSMonster maps the
-MariaDB setting to Sequelize's MySQL dialect and `mysql2` connector. Sequelize
-6's native MariaDB dialect fails on raw query results with the supported 3.x
-connector; the working 2.x connector has a high-severity security advisory.
-MariaDB also needs a virtual generated column to enforce one active crawl per
-user. The baseline adapter creates it without changing the historical migration.
-The bundled Compose profile runs MySQL; to use an existing MariaDB server,
-provide its host and credentials through these variables.
+Use MySQL for higher write concurrency, multiple active users, background AI
+processing, or other demanding workloads. Set `DB_DIALECT=mysql` for MySQL 8.4
+using the five connection values above; the default port is `3306`. The bundled
+Compose profile runs MySQL 8.4.
+
+The configuration still accepts `DB_DIALECT=mariadb` through the MySQL/`mysql2`
+connector, but the 2.4 migration runner rejects MariaDB before changing schema
+or history. Its native schema representation has no validated migration
+checkpoints. Historical MariaDB adapters do not establish safe baseline adoption;
+do not use this setting for a new 2.4 installation or upgrade. See
+[migration compatibility limits](database-migration-execution.md#maintenance-and-limitations).
 
 After changing databases or creating a new database, apply the canonical
 migrations from the `server` directory with `npm run db`. Docker images apply

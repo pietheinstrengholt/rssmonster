@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260926000000-add-feed-admission-window.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260926000000-add-feed-admission-window.mjs';
 
 it('marks established feeds at migration time and leaves incomplete imports retryable', async () => {
   const query = db.sequelize.getQueryInterface();

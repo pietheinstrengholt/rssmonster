@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Sequelize, DataTypes } from 'sequelize';
-import { up, down } from '../../migrations/20260925001000-add-island-muted-ind.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260925001000-add-island-muted-ind.mjs';
 
 describe('Island muted flag migration', () => {
   it('defaults existing and new Islands to unmuted', async () => {

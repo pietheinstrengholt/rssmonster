@@ -163,7 +163,8 @@ up production data and inspect the scope before using them.
 
 | Command | Arguments | What it does and when to use it |
 | --- | --- | --- |
-| `npm run db` | No arguments (or `--help`) | Applies pending historical and ESM Sequelize migrations to the configured database. Use it during a controlled install or deployment. Back up production data first; this command changes the schema. |
+| `npm run db` | No arguments (or `--help`) | Locks and recognizes the database, initializes an empty database from baseline 2.4 or completes/adopts a recognized historical chain, then applies root increments. Back up production data and stop application writers first; incomplete or unknown states require operator investigation. |
+| `npm run db:status` | `--json` or `--help` | Reports recognized baseline, history, pending work, compatibility checks and inconsistencies without applying migrations or changing database records. Takes the migration lock; a missing SQLite file is not created. Exit 0 means recognized, including pending upgrades; exit 1 means blocked/unavailable. |
 | `npm run crawl` | None | Runs one all-user incremental crawl and semantic pipeline, then exits. It fetches due feeds, persists articles, generates vectors, updates Events, and refreshes interest scores. Use it for a one-off run or external scheduler, but do not schedule it alongside the dedicated worker. |
 | `npm run crawl:recover` | `--all` | Without arguments, marks only stale running crawl records as failed so they can recover. `--all` marks every currently running crawl record as failed, including active work. Use the default for stale-run recovery; reserve `--all` for a confirmed administrative reset. |
 

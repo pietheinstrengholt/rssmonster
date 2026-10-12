@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Sequelize, DataTypes } from 'sequelize';
-import { up, down } from '../../migrations/20260917001000-add-island-behavior-time.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260917001000-add-island-behavior-time.mjs';
 
 describe('Island behavioral clock migration', () => {
   it('leaves legacy age unknown and adds an idempotent active-deadline index', async () => {

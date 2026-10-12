@@ -1,6 +1,6 @@
 import { Sequelize, DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
-import { up, down } from '../../migrations/20260915002000-add-personalization-refreshed-at.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260915002000-add-personalization-refreshed-at.mjs';
 
 it('preserves users with unknown refresh history and supports migration replay and rollback', async () => {
   const sequelize = new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false });

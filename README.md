@@ -156,10 +156,10 @@ connect to remote inference.
 | **SQLite quick start** | Trying RSSMonster and lightweight personal reading | Web reader, scheduled crawling, search, subscriptions, and rule-based organization. No separate database service, bundled inference service, or AI worker. Optional remote inference via Settings or environment. |
 | **Comprehensive MySQL deployment** | Local intelligent processing, multiple active users, and higher write concurrency | MySQL 8.4, crawl and AI workers, Qwen embeddings and generation, and ModernBERT scoring for analysis, semantic organization, and recommendations. |
 
-An existing MariaDB 11.4 server can be used with `DB_DIALECT=mariadb` and the
-same server components. This setting selects a MariaDB-compatible baseline
-schema while retaining Sequelize's MySQL/`mysql2` connector because its native
-MariaDB connector fails on raw queries. See [database configuration](docs/configuration.md#database).
+The 2.4 migration runner supports MySQL 8.4 and SQLite. MariaDB is currently
+blocked because its native schema has no validated recognition checkpoints;
+`DB_DIALECT=mariadb` does not enable safe installation or adoption. See
+[database configuration](docs/configuration.md#database).
 
 Install the [Progressive Web App](docs/web-app-and-notifications.md) on supported
 devices to use an existing self-hosted RSSMonster server in its own app window,

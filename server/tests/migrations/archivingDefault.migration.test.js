@@ -1,8 +1,8 @@
 import { DataTypes, Sequelize } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up as createSettings, down as dropSettings } from '../../migrations/20260919000000-add-archiving-settings.mjs';
-import { up, down } from '../../migrations/20260920000000-set-archiving-default-to-seven-years.mjs';
+import { up as createSettings, down as dropSettings } from '../../migrations/pre-2.4/20260919000000-add-archiving-settings.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260920000000-set-archiving-default-to-seven-years.mjs';
 
 // Exercise both the configured database and SQLite's table rebuild.
 it.each(['configured', 'sqlite'])('changes only future defaults on %s and preserves ownership through rollback', async dialect => {

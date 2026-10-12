@@ -9,6 +9,18 @@ import { fileURLToPath } from 'node:url';
 
 const execute = promisify(execFile);
 
+test('upgrades a historical desktop database before serving and preserves state on repeated startup', { timeout: 60_000 }, async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-desktop-legacy-test-'));
+  const helper = fileURLToPath(new URL('./helpers/legacy-migration-check.js', import.meta.url));
+  try {
+    await execute(process.execPath, [helper, directory, 'prepare'], { timeout: 25_000 });
+    const secrets = await readFile(path.join(directory, 'secrets.json'), 'utf8');
+    await execute(process.execPath, [helper, directory, 'upgrade'], { timeout: 25_000 });
+    await execute(process.execPath, [helper, directory, 'repeat'], { timeout: 25_000 });
+    assert.equal(await readFile(path.join(directory, 'secrets.json'), 'utf8'), secrets);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
 test('fresh desktop DB, API refresh, shutdown drain and restart persistence', { timeout: 60_000 }, async () => {
   const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-desktop-test-'));
   const helper = fileURLToPath(new URL('./helpers/runtime-check.js', import.meta.url));

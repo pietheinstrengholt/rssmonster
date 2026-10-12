@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
 const migration = require(
-  '../../migrations/20260904000000-add-email-digest-preferences.js'
+  '../../migrations/pre-2.4/20260904000000-add-email-digest-preferences.js'
 );
 
 describe('email digest preferences migration', () => {

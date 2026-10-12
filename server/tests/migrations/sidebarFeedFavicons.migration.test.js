@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260923004000-add-sidebar-feed-favicons.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260923004000-add-sidebar-feed-favicons.mjs';
 
 it('enables favicons for existing and new settings and preserves rows on rollback', async () => {
   const query = db.sequelize.getQueryInterface();

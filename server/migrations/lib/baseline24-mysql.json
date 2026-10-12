@@ -1,0 +1,296 @@
+{
+  "version": "2.4.0",
+  "cutoffCommit": "2728be062c885ea67f6849e0595a4ca5b126a8fa",
+  "dialect": "mysql",
+  "tables": [
+    {
+      "name": "actions",
+      "create": "CREATE TABLE `actions` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `actionType` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `regularExpression` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `tagValue` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `actions_userId_idx` (`userId`),\n  KEY `actions_actionType_idx` (`actionType`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `actions` ADD CONSTRAINT `actions_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "archiving_settings",
+      "create": "CREATE TABLE `archiving_settings` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `neverDeleteUnreadArticles` tinyint(1) NOT NULL DEFAULT '1',\n  `neverDeleteSaved` tinyint(1) NOT NULL DEFAULT '1',\n  `neverDeleteOpenedOriginalArticles` tinyint(1) NOT NULL DEFAULT '0',\n  `maximumArticleAge` int NOT NULL DEFAULT '7',\n  `maximumArticleAgeUnit` enum('days','weeks','months','years') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'years',\n  `maximumArticlesPerFeed` int DEFAULT NULL,\n  `maximumArticlesTotal` int DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `archiving_settings_userId_unique` (`userId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `archiving_settings` ADD CONSTRAINT `archiving_settings_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "article_sync_actions",
+      "create": "CREATE TABLE `article_sync_actions` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `actionId` char(36) COLLATE utf8mb4_bin NOT NULL,\n  `articleId` bigint NOT NULL,\n  `kind` varchar(32) NOT NULL,\n  `value` varchar(8) NOT NULL,\n  `outcome` varchar(16) NOT NULL,\n  `errorCode` varchar(128) DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `article_sync_actions_user_action_unique` (`userId`,`actionId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `article_sync_actions` ADD CONSTRAINT `article_sync_actions_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "articles",
+      "create": "CREATE TABLE `articles` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `externalId` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `externalIdType` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `userId` int NOT NULL,\n  `feedId` int NOT NULL,\n  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unread',\n  `filteredInd` tinyint(1) NOT NULL DEFAULT '0',\n  `savedInd` int NOT NULL DEFAULT '0',\n  `negativeInd` int NOT NULL DEFAULT '0',\n  `positiveInd` int NOT NULL DEFAULT '0',\n  `openedOriginalCount` int NOT NULL DEFAULT '0',\n  `hotInd` int NOT NULL DEFAULT '0',\n  `hotlinks` int NOT NULL DEFAULT '0',\n  `media` json DEFAULT NULL,\n  `url` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `imageUrl` text COLLATE utf8mb4_unicode_ci,\n  `imageWidth` int unsigned DEFAULT NULL,\n  `imageHeight` int unsigned DEFAULT NULL,\n  `imageMimeType` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `imageSource` enum('media-content','media-thumbnail','enclosure','cleaned-content','content','description','publisher') COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `title` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `author` text COLLATE utf8mb4_unicode_ci,\n  `description` mediumtext COLLATE utf8mb4_unicode_ci,\n  `descriptionHtml` mediumtext COLLATE utf8mb4_unicode_ci,\n  `descriptionText` mediumtext COLLATE utf8mb4_unicode_ci,\n  `contentOriginal` mediumtext COLLATE utf8mb4_unicode_ci,\n  `contentHtml` mediumtext COLLATE utf8mb4_unicode_ci,\n  `contentText` mediumtext COLLATE utf8mb4_unicode_ci,\n  `contentSummaryBullets` json DEFAULT NULL,\n  `contentSourceHash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `isOfficialSource` tinyint(1) NOT NULL DEFAULT '0',\n  `officialOrganization` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `embedding_model` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `articleVector` json DEFAULT NULL,\n  `eventId` int DEFAULT NULL,\n  `language` tinytext COLLATE utf8mb4_unicode_ci,\n  `advertisementScore` int NOT NULL DEFAULT '0',\n  `toneScore` int NOT NULL DEFAULT '50',\n  `qualityScore` int NOT NULL DEFAULT '50',\n  `interestScore` float NOT NULL DEFAULT '0',\n  `attentionBucket` tinyint NOT NULL DEFAULT '0',\n  `publishedAt` datetime NOT NULL,\n  `modifiedAt` datetime DEFAULT NULL,\n  `publishedSource` datetime DEFAULT NULL,\n  `publishInferred` tinyint(1) NOT NULL DEFAULT '0',\n  `firstSeen` datetime DEFAULT NULL,\n  `readAt` datetime DEFAULT NULL,\n  `urlHash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `duplicateOfArticleId` int DEFAULT NULL,\n  `duplicateCount` int NOT NULL DEFAULT '0',\n  `normalizedUrl` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `normalizedUrlHash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `contentTextHash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `aiAnalysisStatus` enum('pending','processing','complete','skipped','failed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'complete',\n  `aiAnalysisCompletedAt` datetime DEFAULT NULL,\n  `advertisementScoreActionOverrideInd` tinyint(1) NOT NULL DEFAULT '0',\n  `qualityScoreActionOverrideInd` tinyint(1) NOT NULL DEFAULT '0',\n  `lastOpenedOriginalAt` datetime DEFAULT NULL,\n  `savedAt` datetime DEFAULT NULL,\n  `positiveFeedbackAt` datetime DEFAULT NULL,\n  `negativeFeedbackAt` datetime DEFAULT NULL,\n  `lastMeaningfulReadAt` datetime DEFAULT NULL,\n  `interestScoredAt` datetime DEFAULT NULL,\n  `aiAnalysisProvenance` json DEFAULT NULL,\n  `originalSource` json DEFAULT NULL,\n  `authors` json DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `articles_feedId_normalizedUrlHash_unique` (`feedId`,`normalizedUrlHash`),\n  UNIQUE KEY `articles_feedId_urlHash_unique` (`feedId`,`urlHash`),\n  KEY `articles_feedId_idx` (`feedId`),\n  KEY `articles_userId_idx` (`userId`),\n  KEY `articles_userId_published_idx` (`userId`,`publishedAt`),\n  KEY `articles_status_idx` (`status`),\n  KEY `articles_clickedAmount_idx` (`openedOriginalCount`),\n  KEY `articles_eventId_idx` (`eventId`),\n  KEY `articles_userId_eventId_published_idx` (`userId`,`eventId`,`publishedAt`),\n  KEY `articles_userId_status_published_idx` (`userId`,`status`,`publishedAt`),\n  KEY `articles_userId_feedId_status_published_idx` (`userId`,`feedId`,`status`,`publishedAt`),\n  KEY `articles_userId_feedId_published_idx` (`userId`,`feedId`,`publishedAt`),\n  KEY `articles_userId_status_feedId_published_idx` (`userId`,`status`,`feedId`,`publishedAt`),\n  KEY `articles_userId_feedId_status_advertisementScore_idx` (`userId`,`feedId`,`status`,`advertisementScore`),\n  KEY `articles_userId_feedId_status_sentimentScore_idx` (`userId`,`feedId`,`status`,`toneScore`),\n  KEY `articles_userId_feedId_status_qualityScore_idx` (`userId`,`feedId`,`status`,`qualityScore`),\n  KEY `articles_feedId_userId_fkey` (`feedId`,`userId`),\n  KEY `articles_user_feed_urlhash_crawl_idx` (`userId`,`feedId`,`urlHash`),\n  KEY `articles_user_feed_url_crawl_idx` (`userId`,`feedId`,`url`(255)),\n  KEY `articles_user_feed_title_crawl_idx` (`userId`,`feedId`,`title`(255)),\n  KEY `articles_favoriteInd_idx` (`savedInd`),\n  KEY `articles_userId_favoriteInd_published_idx` (`userId`,`savedInd`,`publishedAt`),\n  KEY `articles_duplicateOfArticleId_idx` (`duplicateOfArticleId`),\n  KEY `articles_userId_duplicateOfArticleId_published_idx` (`userId`,`duplicateOfArticleId`,`publishedAt`),\n  KEY `articles_userId_isOfficialSource_published_idx` (`userId`,`isOfficialSource`,`publishedAt`),\n  KEY `articles_contentSourceHash_idx` (`contentSourceHash`),\n  KEY `articles_userId_contentTextHash_idx` (`userId`,`contentTextHash`),\n  KEY `articles_userId_contentSourceHash_idx` (`userId`,`contentSourceHash`),\n  KEY `articles_userId_aiAnalysisStatus_idx` (`userId`,`aiAnalysisStatus`),\n  KEY `articles_behavior_read_idx` (`userId`,`positiveInd`,`negativeInd`,`savedInd`,`filteredInd`,`duplicateOfArticleId`,`lastMeaningfulReadAt`,`attentionBucket`),\n  KEY `articles_user_status_visible_event_idx` (`userId`,`status`,`filteredInd`,`duplicateOfArticleId`,`eventId`,`id`),\n  KEY `articles_user_visible_created_idx` (`userId`,`filteredInd`,`duplicateOfArticleId`,`createdAt`),\n  FULLTEXT KEY `articles_title_contentText_fulltext_idx` (`title`,`contentText`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `articles` ADD CONSTRAINT `articles_duplicateOfArticleId_foreign_idx` FOREIGN KEY (`duplicateOfArticleId`) REFERENCES `articles` (`id`) ON DELETE SET NULL ON UPDATE CASCADE",
+        "ALTER TABLE `articles` ADD CONSTRAINT `articles_eventId_fkey` FOREIGN KEY (`eventId`) REFERENCES `events` (`id`) ON DELETE SET NULL ON UPDATE CASCADE",
+        "ALTER TABLE `articles` ADD CONSTRAINT `articles_feedId_userId_fkey` FOREIGN KEY (`feedId`, `userId`) REFERENCES `feeds` (`id`, `userId`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `articles` ADD CONSTRAINT `articles_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `articles` ADD CONSTRAINT `articles_ibfk_2` FOREIGN KEY (`feedId`) REFERENCES `feeds` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "briefing_preferences",
+      "create": "CREATE TABLE `briefing_preferences` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `includeOnlyUnreadArticles` tinyint(1) NOT NULL DEFAULT '0',\n  `markAsReadOnScroll` tinyint(1) NOT NULL DEFAULT '0',\n  `includeDevelopingEvents` tinyint(1) NOT NULL DEFAULT '0',\n  `showOnlyInterestMatchedArticles` tinyint(1) NOT NULL DEFAULT '0',\n  `showOnlyDevelopingEventArticles` tinyint(1) NOT NULL DEFAULT '0',\n  `minDistinctSources` tinyint NOT NULL DEFAULT '1',\n  `prioritizeHighTrust` tinyint(1) NOT NULL DEFAULT '0',\n  `selectionPeriod` enum('24h','7d') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '7d',\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `emailDigestEnabled` tinyint(1) NOT NULL DEFAULT '0',\n  `emailDigestTime` varchar(5) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '08:00',\n  `emailDigestTimezone` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'UTC',\n  `emailDigestSkipWhenEmpty` tinyint(1) NOT NULL DEFAULT '1',\n  `includeHotArticles` tinyint(1) NOT NULL DEFAULT '1',\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `briefing_preferences_userId_unique` (`userId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `briefing_preferences` ADD CONSTRAINT `briefing_preferences_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "categories",
+      "create": "CREATE TABLE `categories` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `categoryOrder` int DEFAULT '0',\n  `iconName` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `clusteringBehavior` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `pinned` tinyint(1) NOT NULL DEFAULT '0',\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `categories_id_userId_unique` (`id`,`userId`),\n  KEY `categories_userId_order_name_idx` (`userId`,`categoryOrder`,`name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `categories` ADD CONSTRAINT `categories_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "crawl_runs",
+      "create": "CREATE TABLE `crawl_runs` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `status` enum('running','completed','failed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'running',\n  `startedAt` datetime NOT NULL,\n  `completedAt` datetime DEFAULT NULL,\n  `errorMessage` text COLLATE utf8mb4_unicode_ci,\n  `newArticles` int DEFAULT NULL,\n  `updatedArticles` int DEFAULT NULL,\n  `articleErrors` int DEFAULT NULL,\n  `errors` int DEFAULT NULL,\n  `durationMs` int DEFAULT NULL,\n  `processedFeeds` int DEFAULT NULL,\n  `failedFeeds` int DEFAULT NULL,\n  `timedOutFeeds` int DEFAULT NULL,\n  `triggerType` enum('scheduled','api') COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `feedsAttempted` int DEFAULT NULL,\n  `feedsSucceeded` int DEFAULT NULL,\n  `feedsRecovered` int DEFAULT NULL,\n  `articlesFetched` int DEFAULT NULL,\n  `articlesUnchanged` int DEFAULT NULL,\n  `articlesDuplicate` int DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `heartbeatAt` datetime DEFAULT NULL,\n  `ownerToken` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `articlesFiltered` int DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `crawl_runs_active_user_unique` (((case when (`status` = _utf8mb4'running') then `userId` else NULL end))),\n  KEY `crawl_runs_userId_idx` (`userId`),\n  KEY `crawl_runs_userId_startedAt_idx` (`userId`,`startedAt`),\n  KEY `crawl_runs_status_heartbeatAt_idx` (`status`,`heartbeatAt`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `crawl_runs` ADD CONSTRAINT `crawl_runs_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "email_deliveries",
+      "create": "CREATE TABLE `email_deliveries` (\n  `id` char(36) COLLATE utf8mb4_bin NOT NULL,\n  `userId` int NOT NULL,\n  `messageType` varchar(64) NOT NULL,\n  `recipient` varchar(320) NOT NULL,\n  `status` enum('pending','sending','sent','failed','cancelled') NOT NULL DEFAULT 'pending',\n  `payload` json NOT NULL,\n  `attemptCount` int NOT NULL DEFAULT '0',\n  `retryCount` int NOT NULL DEFAULT '0',\n  `maxAttempts` int NOT NULL DEFAULT '5',\n  `scheduledAt` datetime NOT NULL,\n  `availableAt` datetime NOT NULL,\n  `leaseOwner` varchar(64) DEFAULT NULL,\n  `leaseUntil` datetime DEFAULT NULL,\n  `completedAt` datetime DEFAULT NULL,\n  `providerMessageId` varchar(255) DEFAULT NULL,\n  `lastError` varchar(2000) DEFAULT NULL,\n  `dedupeKey` varchar(255) NOT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `email_deliveries_user_type_dedupe_unique` (`userId`,`messageType`,`dedupeKey`),\n  KEY `email_deliveries_claim_idx` (`status`,`availableAt`,`leaseUntil`,`id`),\n  KEY `email_deliveries_user_status_idx` (`userId`,`status`,`scheduledAt`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `email_deliveries` ADD CONSTRAINT `email_deliveries_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "email_verification_tokens",
+      "create": "CREATE TABLE `email_verification_tokens` (\n  `id` char(36) COLLATE utf8mb4_bin NOT NULL,\n  `userId` int NOT NULL,\n  `tokenHash` varchar(64) NOT NULL,\n  `expiresAt` datetime NOT NULL,\n  `usedAt` datetime DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `email_verification_tokens_hash_unique` (`tokenHash`),\n  KEY `email_verification_tokens_user_expiry_idx` (`userId`,`expiresAt`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `email_verification_tokens` ADD CONSTRAINT `email_verification_tokens_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "events",
+      "create": "CREATE TABLE `events` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `representativeArticleId` int NOT NULL,\n  `name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `generatedName` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `articleCount` int DEFAULT '1',\n  `sourceCount` int DEFAULT '0',\n  `sourceDiversityScore` float DEFAULT '0',\n  `eventStrength` float DEFAULT '0',\n  `eventVector` json DEFAULT NULL,\n  `eventWindowStartAt` datetime DEFAULT NULL,\n  `eventWindowEndAt` datetime DEFAULT NULL,\n  `status` enum('emerging','active','cooling','archived') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'emerging',\n  `developingArticleId` int DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `embedding_model` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `representativeArticleId` (`representativeArticleId`),\n  KEY `events_userId_idx` (`userId`),\n  KEY `events_status_idx` (`status`),\n  KEY `events_userId_updatedAt_idx` (`userId`,`updatedAt`),\n  KEY `events_developingArticleId_fkey` (`developingArticleId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `events` ADD CONSTRAINT `events_developingArticleId_fkey` FOREIGN KEY (`developingArticleId`) REFERENCES `articles` (`id`) ON DELETE SET NULL ON UPDATE CASCADE",
+        "ALTER TABLE `events` ADD CONSTRAINT `events_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `events` ADD CONSTRAINT `events_ibfk_3` FOREIGN KEY (`representativeArticleId`) REFERENCES `articles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "feed_crawl_results",
+      "create": "CREATE TABLE `feed_crawl_results` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `crawlRunId` int NOT NULL,\n  `userId` int NOT NULL,\n  `feedId` int NOT NULL,\n  `status` enum('SUCCESS','RECOVERED','FAILED') COLLATE utf8mb4_unicode_ci NOT NULL,\n  `errorCategory` enum('TIMEOUT','NOT_FOUND','RATE_LIMITED','HTTP_ERROR','REDIRECT_LOOP','NETWORK_ERROR','INVALID_FEED','MALFORMED_BODY','VALIDATION_ERROR','EMPTY_FEED','SECURITY_REJECTED','TOO_LARGE','UNKNOWN_ERROR') COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `errorCode` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `httpStatus` int DEFAULT NULL,\n  `requestedUrl` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `resolvedUrl` text COLLATE utf8mb4_unicode_ci,\n  `recoveryAttempted` tinyint(1) NOT NULL DEFAULT '0',\n  `recoverySucceeded` tinyint(1) NOT NULL DEFAULT '0',\n  `attemptCount` int NOT NULL DEFAULT '1',\n  `itemsFetched` int NOT NULL DEFAULT '0',\n  `articlesNew` int NOT NULL DEFAULT '0',\n  `articlesUpdated` int NOT NULL DEFAULT '0',\n  `articlesUnchanged` int NOT NULL DEFAULT '0',\n  `articlesDuplicate` int NOT NULL DEFAULT '0',\n  `durationMs` int NOT NULL DEFAULT '0',\n  `errorMessage` varchar(1000) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `attemptSummary` json DEFAULT NULL,\n  `startedAt` datetime NOT NULL,\n  `completedAt` datetime NOT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `articlesFiltered` int NOT NULL DEFAULT '0',\n  PRIMARY KEY (`id`),\n  KEY `feed_crawl_results_run_feed_idx` (`crawlRunId`,`feedId`),\n  KEY `feed_crawl_results_feed_created_idx` (`feedId`,`createdAt`),\n  KEY `feed_crawl_results_user_created_idx` (`userId`,`createdAt`),\n  KEY `feed_crawl_results_run_status_idx` (`crawlRunId`,`status`),\n  KEY `feed_crawl_results_category_created_idx` (`errorCategory`,`createdAt`),\n  KEY `feed_crawl_results_feed_completed_idx` (`feedId`,`completedAt`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `feed_crawl_results` ADD CONSTRAINT `feed_crawl_results_ibfk_1` FOREIGN KEY (`crawlRunId`) REFERENCES `crawl_runs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `feed_crawl_results` ADD CONSTRAINT `feed_crawl_results_ibfk_2` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `feed_crawl_results` ADD CONSTRAINT `feed_crawl_results_ibfk_3` FOREIGN KEY (`feedId`) REFERENCES `feeds` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "feed_url_aliases",
+      "create": "CREATE TABLE `feed_url_aliases` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `feedId` int NOT NULL,\n  `originalUrl` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `normalizedUrl` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `normalizedUrlHash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `aliasType` enum('input','discovered_alternate','redirect','final','publisher_self','manual','historical') COLLATE utf8mb4_unicode_ci NOT NULL,\n  `firstSeenAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `lastSeenAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `feed_url_aliases_user_hash_unique` (`userId`,`normalizedUrlHash`),\n  KEY `feed_url_aliases_user_feed_idx` (`userId`,`feedId`),\n  KEY `feed_url_aliases_feed_idx` (`feedId`),\n  KEY `feed_url_aliases_user_type_idx` (`userId`,`aliasType`),\n  KEY `feed_url_aliases_feedId_userId_fkey` (`feedId`,`userId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `feed_url_aliases` ADD CONSTRAINT `feed_url_aliases_feedId_userId_fkey` FOREIGN KEY (`feedId`, `userId`) REFERENCES `feeds` (`id`, `userId`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `feed_url_aliases` ADD CONSTRAINT `feed_url_aliases_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `feed_url_aliases` ADD CONSTRAINT `feed_url_aliases_ibfk_2` FOREIGN KEY (`feedId`) REFERENCES `feeds` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "feeds",
+      "create": "CREATE TABLE `feeds` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `categoryId` int NOT NULL,\n  `feedName` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `feedDesc` text COLLATE utf8mb4_unicode_ci,\n  `feedType` varchar(16) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `url` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `favicon` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `errorCount` int DEFAULT '0',\n  `errorMessage` text COLLATE utf8mb4_unicode_ci,\n  `errorSince` datetime DEFAULT NULL,\n  `mutedUntil` datetime DEFAULT NULL,\n  `status` enum('active','error','disabled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',\n  `feedTrust` float NOT NULL DEFAULT '0.75',\n  `feedDuplicationRate` float NOT NULL DEFAULT '0',\n  `feedAttentionAvg` float NOT NULL DEFAULT '0',\n  `feedDeepReadRatio` float NOT NULL DEFAULT '0',\n  `feedSkimRatio` float NOT NULL DEFAULT '0',\n  `feedIgnoreRatio` float NOT NULL DEFAULT '0',\n  `feedOpenedOriginalAvg` float NOT NULL DEFAULT '0',\n  `feedOpenedOriginalRatio` float NOT NULL DEFAULT '0',\n  `feedAttentionSampleSize` int NOT NULL DEFAULT '0',\n  `feedAttentionUpdatedAt` datetime DEFAULT NULL,\n  `crawlSince` datetime DEFAULT NULL,\n  `lastFetched` datetime DEFAULT NULL,\n  `applyAiAnalysis` tinyint(1) NOT NULL DEFAULT '1',\n  `generateEmbeddings` tinyint(1) NOT NULL DEFAULT '1',\n  `feedTags` json NOT NULL,\n  `updateIntervalMinutes` int DEFAULT NULL,\n  `etag` varchar(2048) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `lastModified` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `contentHash` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `cacheFreshUntil` datetime DEFAULT NULL,\n  `lastAttemptAt` datetime DEFAULT NULL,\n  `lastSuccessAt` datetime DEFAULT NULL,\n  `lastChangedAt` datetime DEFAULT NULL,\n  `lastPublishedAt` datetime DEFAULT NULL,\n  `observedEntryIntervalMs` bigint DEFAULT NULL,\n  `consecutiveFailures` int NOT NULL DEFAULT '0',\n  `nextFetchAt` datetime DEFAULT CURRENT_TIMESTAMP,\n  `lastFetchOutcome` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `leaseUntil` datetime DEFAULT NULL,\n  `leaseOwner` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `publisherSelfUrl` text COLLATE utf8mb4_unicode_ci,\n  `publisherSelfStatus` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `publisherSelfCheckedAt` datetime DEFAULT NULL,\n  `publisherSelfDiagnostic` text COLLATE utf8mb4_unicode_ci,\n  `lastCrawlAt` datetime DEFAULT NULL,\n  `lastCrawlStatus` enum('SUCCESS','RECOVERED','FAILED') COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `lastCrawlErrorCategory` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `lastCrawlDurationMs` int DEFAULT NULL,\n  `lastSuccessfulCrawlAt` datetime DEFAULT NULL,\n  `totalCrawlFailures` int NOT NULL DEFAULT '0',\n  `totalCrawlSuccesses` int NOT NULL DEFAULT '0',\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `itemFilter` text COLLATE utf8mb4_unicode_ci,\n  `sourceConfig` json DEFAULT NULL,\n  `lastArticleReceivedAt` datetime DEFAULT NULL,\n  `pinned` tinyint(1) NOT NULL DEFAULT '0',\n  `authenticationType` enum('basic') COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `authenticationUsername` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `authenticationPassword` text COLLATE utf8mb4_unicode_ci,\n  `sourceAffinity` float DEFAULT NULL,\n  `initialImportCompletedAt` datetime DEFAULT NULL,\n  `ongoingAdmissionWindowDays` int NOT NULL DEFAULT '30',\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `feeds_id_userId_unique` (`id`,`userId`),\n  UNIQUE KEY `feeds_userId_url_unique` (`userId`,`url`),\n  KEY `feeds_userId_idx` (`userId`),\n  KEY `feeds_userId_feedName_idx` (`userId`,`feedName`),\n  KEY `feeds_categoryId_idx` (`categoryId`),\n  KEY `feeds_userId_categoryId_idx` (`userId`,`categoryId`),\n  KEY `feeds_categoryId_userId_fkey` (`categoryId`,`userId`),\n  KEY `feeds_due_claim_idx` (`status`,`nextFetchAt`,`leaseUntil`,`id`),\n  KEY `feeds_user_due_claim_idx` (`userId`,`status`,`nextFetchAt`,`leaseUntil`,`id`),\n  KEY `feeds_lease_owner_idx` (`leaseOwner`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `feeds` ADD CONSTRAINT `feeds_categoryId_userId_fkey` FOREIGN KEY (`categoryId`, `userId`) REFERENCES `categories` (`id`, `userId`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `feeds` ADD CONSTRAINT `feeds_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `feeds` ADD CONSTRAINT `feeds_ibfk_2` FOREIGN KEY (`categoryId`) REFERENCES `categories` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "generated_feeds",
+      "create": "CREATE TABLE `generated_feeds` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `description` text,\n  `expression` text NOT NULL,\n  `token` varchar(64) NOT NULL,\n  `enabled` tinyint(1) NOT NULL DEFAULT '1',\n  `tokenRegeneratedAt` datetime NOT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `generated_feeds_token_unique` (`token`),\n  KEY `generated_feeds_userId_idx` (`userId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `generated_feeds` ADD CONSTRAINT `generated_feeds_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "hotlinks",
+      "create": "CREATE TABLE `hotlinks` (\n  `userId` int NOT NULL,\n  `feedId` int NOT NULL,\n  `sourceArticleId` int DEFAULT NULL,\n  `url` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,\n  `createdAt` datetime DEFAULT NULL,\n  KEY `hotlinks_userId_url_idx` (`userId`,`url`(255)),\n  KEY `hotlinks_feedId_idx` (`feedId`),\n  KEY `hotlinks_userId_feedId_url_idx` (`userId`,`feedId`,`url`(255)),\n  KEY `hotlinks_sourceArticleId_idx` (`sourceArticleId`),\n  KEY `hotlinks_userId_createdAt_idx` (`userId`,`createdAt`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `hotlinks` ADD CONSTRAINT `hotlinks_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `hotlinks` ADD CONSTRAINT `hotlinks_ibfk_2` FOREIGN KEY (`feedId`) REFERENCES `feeds` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `hotlinks` ADD CONSTRAINT `hotlinks_sourceArticleId_foreign_idx` FOREIGN KEY (`sourceArticleId`) REFERENCES `articles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "inference_settings",
+      "create": "CREATE TABLE `inference_settings` (\n  `id` int NOT NULL DEFAULT '1',\n  `baseUrl` varchar(2048) NOT NULL,\n  `apiKeyEncrypted` text,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `runtimeOverrides` json DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  CONSTRAINT `inference_settings_singleton` CHECK ((`id` = 1))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "island_taxonomy",
+      "create": "CREATE TABLE `island_taxonomy` (\n  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\n  `identity` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `displayName` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `categoryName` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `description` text COLLATE utf8mb4_unicode_ci,\n  `vector` json DEFAULT NULL,\n  `embedding_model` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `status` enum('active','hidden','archived') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `identity` (`identity`),\n  UNIQUE KEY `island_taxonomy_identity_unique` (`identity`),\n  KEY `island_taxonomy_category_idx` (`categoryName`),\n  KEY `island_taxonomy_status_idx` (`status`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "islands",
+      "create": "CREATE TABLE `islands` (\n  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\n  `label` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `generatedLabel` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `weight` float NOT NULL DEFAULT '0',\n  `userId` int NOT NULL,\n  `islandVector` json DEFAULT NULL,\n  `archivedInd` tinyint(1) NOT NULL DEFAULT '0',\n  `archivedAt` datetime DEFAULT NULL,\n  `positiveSignals` json NOT NULL,\n  `populationAudit` json DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `embedding_model` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `lastBehaviorAt` datetime DEFAULT NULL,\n  `supportArticleIds` json DEFAULT NULL,\n  `mutedInd` tinyint(1) NOT NULL DEFAULT '0',\n  PRIMARY KEY (`id`),\n  KEY `islands_userId_idx` (`userId`),\n  KEY `islands_user_weight_idx` (`userId`,`weight`),\n  KEY `islands_user_archived_idx` (`userId`,`archivedInd`),\n  KEY `islands_user_active_behavior_idx` (`userId`,`archivedInd`,`lastBehaviorAt`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `islands` ADD CONSTRAINT `islands_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "official_sources",
+      "create": "CREATE TABLE `official_sources` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `entity` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `domain` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `enabled` tinyint(1) NOT NULL DEFAULT '1',\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `official_sources_userId_domain_unique` (`userId`,`domain`),\n  KEY `official_sources_userId_idx` (`userId`),\n  KEY `official_sources_userId_entity_idx` (`userId`,`entity`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `official_sources` ADD CONSTRAINT `official_sources_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "oidc_identities",
+      "create": "CREATE TABLE `oidc_identities` (\n  `identityHash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `issuer` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `subject` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `userId` int NOT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`identityHash`),\n  KEY `oidc_identities_user_id` (`userId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `oidc_identities` ADD CONSTRAINT `oidc_identities_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "oidc_transactions",
+      "create": "CREATE TABLE `oidc_transactions` (\n  `stateHash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `browserHash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `configurationHash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `nonce` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `codeVerifier` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `phase` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `linkUserId` int DEFAULT NULL,\n  `userId` int DEFAULT NULL,\n  `passwordVersion` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `exchangeHash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `expiresAt` datetime NOT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`stateHash`),\n  UNIQUE KEY `exchangeHash` (`exchangeHash`),\n  KEY `linkUserId` (`linkUserId`),\n  KEY `userId` (`userId`),\n  KEY `oidc_transactions_expires_at` (`expiresAt`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `oidc_transactions` ADD CONSTRAINT `oidc_transactions_ibfk_1` FOREIGN KEY (`linkUserId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `oidc_transactions` ADD CONSTRAINT `oidc_transactions_ibfk_2` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "password_reset_tokens",
+      "create": "CREATE TABLE `password_reset_tokens` (\n  `id` char(36) COLLATE utf8mb4_bin NOT NULL,\n  `userId` int NOT NULL,\n  `tokenHash` varchar(64) NOT NULL,\n  `expiresAt` datetime NOT NULL,\n  `usedAt` datetime DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `password_reset_tokens_hash_unique` (`tokenHash`),\n  KEY `password_reset_tokens_user_expiry_idx` (`userId`,`expiresAt`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `password_reset_tokens` ADD CONSTRAINT `password_reset_tokens_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "processing_failures",
+      "create": "CREATE TABLE `processing_failures` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `crawlRunId` int DEFAULT NULL,\n  `executionId` char(36) COLLATE utf8mb4_bin NOT NULL,\n  `userId` int NOT NULL,\n  `stage` varchar(64) NOT NULL,\n  `failureType` enum('ERROR','TIMEOUT','RATE_LIMITED','UNAVAILABLE','INVALID_DATA','PERSISTENCE_FAILURE','LEASE_LOST','ABANDONED','CANCELLED') NOT NULL DEFAULT 'ERROR',\n  `severity` enum('WARNING','ERROR','FATAL') NOT NULL DEFAULT 'ERROR',\n  `code` varchar(128) DEFAULT NULL,\n  `errorName` varchar(128) DEFAULT NULL,\n  `message` varchar(2000) NOT NULL,\n  `stackTrace` text,\n  `subjectType` varchar(32) DEFAULT NULL,\n  `subjectId` varchar(128) DEFAULT NULL,\n  `feedId` int DEFAULT NULL,\n  `articleId` int DEFAULT NULL,\n  `retryable` tinyint(1) NOT NULL DEFAULT '0',\n  `attemptNumber` int DEFAULT NULL,\n  `fingerprint` varchar(64) NOT NULL,\n  `context` json DEFAULT NULL,\n  `occurredAt` datetime NOT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `processing_failures_user_occurred_idx` (`userId`,`occurredAt`),\n  KEY `processing_failures_crawl_occurred_idx` (`crawlRunId`,`occurredAt`),\n  KEY `processing_failures_user_stage_occurred_idx` (`userId`,`stage`,`occurredAt`),\n  KEY `processing_failures_user_type_occurred_idx` (`userId`,`failureType`,`occurredAt`),\n  KEY `processing_failures_fingerprint_occurred_idx` (`fingerprint`,`occurredAt`),\n  KEY `processing_failures_feed_occurred_idx` (`feedId`,`occurredAt`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `processing_failures` ADD CONSTRAINT `processing_failures_ibfk_1` FOREIGN KEY (`crawlRunId`) REFERENCES `crawl_runs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `processing_failures` ADD CONSTRAINT `processing_failures_ibfk_2` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "processing_jobs",
+      "create": "CREATE TABLE `processing_jobs` (\n  `id` char(36) COLLATE utf8mb4_bin NOT NULL,\n  `type` varchar(64) NOT NULL,\n  `userId` int NOT NULL,\n  `articleId` int DEFAULT NULL,\n  `dedupeKey` varchar(255) NOT NULL,\n  `payload` json NOT NULL,\n  `priority` int NOT NULL DEFAULT '0',\n  `status` enum('pending','running','succeeded','dead','cancelled') NOT NULL DEFAULT 'pending',\n  `attempts` int NOT NULL DEFAULT '0',\n  `maxAttempts` int NOT NULL DEFAULT '5',\n  `availableAt` datetime NOT NULL,\n  `leaseOwner` varchar(64) DEFAULT NULL,\n  `leaseUntil` datetime DEFAULT NULL,\n  `lastErrorCode` varchar(128) DEFAULT NULL,\n  `lastErrorMessage` varchar(2000) DEFAULT NULL,\n  `startedAt` datetime DEFAULT NULL,\n  `completedAt` datetime DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `processing_jobs_user_type_dedupe_unique` (`userId`,`type`,`dedupeKey`),\n  KEY `articleId` (`articleId`),\n  KEY `processing_jobs_claim_idx` (`status`,`priority`,`createdAt`,`availableAt`,`id`),\n  KEY `processing_jobs_lease_recovery_idx` (`status`,`leaseUntil`,`id`),\n  KEY `processing_jobs_user_status_available_idx` (`userId`,`status`,`availableAt`),\n  KEY `processing_jobs_user_article_status_idx` (`userId`,`articleId`,`status`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `processing_jobs` ADD CONSTRAINT `processing_jobs_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `processing_jobs` ADD CONSTRAINT `processing_jobs_ibfk_2` FOREIGN KEY (`articleId`) REFERENCES `articles` (`id`) ON DELETE SET NULL ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "push_subscriptions",
+      "create": "CREATE TABLE `push_subscriptions` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `endpoint` text NOT NULL,\n  `endpointHash` varchar(64) NOT NULL,\n  `p256dh` text NOT NULL,\n  `auth` text NOT NULL,\n  `expirationTime` datetime DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `endpointHash` (`endpointHash`),\n  KEY `push_subscriptions_userId_idx` (`userId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `push_subscriptions` ADD CONSTRAINT `push_subscriptions_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "server_settings",
+      "create": "CREATE TABLE `server_settings` (\n  `key` varchar(100) NOT NULL,\n  `value` json NOT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`key`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "sidebar_settings",
+      "create": "CREATE TABLE `sidebar_settings` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `showTotalCount` tinyint(1) NOT NULL DEFAULT '1',\n  `declutterCounts` tinyint(1) NOT NULL DEFAULT '1',\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `hideZeroCountItems` tinyint(1) NOT NULL DEFAULT '0',\n  `automaticallyHideInactiveFeeds` tinyint(1) NOT NULL DEFAULT '0',\n  `inactiveFeedDays` int NOT NULL DEFAULT '30',\n  `sortOrder` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'manual',\n  `showFeedFavicons` tinyint(1) NOT NULL DEFAULT '1',\n  `sortByCurrentSelection` tinyint(1) NOT NULL DEFAULT '0',\n  `sectionOrder` json DEFAULT NULL,\n  `markReadVisibleOnly` tinyint(1) NOT NULL DEFAULT '0',\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `sidebar_settings_userId_unique` (`userId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `sidebar_settings` ADD CONSTRAINT `sidebar_settings_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "smart_folders",
+      "create": "CREATE TABLE `smart_folders` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `query` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `limitCount` int NOT NULL DEFAULT '50',\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `markAsReadOnScroll` tinyint(1) NOT NULL DEFAULT '0',\n  PRIMARY KEY (`id`),\n  KEY `smart_folders_userId_idx` (`userId`),\n  KEY `smart_folders_userId_name_idx` (`userId`,`name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `smart_folders` ADD CONSTRAINT `smart_folders_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "tags",
+      "create": "CREATE TABLE `tags` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `articleId` int NOT NULL,\n  `userId` int NOT NULL,\n  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `tagType` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `tags_articleId_name_unique` (`articleId`,`name`),\n  KEY `tags_userId_name_idx` (`userId`,`name`),\n  KEY `tags_name_idx` (`name`),\n  KEY `tags_user_article_name_idx` (`userId`,`articleId`,`name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `tags` ADD CONSTRAINT `tags_ibfk_1` FOREIGN KEY (`articleId`) REFERENCES `articles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `tags` ADD CONSTRAINT `tags_ibfk_2` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "user_settings",
+      "create": "CREATE TABLE `user_settings` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `categoryId` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '%',\n  `feedId` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '%',\n  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unread',\n  `sort` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'desc',\n  `minAdvertisementScore` int NOT NULL DEFAULT '0',\n  `minToneScore` int NOT NULL DEFAULT '0',\n  `minQualityScore` int NOT NULL DEFAULT '0',\n  `viewMode` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'expanded',\n  `grouping` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'none',\n  `includeDevelopingEvents` tinyint(1) NOT NULL DEFAULT '0',\n  `prioritizeHighTrust` tinyint(1) NOT NULL DEFAULT '0',\n  `themeMode` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'system',\n  `startupViewMode` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'last-used',\n  `markAsReadOnScroll` tinyint(1) NOT NULL DEFAULT '1',\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `openArticleLinksInNewTab` tinyint(1) NOT NULL DEFAULT '0',\n  `onboardingCompleted` tinyint(1) NOT NULL DEFAULT '0',\n  `minOverallQualityScore` int NOT NULL DEFAULT '0',\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `userId` (`userId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `user_settings` ADD CONSTRAINT `user_settings_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "users",
+      "create": "CREATE TABLE `users` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `password` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `feverCredentialHash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `role` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'user',\n  `lastLogin` datetime NOT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  `bootstrapAdminClaim` tinyint(1) DEFAULT NULL,\n  `email` varchar(320) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `emailVerifiedAt` datetime DEFAULT NULL,\n  `passwordChangedAt` datetime DEFAULT NULL,\n  `personalizationRefreshedAt` datetime DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `username` (`username`),\n  UNIQUE KEY `hash` (`feverCredentialHash`),\n  UNIQUE KEY `users_bootstrap_admin_claim_unique` (`bootstrapAdminClaim`),\n  UNIQUE KEY `users_email_unique` (`email`),\n  KEY `users_personalization_refreshed_at_id` (`personalizationRefreshedAt`,`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "webhook_conditions",
+      "create": "CREATE TABLE `webhook_conditions` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `webhookId` int NOT NULL,\n  `field` varchar(64) NOT NULL,\n  `operator` varchar(32) NOT NULL,\n  `value` text NOT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `webhook_conditions_webhookId_idx` (`webhookId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `webhook_conditions` ADD CONSTRAINT `webhook_conditions_ibfk_1` FOREIGN KEY (`webhookId`) REFERENCES `webhooks` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "webhook_deliveries",
+      "create": "CREATE TABLE `webhook_deliveries` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `webhookId` int NOT NULL,\n  `articleId` int NOT NULL,\n  `status` enum('pending','success','failed') NOT NULL DEFAULT 'pending',\n  `attemptCount` int NOT NULL DEFAULT '0',\n  `lastAttemptAt` datetime DEFAULT NULL,\n  `nextAttemptAt` datetime DEFAULT NULL,\n  `httpStatus` int DEFAULT NULL,\n  `error` varchar(2000) DEFAULT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `webhook_deliveries_webhook_article_unique` (`webhookId`,`articleId`),\n  KEY `webhook_deliveries_articleId_idx` (`articleId`),\n  KEY `webhook_deliveries_status_nextAttemptAt_idx` (`status`,`nextAttemptAt`,`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `webhook_deliveries` ADD CONSTRAINT `webhook_deliveries_ibfk_1` FOREIGN KEY (`webhookId`) REFERENCES `webhooks` (`id`) ON DELETE CASCADE ON UPDATE CASCADE",
+        "ALTER TABLE `webhook_deliveries` ADD CONSTRAINT `webhook_deliveries_ibfk_2` FOREIGN KEY (`articleId`) REFERENCES `articles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "webhooks",
+      "create": "CREATE TABLE `webhooks` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `userId` int NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `enabled` tinyint(1) NOT NULL DEFAULT '1',\n  `endpointUrl` text NOT NULL,\n  `secret` text,\n  `matchMode` enum('ALL','ANY') NOT NULL DEFAULT 'ALL',\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`id`),\n  KEY `webhooks_userId_idx` (`userId`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": [
+        "ALTER TABLE `webhooks` ADD CONSTRAINT `webhooks_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+      ]
+    },
+    {
+      "name": "worker_leases",
+      "create": "CREATE TABLE `worker_leases` (\n  `key` varchar(64) NOT NULL,\n  `owner` varchar(64) NOT NULL,\n  `leaseUntil` datetime NOT NULL,\n  `createdAt` datetime NOT NULL,\n  `updatedAt` datetime NOT NULL,\n  PRIMARY KEY (`key`),\n  KEY `worker_leases_expiry_idx` (`leaseUntil`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+      "indexes": [],
+      "foreignKeys": []
+    }
+  ]
+}

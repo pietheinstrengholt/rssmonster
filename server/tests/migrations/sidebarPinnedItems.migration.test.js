@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260923006000-add-sidebar-pinned-items.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260923006000-add-sidebar-pinned-items.mjs';
 
 it('adds unpinned defaults to existing and new feed/category rows and rolls back safely', async () => {
   const query = db.sequelize.getQueryInterface();

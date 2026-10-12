@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
 const migration = require(
-  '../../migrations/20260902000000-add-feed-item-filter.js'
+  '../../migrations/pre-2.4/20260902000000-add-feed-item-filter.js'
 );
 
 describe('feed item filter migration', () => {

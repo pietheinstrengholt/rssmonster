@@ -1,10 +1,10 @@
 import { Sequelize, DataTypes } from 'sequelize';
 import { describe, expect, it } from 'vitest';
-import migration from '../../migrations/20260910000000-add-oidc-login.js';
+import migration from '../../migrations/pre-2.4/20260910000000-add-oidc-login.js';
 import createIdentity from '../../models/oidcIdentity.js';
 import createTransaction from '../../models/oidcTransaction.js';
 import createUser from '../../models/user.js';
-import credentialsMigration from '../../migrations/20260910001000-allow-oidc-only-users.js';
+import credentialsMigration from '../../migrations/pre-2.4/20260910001000-allow-oidc-only-users.js';
 
 describe('OIDC migration', () => {
   it.each([false, true])('preserves SQLite user references, indexes and allocated IDs (empty=%s)', async empty => {

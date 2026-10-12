@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260923001000-add-sidebar-hide-zero-count-items.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260923001000-add-sidebar-hide-zero-count-items.mjs';
 
 it('defaults existing and future settings to visible and preserves other settings through rollback', async () => {
   const query = db.sequelize.getQueryInterface();

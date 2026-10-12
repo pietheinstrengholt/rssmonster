@@ -3,7 +3,7 @@ import { DataTypes } from 'sequelize';
 import { describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const migration = require('../../migrations/20260828003000-add-article-ai-analysis-completed-at.js');
+const migration = require('../../migrations/pre-2.4/20260828003000-add-article-ai-analysis-completed-at.js');
 
 describe('article AI analysis completion migration', () => {
   it('adds a nullable completion timestamp', async () => {

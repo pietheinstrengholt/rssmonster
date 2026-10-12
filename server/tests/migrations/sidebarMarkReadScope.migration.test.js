@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260929000000-add-sidebar-mark-read-scope.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260929000000-add-sidebar-mark-read-scope.mjs';
 
 it('preserves current-selection read scope for existing and new settings and preserves rows on rollback', async () => {
   const query = db.sequelize.getQueryInterface();

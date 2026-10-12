@@ -1,0 +1,299 @@
+{
+  "cutoffCommit": "2728be062c885ea67f6849e0595a4ca5b126a8fa",
+  "migrations": [
+    {
+      "name": "20260810000000-baseline-core.js",
+      "sha256": "5ee8179021f71e9f0f6850a75362ef662df386708998126226ad2751c3bb7723"
+    },
+    {
+      "name": "20260810001000-baseline-feeds.js",
+      "sha256": "70f9c4df97c596f56b1c9767ecc5b1f49f613afd3f723d631a4dd1b41114b109"
+    },
+    {
+      "name": "20260810002000-baseline-articles.js",
+      "sha256": "66d3c945810ba507c33cf9be9400ed458c0cb2eaf513a640a4df35dbbc892442"
+    },
+    {
+      "name": "20260810003000-baseline-semantics.js",
+      "sha256": "d2e38bf1d691c9f268fd9cb5f17d9db2cbc66c6d1017078a03de5386921f3b56"
+    },
+    {
+      "name": "20260810004000-baseline-crawling.js",
+      "sha256": "a50cbca73131d19b4d8ef17882eb97abf9b13ed220f3814f80df50b54e753de0"
+    },
+    {
+      "name": "20260811000000-add-user-bootstrap-admin-claim.js",
+      "sha256": "19680f7353de8c1421aa6e91054a555995329f85dd46f9c9dee7619eb332234b"
+    },
+    {
+      "name": "20260811001000-add-crawl-run-heartbeat.js",
+      "sha256": "97f623beffc0c7b57951d1ce145d732c8889d164dadc892ea6c57fc450c250d8"
+    },
+    {
+      "name": "20260811002000-add-article-title-content-text-fulltext-index.js",
+      "sha256": "a47dcd483650d829f82c79c17ac1af960f0d80f6ed3a947267d03005cbc85cd3"
+    },
+    {
+      "name": "20260814000000-add-push-subscriptions.js",
+      "sha256": "0160abceec884ef8d2e3d40e2c97c713bc29f61b4360c3c5d03b69710a7e7073"
+    },
+    {
+      "name": "20260820000000-rename-generated-tags-to-inferred.js",
+      "sha256": "8cef419641f66025c4b714cf41a1f147cf680e71a77b2a39282268643c00fa82"
+    },
+    {
+      "name": "20260821000000-improve-island-taxonomy-semantics.js",
+      "sha256": "f8b5da991b71572d84c43324dd40abe0236907321f630efbb62bc479d1a3b6d5"
+    },
+    {
+      "name": "20260824000000-add-processing-failures.js",
+      "sha256": "aa7babac749149d9250980888d847ea6ea0e59b8518ce5e8a88a2197e0595216"
+    },
+    {
+      "name": "20260828000000-add-generated-semantic-labels.js",
+      "sha256": "b49115ab77a44daca8af2fa38cc7606aa659e70111b7f449884c5c6fb3d564c6"
+    },
+    {
+      "name": "20260828001000-add-processing-jobs.js",
+      "sha256": "a6b287fdd788391ba34769508f19868c9fd52b5b82768cef4487b7c708ca35b0"
+    },
+    {
+      "name": "20260828002000-add-article-ai-analysis-status.js",
+      "sha256": "6a82b6783dfab63f17c27e6dd78e189ee574c26dc3f1563087df754693ee579f"
+    },
+    {
+      "name": "20260828003000-add-article-ai-analysis-completed-at.js",
+      "sha256": "bea6bb7ed707a0f6afd011541a847927c472b1bfd38c3f171a4c8705ebf400de"
+    },
+    {
+      "name": "20260828004000-add-worker-leases.js",
+      "sha256": "ce1af5067c5087437f4a2ae82e887dd3132cad45bc6a6aaa3b793f0d7f1e70c2"
+    },
+    {
+      "name": "20260828005000-add-article-score-action-overrides.js",
+      "sha256": "2d357684f19f2ef4e9563909f8201e5bf46e3692af1e6fcc28246165082a62c3"
+    },
+    {
+      "name": "20260829000000-set-neutral-feed-trust-default.js",
+      "sha256": "84a805cb398a3e10767ae3fc68efbc60a9b076448be6bf1f12170cc8b046cd6b"
+    },
+    {
+      "name": "20260902000000-add-feed-item-filter.js",
+      "sha256": "d176697443b73f853e5543e4986e2c2a7df7c0017ceacac27a3a7ee0125717fe"
+    },
+    {
+      "name": "20260902001000-add-crawl-filtered-counts.js",
+      "sha256": "054ba6e25b0925f23bc02a0be9f9167249d8ff730674add0538a2e975b9d6604"
+    },
+    {
+      "name": "20260902002000-create-generated-feeds.js",
+      "sha256": "afd0fcf1e90ff93e82f28ad440cbdec35b92ccd409105def9081722b3aefe5b7"
+    },
+    {
+      "name": "20260902003000-add-email-delivery-models.js",
+      "sha256": "1920704c5bc1ced7d8076b4037822bb0bc2eb22bfa51e1594bb4a1a7f98da9b4"
+    },
+    {
+      "name": "20260903000000-reconcile-email-delivery-outbox.js",
+      "sha256": "01b4e979f6f573618fa08ce52266cc8e2c41c0736760d9b2717f2954c39d6260"
+    },
+    {
+      "name": "20260904000000-add-email-digest-preferences.js",
+      "sha256": "2c8fe30d6bb71e48d9c9a46111c95f439e6de7e67b099c809e63d2d308d57147"
+    },
+    {
+      "name": "20260904001000-add-smart-folder-mark-as-read-on-scroll.js",
+      "sha256": "3439c65abf1d0da005f75bd663f5f527a8dfbd37ce7ee4c3a09fffef54f6b50f"
+    },
+    {
+      "name": "20260904002000-normalize-smart-folder-mark-as-read-on-scroll.js",
+      "sha256": "99f96ef2c4d0d743488e24318bd2155da06ff0177678eb245a2e030cefc43721"
+    },
+    {
+      "name": "20260904003000-add-feed-source-config.js",
+      "sha256": "465a0a66a6c2c6a013ed5ace91d9bf43a9f8f4023931cfd900fb9906919bcdaa"
+    },
+    {
+      "name": "20260910000000-add-oidc-login.js",
+      "sha256": "5028508709f39ea3b67ca78cc652a0d8a28af29708cf96cc83ed36371b7332a1"
+    },
+    {
+      "name": "20260910001000-allow-oidc-only-users.js",
+      "sha256": "d8020428ecf71d15812a3e98f78af63f5b6c166caa594ad6a47a027abc459d93"
+    },
+    {
+      "name": "20260911000000-add-inference-settings.mjs",
+      "sha256": "ff6f383b4d849dd3015b19d8963dd4e1ef0319721dcc8def9902cc5b14611ce8"
+    },
+    {
+      "name": "20260914000000-remove-topics.mjs",
+      "sha256": "e232a3c84c6bc695a23a859c1a783b1b3195e74b056580923d94cd7e51e43d05"
+    },
+    {
+      "name": "20260914001000-add-article-interaction-timestamps.mjs",
+      "sha256": "84c89c760fc0d248e2f8476e99950a550881b43a90b098265b87d29055251e20"
+    },
+    {
+      "name": "20260915000000-add-aggregate-embedding-models.mjs",
+      "sha256": "d25e9491d58c6aa4321745c3ac184f8b75ee2a87aa1078139e2589e240dea112"
+    },
+    {
+      "name": "20260915001000-add-interest-scored-at.mjs",
+      "sha256": "159c2cc315f9e453ad1de05d3f8c7453b92ca15b6ec080083fa1eacdd23328c7"
+    },
+    {
+      "name": "20260915002000-add-personalization-refreshed-at.mjs",
+      "sha256": "1263f66555732855d67e0ba729191e9e939005980d4afbc7c90027c1b283990a"
+    },
+    {
+      "name": "20260917000000-add-article-analysis-provenance.mjs",
+      "sha256": "48f9630887d7a39c4470d4476312d1cdb67c37fd1519a61a4c313cf6ad20d09f"
+    },
+    {
+      "name": "20260917001000-add-island-behavior-time.mjs",
+      "sha256": "83898ae6ef7b4b4280759b7be709e60f92bd337647dc5f56b7f756c3f4acd347"
+    },
+    {
+      "name": "20260918000000-add-server-settings.mjs",
+      "sha256": "c0fd13a0153ce67ceb35e8e0024592c0b702d62f71ead2ccdeab52fa44968cc3"
+    },
+    {
+      "name": "20260918001000-rename-user-settings.mjs",
+      "sha256": "cc5b08c39a5c208815a9dc68292d0a5380ef7f569f9c3abcda54b89345332859"
+    },
+    {
+      "name": "20260918002000-add-inference-runtime-overrides.mjs",
+      "sha256": "0b4b1db208e251c1b76319715ef104b7eba6913dde4c10335e4cbdec4b6dffc4"
+    },
+    {
+      "name": "20260918003000-add-article-link-preference.mjs",
+      "sha256": "4a67f9b74f9baa389d780d3baf53f2f2992a6a9c05eaa5d065c46d01b94c5681"
+    },
+    {
+      "name": "20260919000000-add-archiving-settings.mjs",
+      "sha256": "199b6b7ba4a5612c4b2b570371d1e3c4aae8f8fd03cb156c0eaab5f7afbaa289"
+    },
+    {
+      "name": "20260919001000-add-island-support-article-ids.mjs",
+      "sha256": "0138cc6ebe7c11f822b6f47c194498788aa65c6fb163b3d96d6a1c9dbcdceb11"
+    },
+    {
+      "name": "20260919002000-add-article-query-performance-indexes.mjs",
+      "sha256": "3af3f43479b7c91add52c3f67157b769abdb580ffed547c4060ca64eeb46bd69"
+    },
+    {
+      "name": "20260920000000-set-archiving-default-to-seven-years.mjs",
+      "sha256": "49ad4098bca26b7d6cf66dc7fceb649b0f6d7314395acbe9ef9a343f25e28267"
+    },
+    {
+      "name": "20260922000000-add-article-original-source.mjs",
+      "sha256": "69f1c1cfd222056ba77736a5ea1315917b224e7abeb0d08ba39281feb4decca0"
+    },
+    {
+      "name": "20260922001000-add-article-authors.mjs",
+      "sha256": "22fc1968cc8f0fe14f0e07c2c4572374f50561c94fb21ce77b61322256729371"
+    },
+    {
+      "name": "20260922002000-add-category-clustering-behavior.mjs",
+      "sha256": "a257225c3ab1bf1b0410a563b78f77314da2306a060bc39b88f08d620236cef5"
+    },
+    {
+      "name": "20260922003000-add-article-visible-created-index.mjs",
+      "sha256": "92a253b7e6e311a71ccb610582af5fd44f9e34f3987250957a5145ea31d9687f"
+    },
+    {
+      "name": "20260923000000-add-sidebar-settings.mjs",
+      "sha256": "6531493e7267b6ef23e9c73b7eed7fdc8fb1616047505123fea71580d85c5d57"
+    },
+    {
+      "name": "20260923001000-add-sidebar-hide-zero-count-items.mjs",
+      "sha256": "e6dd5606d824e56a71c0ea2710df834956fcd7f17bf69ceb79486aa1e99d3e65"
+    },
+    {
+      "name": "20260923002000-add-inactive-feed-settings.mjs",
+      "sha256": "13c90291f2c2f2200926bb389aa041e4e45ad3b591049efbca63eb4f4dc9db47"
+    },
+    {
+      "name": "20260923003000-add-sidebar-sort-order.mjs",
+      "sha256": "63e92735ec0b1b7d3796330349356e13750a2b43faebedd28958e9db3ae705e7"
+    },
+    {
+      "name": "20260923004000-add-sidebar-feed-favicons.mjs",
+      "sha256": "47e7ae1e416b0c0f6c826bbe707fc77b95188190d91f4511b54861c2cd3e9b7c"
+    },
+    {
+      "name": "20260923005000-add-sidebar-dynamic-sorting.mjs",
+      "sha256": "6f9d50325eb294b946998cb97cdba1bd690af4debc595917fcaab41cc43f604e"
+    },
+    {
+      "name": "20260923006000-add-sidebar-pinned-items.mjs",
+      "sha256": "9c6df2bf9a6986d20203119202cb195ddf3aae0dc4d512d0f8fa9b62b36675cf"
+    },
+    {
+      "name": "20260923007000-add-sidebar-section-order.mjs",
+      "sha256": "d54b3aac3b6ac3e182129446f09eafc62f12e21fc2e23a36e67f174ec728abb2"
+    },
+    {
+      "name": "20260923008000-add-feed-authentication.mjs",
+      "sha256": "6efd092a6cb5c1ad9e7f2ce7cf41a6fec8e541a86fccff7df1623496751248c8"
+    },
+    {
+      "name": "20260923009000-expand-feed-authentication-password.mjs",
+      "sha256": "b13017b216e17c80a94ffb15fd9dc4a246e215ae70ae6c784d02a4b02132d3b2"
+    },
+    {
+      "name": "20260925000000-add-briefing-include-hot-articles.mjs",
+      "sha256": "56575930d6dafdf2ecffda14d6512e53edcf278ad2afbf15f4c2777b7342072d"
+    },
+    {
+      "name": "20260925001000-add-island-muted-ind.mjs",
+      "sha256": "77dafdfa48623a134b169c0bdf751b5afd6c1c3f452a9468ed02e2f1e6c8d604"
+    },
+    {
+      "name": "20260925002000-add-feed-source-affinity.mjs",
+      "sha256": "8c0fefe7be662b2c7a7be47c82ff6a756304d0fcdc6484eb7de29b4734a255d9"
+    },
+    {
+      "name": "20260926000000-add-feed-admission-window.mjs",
+      "sha256": "f60f42c83681e688988d5c7956659b2c464d30e7594697bbdf440efce915812f"
+    },
+    {
+      "name": "20260929000000-add-sidebar-mark-read-scope.mjs",
+      "sha256": "d142c64fba99a809ff12f881f3f6a9f44e1237f8932abdb230b50e3d000758f6"
+    },
+    {
+      "name": "20260929001000-add-onboarding-completed.mjs",
+      "sha256": "a3acbe9f21c1e7f7afbb70c4d3d28ac919fa86ccf044e9eed2800d08b1d2a29b"
+    },
+    {
+      "name": "20260930000000-add-overall-quality-threshold.mjs",
+      "sha256": "354835cb0249a1d0ff9c9ff034e462572690674e3230501b1050f77019291075"
+    },
+    {
+      "name": "20261004000000-create-webhooks.mjs",
+      "sha256": "075cc3441d7b850bd4d7fb39c649589b082f2e71051a45ff90340f23720c5682"
+    },
+    {
+      "name": "20261009000000-add-article-sync-actions.mjs",
+      "sha256": "5a96c4241259f8e75d94f415c047fad6df8e67e2b0aa3608e3793cd7ed7f7567"
+    },
+    {
+      "name": "20261012000000-standardize-saved-opened-original.mjs",
+      "sha256": "701338a23de8418160b803ea61326f5124abef55ed6bb3dfa8ef1469379e8e00"
+    },
+    {
+      "name": "20261012001000-standardize-reading-modes.mjs",
+      "sha256": "41d2ffe3480fdb93ee3d9e79b22f411d5470d8b05d1c15bd47f36440695ef64a"
+    },
+    {
+      "name": "20261012002000-standardize-tone-score.mjs",
+      "sha256": "64bf9ad10196cfb6b17e6b9c8fa7d4430cdb14c9681ae1b399723b3e782e08c9"
+    }
+  ],
+  "dependencies": [
+    {
+      "name": "../lib/articleStateMigration.mjs",
+      "sha256": "18df8610a2191394eb9e4e66da987a315c46cb834a12f447d44379e300c4ea53"
+    }
+  ]
+}

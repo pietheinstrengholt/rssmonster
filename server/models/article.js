@@ -123,6 +123,7 @@ export default (sequelize) => {
       // Marks whether the user has saved the article as saved.
       savedInd: {
         type: DataTypes.INTEGER,
+        allowNull: false,
         defaultValue: 0
       },
       // Marks explicit negative-interest feedback for behavioral learning.
@@ -140,11 +141,13 @@ export default (sequelize) => {
       // Counts the user's outbound link clicks from this article.
       openedOriginalCount: {
         type: DataTypes.INTEGER,
+        allowNull: false,
         defaultValue: 0
       },
       // Marks whether the article contains at least one collected outbound hotlink.
       hotInd: {
         type: DataTypes.INTEGER,
+        allowNull: false,
         defaultValue: 0
       },
       // Counts outbound hotlinks collected from the article content.
@@ -348,6 +351,7 @@ export default (sequelize) => {
       // Scores the absence of promotional content from 0 to 100, defaulting to zero.
       advertisementScore: {
         type: DataTypes.INTEGER,
+        allowNull: false,
         defaultValue: 0
       },
       // Marks advertisementScore as deterministic action output rather than unresolved inference.
@@ -359,11 +363,13 @@ export default (sequelize) => {
       // Scores emotional neutrality and tone quality from 0 to 100, defaulting to 50.
       toneScore: {
         type: DataTypes.INTEGER,
+        allowNull: false,
         defaultValue: 50
       },
       // Scores writing and informational quality from 0 to 100, defaulting to 50.
       qualityScore: {
         type: DataTypes.INTEGER,
+        allowNull: false,
         defaultValue: 50
       },
       // Marks qualityScore as deterministic action output rather than unresolved inference.

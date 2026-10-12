@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const migration = require('../../migrations/20260811002000-add-article-title-content-text-fulltext-index.js');
+const migration = require('../../migrations/pre-2.4/20260811002000-add-article-title-content-text-fulltext-index.js');
 
 const queryInterfaceFor = dialect => ({
   addIndex: vi.fn().mockResolvedValue(undefined),

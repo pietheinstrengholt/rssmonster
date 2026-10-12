@@ -3,7 +3,7 @@ import { DataTypes } from 'sequelize';
 import { describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const migration = require('../../migrations/20260828002000-add-article-ai-analysis-status.js');
+const migration = require('../../migrations/pre-2.4/20260828002000-add-article-ai-analysis-status.js');
 
 describe('article AI analysis status migration', () => {
   it('preserves historical rows as complete and adds the ownership-state index', async () => {

@@ -1,0 +1,374 @@
+{
+  "version": "2.4.0",
+  "cutoffCommit": "2728be062c885ea67f6849e0595a4ca5b126a8fa",
+  "dialect": "sqlite",
+  "tables": [
+    {
+      "name": "actions",
+      "create": "CREATE TABLE \"actions\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `userId` INTEGER NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `actionType` varchar(255) NOT NULL,\n  `regularExpression` text NOT NULL,\n  `tagValue` varchar(255) DEFAULT NULL,\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, CONSTRAINT `actions_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE INDEX `actions_actionType_idx` ON `actions` (`actionType`)",
+        "CREATE INDEX `actions_userId_idx` ON `actions` (`userId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "archiving_settings",
+      "create": "CREATE TABLE \"archiving_settings\" (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `neverDeleteUnreadArticles` TINYINT(1) NOT NULL DEFAULT 1, \"neverDeleteSaved\" TINYINT(1) NOT NULL DEFAULT 1, \"neverDeleteOpenedOriginalArticles\" TINYINT(1) NOT NULL DEFAULT 0, `maximumArticleAge` INTEGER NOT NULL DEFAULT 7, `maximumArticleAgeUnit` TEXT NOT NULL DEFAULT 'years', `maximumArticlesPerFeed` INTEGER DEFAULT NULL, `maximumArticlesTotal` INTEGER DEFAULT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE UNIQUE INDEX `archiving_settings_userId_unique` ON `archiving_settings` (`userId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "article_sync_actions",
+      "create": "CREATE TABLE `article_sync_actions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `actionId` UUID NOT NULL, `articleId` BIGINT NOT NULL, `kind` VARCHAR(32) NOT NULL, `value` VARCHAR(8) NOT NULL, `outcome` VARCHAR(16) NOT NULL, `errorCode` VARCHAR(128), `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE UNIQUE INDEX `article_sync_actions_user_action_unique` ON `article_sync_actions` (`userId`, `actionId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "articles",
+      "create": "CREATE TABLE \"articles\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `externalId` varchar(1024) DEFAULT NULL,\n  `externalIdType` varchar(64) DEFAULT NULL,\n  `userId` INTEGER NOT NULL,\n  `feedId` INTEGER NOT NULL,\n  `status` varchar(255) NOT NULL DEFAULT 'unread',\n  `filteredInd` INTEGER(1) NOT NULL DEFAULT '0',\n  \"savedInd\" INTEGER NOT NULL DEFAULT '0',\n  `negativeInd` INTEGER NOT NULL DEFAULT '0',\n  `positiveInd` INTEGER NOT NULL DEFAULT '0',\n  \"openedOriginalCount\" INTEGER NOT NULL DEFAULT '0',\n  `hotInd` INTEGER NOT NULL DEFAULT '0',\n  `hotlinks` INTEGER NOT NULL DEFAULT '0',\n  `media` json DEFAULT NULL,\n  `url` varchar(1024) DEFAULT NULL,\n  `imageUrl` text,\n  `imageWidth` INTEGER DEFAULT NULL,\n  `imageHeight` INTEGER DEFAULT NULL,\n  `imageMimeType` varchar(100) DEFAULT NULL,\n  `imageSource` TEXT CHECK (`imageSource` IN ('media-content','media-thumbnail','enclosure','cleaned-content','content','description','publisher')) DEFAULT NULL,\n  `title` text NOT NULL,\n  `author` text,\n  `description` TEXT,\n  `descriptionHtml` TEXT,\n  `descriptionText` TEXT,\n  `contentOriginal` TEXT,\n  `contentHtml` TEXT,\n  `contentText` TEXT,\n  `contentSummaryBullets` json DEFAULT NULL,\n  `contentSourceHash` varchar(64) DEFAULT NULL,\n  `isOfficialSource` INTEGER(1) NOT NULL DEFAULT '0',\n  `officialOrganization` varchar(128) DEFAULT NULL,\n  `embedding_model` varchar(64) DEFAULT NULL,\n  `articleVector` json DEFAULT NULL,\n  `eventId` INTEGER DEFAULT NULL,\n  `language` TEXT,\n  `advertisementScore` INTEGER NOT NULL DEFAULT '0',\n  \"toneScore\" INTEGER NOT NULL DEFAULT '50',\n  `qualityScore` INTEGER NOT NULL DEFAULT '50',\n  `interestScore` REAL NOT NULL DEFAULT '0',\n  `attentionBucket` INTEGER NOT NULL DEFAULT '0',\n  `publishedAt` DATETIME NOT NULL,\n  `modifiedAt` DATETIME DEFAULT NULL,\n  `publishedSource` DATETIME DEFAULT NULL,\n  `publishInferred` INTEGER(1) NOT NULL DEFAULT '0',\n  `firstSeen` DATETIME DEFAULT NULL,\n  `readAt` DATETIME DEFAULT NULL,\n  `urlHash` varchar(64) DEFAULT NULL,\n  `duplicateOfArticleId` INTEGER DEFAULT NULL,\n  `duplicateCount` INTEGER NOT NULL DEFAULT '0',\n  `normalizedUrl` varchar(1024) DEFAULT NULL,\n  `normalizedUrlHash` varchar(64) DEFAULT NULL,\n  `contentTextHash` varchar(64) DEFAULT NULL,\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, `aiAnalysisStatus` TEXT NOT NULL DEFAULT 'complete', `aiAnalysisCompletedAt` DATETIME DEFAULT NULL, `advertisementScoreActionOverrideInd` TINYINT(1) NOT NULL DEFAULT 0, `qualityScoreActionOverrideInd` TINYINT(1) NOT NULL DEFAULT 0, \"lastOpenedOriginalAt\" DATETIME DEFAULT NULL, \"savedAt\" DATETIME DEFAULT NULL, `positiveFeedbackAt` DATETIME DEFAULT NULL, `negativeFeedbackAt` DATETIME DEFAULT NULL, `lastMeaningfulReadAt` DATETIME DEFAULT NULL, `interestScoredAt` DATETIME DEFAULT NULL, `aiAnalysisProvenance` JSON DEFAULT NULL, `originalSource` JSON DEFAULT NULL, `authors` JSON DEFAULT NULL, CONSTRAINT `articles_duplicateOfArticleId_foreign_idx` FOREIGN KEY (`duplicateOfArticleId`) REFERENCES `articles` (`id`) ON UPDATE CASCADE ON DELETE SET NULL, CONSTRAINT `articles_feedId_userId_fkey` FOREIGN KEY (`feedId`, `userId`) REFERENCES `feeds` (`id`, `userId`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `articles_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `articles_ibfk_2` FOREIGN KEY (`feedId`) REFERENCES `feeds` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `articles_eventId_fkey` FOREIGN KEY (`eventId`) REFERENCES `events` (`id`) ON UPDATE CASCADE ON DELETE SET NULL)",
+      "indexes": [
+        "CREATE INDEX `articles_behavior_read_idx` ON `articles` (`userId`, `positiveInd`, `negativeInd`, \"savedInd\", `filteredInd`, `duplicateOfArticleId`, `lastMeaningfulReadAt`, `attentionBucket`)",
+        "CREATE INDEX `articles_clickedAmount_idx` ON `articles` (\"openedOriginalCount\")",
+        "CREATE INDEX `articles_contentSourceHash_idx` ON `articles` (`contentSourceHash`)",
+        "CREATE INDEX `articles_duplicateOfArticleId_idx` ON `articles` (`duplicateOfArticleId`)",
+        "CREATE INDEX `articles_eventId_idx` ON `articles` (`eventId`)",
+        "CREATE INDEX `articles_favoriteInd_idx` ON `articles` (\"savedInd\")",
+        "CREATE INDEX `articles_feedId_idx` ON `articles` (`feedId`)",
+        "CREATE INDEX `articles_feedId_userId_fkey` ON `articles` (`feedId`, `userId`)",
+        "CREATE INDEX `articles_status_idx` ON `articles` (`status`)",
+        "CREATE INDEX `articles_userId_aiAnalysisStatus_idx` ON `articles` (`userId`, `aiAnalysisStatus`)",
+        "CREATE INDEX `articles_userId_contentSourceHash_idx` ON `articles` (`userId`, `contentSourceHash`)",
+        "CREATE INDEX `articles_userId_contentTextHash_idx` ON `articles` (`userId`, `contentTextHash`)",
+        "CREATE INDEX `articles_userId_duplicateOfArticleId_published_idx` ON `articles` (`userId`, `duplicateOfArticleId`, `publishedAt`)",
+        "CREATE INDEX `articles_userId_eventId_published_idx` ON `articles` (`userId`, `eventId`, `publishedAt`)",
+        "CREATE INDEX `articles_userId_favoriteInd_published_idx` ON `articles` (`userId`, \"savedInd\", `publishedAt`)",
+        "CREATE INDEX `articles_userId_feedId_published_idx` ON `articles` (`userId`, `feedId`, `publishedAt`)",
+        "CREATE INDEX `articles_userId_feedId_status_advertisementScore_idx` ON `articles` (`userId`, `feedId`, `status`, `advertisementScore`)",
+        "CREATE INDEX `articles_userId_feedId_status_published_idx` ON `articles` (`userId`, `feedId`, `status`, `publishedAt`)",
+        "CREATE INDEX `articles_userId_feedId_status_qualityScore_idx` ON `articles` (`userId`, `feedId`, `status`, `qualityScore`)",
+        "CREATE INDEX `articles_userId_feedId_status_sentimentScore_idx` ON `articles` (`userId`, `feedId`, `status`, \"toneScore\")",
+        "CREATE INDEX `articles_userId_idx` ON `articles` (`userId`)",
+        "CREATE INDEX `articles_userId_isOfficialSource_published_idx` ON `articles` (`userId`, `isOfficialSource`, `publishedAt`)",
+        "CREATE INDEX `articles_userId_published_idx` ON `articles` (`userId`, `publishedAt`)",
+        "CREATE INDEX `articles_userId_status_feedId_published_idx` ON `articles` (`userId`, `status`, `feedId`, `publishedAt`)",
+        "CREATE INDEX `articles_userId_status_published_idx` ON `articles` (`userId`, `status`, `publishedAt`)",
+        "CREATE INDEX `articles_user_feed_title_crawl_idx` ON `articles` (`userId`, `feedId`, `title`)",
+        "CREATE INDEX `articles_user_feed_url_crawl_idx` ON `articles` (`userId`, `feedId`, `url`)",
+        "CREATE INDEX `articles_user_feed_urlhash_crawl_idx` ON `articles` (`userId`, `feedId`, `urlHash`)",
+        "CREATE INDEX `articles_user_status_visible_event_idx` ON `articles` (`userId`, `status`, `filteredInd`, `duplicateOfArticleId`, `eventId`, `id`)",
+        "CREATE INDEX `articles_user_visible_created_idx` ON `articles` (`userId`, `filteredInd`, `duplicateOfArticleId`, `createdAt`)",
+        "CREATE UNIQUE INDEX `articles_feedId_normalizedUrlHash_unique` ON `articles` (`feedId`, `normalizedUrlHash`)",
+        "CREATE UNIQUE INDEX `articles_feedId_urlHash_unique` ON `articles` (`feedId`, `urlHash`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "briefing_preferences",
+      "create": "CREATE TABLE \"briefing_preferences\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `userId` INTEGER NOT NULL,\n  `includeOnlyUnreadArticles` INTEGER(1) NOT NULL DEFAULT '0',\n  `markAsReadOnScroll` INTEGER(1) NOT NULL DEFAULT '0',\n  `includeDevelopingEvents` INTEGER(1) NOT NULL DEFAULT '0',\n  `showOnlyInterestMatchedArticles` INTEGER(1) NOT NULL DEFAULT '0',\n  `showOnlyDevelopingEventArticles` INTEGER(1) NOT NULL DEFAULT '0',\n  `minDistinctSources` INTEGER NOT NULL DEFAULT '1',\n  `prioritizeHighTrust` INTEGER(1) NOT NULL DEFAULT '0',\n  `selectionPeriod` TEXT CHECK (`selectionPeriod` IN ('24h','7d')) NOT NULL DEFAULT '7d',\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, `emailDigestEnabled` TINYINT(1) NOT NULL DEFAULT 0, `emailDigestTime` VARCHAR(5) NOT NULL DEFAULT '08:00', `emailDigestTimezone` VARCHAR(64) NOT NULL DEFAULT 'UTC', `emailDigestSkipWhenEmpty` TINYINT(1) NOT NULL DEFAULT 1, `includeHotArticles` TINYINT(1) NOT NULL DEFAULT 1, CONSTRAINT `briefing_preferences_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE UNIQUE INDEX `briefing_preferences_userId_unique` ON `briefing_preferences` (`userId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "categories",
+      "create": "CREATE TABLE \"categories\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `userId` INTEGER NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `categoryOrder` INTEGER DEFAULT '0',\n  `iconName` varchar(255) DEFAULT NULL,\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, `clusteringBehavior` VARCHAR(32) DEFAULT NULL, `pinned` TINYINT(1) NOT NULL DEFAULT 0, CONSTRAINT `categories_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE INDEX `categories_userId_order_name_idx` ON `categories` (`userId`, `categoryOrder`, `name`)",
+        "CREATE UNIQUE INDEX `categories_id_userId_unique` ON `categories` (`id`, `userId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "crawl_runs",
+      "create": "CREATE TABLE \"crawl_runs\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `userId` INTEGER NOT NULL,\n  `status` TEXT CHECK (`status` IN ('running','completed','failed')) NOT NULL DEFAULT 'running',\n  `startedAt` DATETIME NOT NULL,\n  `completedAt` DATETIME DEFAULT NULL,\n  `errorMessage` text,\n  `newArticles` INTEGER DEFAULT NULL,\n  `updatedArticles` INTEGER DEFAULT NULL,\n  `articleErrors` INTEGER DEFAULT NULL,\n  `errors` INTEGER DEFAULT NULL,\n  `durationMs` INTEGER DEFAULT NULL,\n  `processedFeeds` INTEGER DEFAULT NULL,\n  `failedFeeds` INTEGER DEFAULT NULL,\n  `timedOutFeeds` INTEGER DEFAULT NULL,\n  `triggerType` TEXT CHECK (`triggerType` IN ('scheduled','api')) DEFAULT NULL,\n  `feedsAttempted` INTEGER DEFAULT NULL,\n  `feedsSucceeded` INTEGER DEFAULT NULL,\n  `feedsRecovered` INTEGER DEFAULT NULL,\n  `articlesFetched` INTEGER DEFAULT NULL,\n  `articlesUnchanged` INTEGER DEFAULT NULL,\n  `articlesDuplicate` INTEGER DEFAULT NULL,\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, `heartbeatAt` DATETIME DEFAULT NULL, `ownerToken` VARCHAR(36) DEFAULT NULL, `articlesFiltered` INTEGER DEFAULT NULL, CONSTRAINT `crawl_runs_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE INDEX `crawl_runs_status_heartbeatAt_idx` ON `crawl_runs` (`status`, `heartbeatAt`)",
+        "CREATE INDEX `crawl_runs_userId_idx` ON `crawl_runs` (`userId`)",
+        "CREATE INDEX `crawl_runs_userId_startedAt_idx` ON `crawl_runs` (`userId`, `startedAt`)",
+        "CREATE UNIQUE INDEX `crawl_runs_active_user_unique` ON `crawl_runs` (((case when (`status` = 'running') then `userId` else NULL end)))"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "email_deliveries",
+      "create": "CREATE TABLE `email_deliveries` (`id` UUID NOT NULL PRIMARY KEY, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `messageType` VARCHAR(64) NOT NULL, `recipient` VARCHAR(320) NOT NULL, `status` TEXT NOT NULL DEFAULT 'pending', `payload` JSON NOT NULL, `attemptCount` INTEGER NOT NULL DEFAULT 0, `retryCount` INTEGER NOT NULL DEFAULT 0, `maxAttempts` INTEGER NOT NULL DEFAULT 5, `scheduledAt` DATETIME NOT NULL, `availableAt` DATETIME NOT NULL, `leaseOwner` VARCHAR(64) DEFAULT NULL, `leaseUntil` DATETIME DEFAULT NULL, `completedAt` DATETIME DEFAULT NULL, `providerMessageId` VARCHAR(255) DEFAULT NULL, `lastError` VARCHAR(2000) DEFAULT NULL, `dedupeKey` VARCHAR(255) NOT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `email_deliveries_claim_idx` ON `email_deliveries` (`status`, `availableAt`, `leaseUntil`, `id`)",
+        "CREATE INDEX `email_deliveries_user_status_idx` ON `email_deliveries` (`userId`, `status`, `scheduledAt`)",
+        "CREATE UNIQUE INDEX `email_deliveries_user_type_dedupe_unique` ON `email_deliveries` (`userId`, `messageType`, `dedupeKey`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "email_verification_tokens",
+      "create": "CREATE TABLE `email_verification_tokens` (`id` UUID NOT NULL PRIMARY KEY, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `tokenHash` VARCHAR(64) NOT NULL, `expiresAt` DATETIME NOT NULL, `usedAt` DATETIME DEFAULT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `email_verification_tokens_user_expiry_idx` ON `email_verification_tokens` (`userId`, `expiresAt`)",
+        "CREATE UNIQUE INDEX `email_verification_tokens_hash_unique` ON `email_verification_tokens` (`tokenHash`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "events",
+      "create": "CREATE TABLE \"events\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `userId` INTEGER NOT NULL,\n  `representativeArticleId` INTEGER NOT NULL,\n  `name` varchar(255) DEFAULT NULL,\n  `articleCount` INTEGER DEFAULT '1',\n  `sourceCount` INTEGER DEFAULT '0',\n  `sourceDiversityScore` REAL DEFAULT '0',\n  `eventStrength` REAL DEFAULT '0',\n  `eventVector` json DEFAULT NULL,\n  `eventWindowStartAt` DATETIME DEFAULT NULL,\n  `eventWindowEndAt` DATETIME DEFAULT NULL,\n  `status` TEXT CHECK (`status` IN ('emerging','active','cooling','archived')) NOT NULL DEFAULT 'emerging',\n  `developingArticleId` INTEGER DEFAULT NULL,\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, `generatedName` VARCHAR(255) DEFAULT NULL, `embedding_model` VARCHAR(64), CONSTRAINT `events_developingArticleId_fkey` FOREIGN KEY (`developingArticleId`) REFERENCES `articles` (`id`) ON UPDATE CASCADE ON DELETE SET NULL, CONSTRAINT `events_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `events_ibfk_3` FOREIGN KEY (`representativeArticleId`) REFERENCES `articles` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE INDEX `events_developingArticleId_fkey` ON `events` (`developingArticleId`)",
+        "CREATE INDEX `events_status_idx` ON `events` (`status`)",
+        "CREATE INDEX `events_userId_idx` ON `events` (`userId`)",
+        "CREATE INDEX `events_userId_updatedAt_idx` ON `events` (`userId`, `updatedAt`)",
+        "CREATE INDEX `representativeArticleId` ON `events` (`representativeArticleId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "feed_crawl_results",
+      "create": "CREATE TABLE \"feed_crawl_results\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `crawlRunId` INTEGER NOT NULL,\n  `userId` INTEGER NOT NULL,\n  `feedId` INTEGER NOT NULL,\n  `status` TEXT CHECK (`status` IN ('SUCCESS','RECOVERED','FAILED')) NOT NULL,\n  `errorCategory` TEXT CHECK (`errorCategory` IN ('TIMEOUT','NOT_FOUND','RATE_LIMITED','HTTP_ERROR','REDIRECT_LOOP','NETWORK_ERROR','INVALID_FEED','MALFORMED_BODY','VALIDATION_ERROR','EMPTY_FEED','SECURITY_REJECTED','TOO_LARGE','UNKNOWN_ERROR')) DEFAULT NULL,\n  `errorCode` varchar(128) DEFAULT NULL,\n  `httpStatus` INTEGER DEFAULT NULL,\n  `requestedUrl` text NOT NULL,\n  `resolvedUrl` text,\n  `recoveryAttempted` INTEGER(1) NOT NULL DEFAULT '0',\n  `recoverySucceeded` INTEGER(1) NOT NULL DEFAULT '0',\n  `attemptCount` INTEGER NOT NULL DEFAULT '1',\n  `itemsFetched` INTEGER NOT NULL DEFAULT '0',\n  `articlesNew` INTEGER NOT NULL DEFAULT '0',\n  `articlesUpdated` INTEGER NOT NULL DEFAULT '0',\n  `articlesUnchanged` INTEGER NOT NULL DEFAULT '0',\n  `articlesDuplicate` INTEGER NOT NULL DEFAULT '0',\n  `durationMs` INTEGER NOT NULL DEFAULT '0',\n  `errorMessage` varchar(1000) DEFAULT NULL,\n  `attemptSummary` json DEFAULT NULL,\n  `startedAt` DATETIME NOT NULL,\n  `completedAt` DATETIME NOT NULL,\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, `articlesFiltered` INTEGER NOT NULL DEFAULT 0, CONSTRAINT `feed_crawl_results_ibfk_1` FOREIGN KEY (`crawlRunId`) REFERENCES `crawl_runs` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `feed_crawl_results_ibfk_2` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `feed_crawl_results_ibfk_3` FOREIGN KEY (`feedId`) REFERENCES `feeds` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE INDEX `feed_crawl_results_category_created_idx` ON `feed_crawl_results` (`errorCategory`, `createdAt`)",
+        "CREATE INDEX `feed_crawl_results_feed_completed_idx` ON `feed_crawl_results` (`feedId`, `completedAt`)",
+        "CREATE INDEX `feed_crawl_results_feed_created_idx` ON `feed_crawl_results` (`feedId`, `createdAt`)",
+        "CREATE INDEX `feed_crawl_results_run_feed_idx` ON `feed_crawl_results` (`crawlRunId`, `feedId`)",
+        "CREATE INDEX `feed_crawl_results_run_status_idx` ON `feed_crawl_results` (`crawlRunId`, `status`)",
+        "CREATE INDEX `feed_crawl_results_user_created_idx` ON `feed_crawl_results` (`userId`, `createdAt`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "feed_url_aliases",
+      "create": "CREATE TABLE \"feed_url_aliases\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `userId` INTEGER NOT NULL,\n  `feedId` INTEGER NOT NULL,\n  `originalUrl` text NOT NULL,\n  `normalizedUrl` text NOT NULL,\n  `normalizedUrlHash` varchar(64) NOT NULL,\n  `aliasType` TEXT CHECK (`aliasType` IN ('input','discovered_alternate','redirect','final','publisher_self','manual','historical')) NOT NULL,\n  `firstSeenAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `lastSeenAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP\n, CONSTRAINT `feed_url_aliases_feedId_userId_fkey` FOREIGN KEY (`feedId`, `userId`) REFERENCES `feeds` (`id`, `userId`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `feed_url_aliases_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `feed_url_aliases_ibfk_2` FOREIGN KEY (`feedId`) REFERENCES `feeds` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE INDEX `feed_url_aliases_feedId_userId_fkey` ON `feed_url_aliases` (`feedId`, `userId`)",
+        "CREATE INDEX `feed_url_aliases_feed_idx` ON `feed_url_aliases` (`feedId`)",
+        "CREATE INDEX `feed_url_aliases_user_feed_idx` ON `feed_url_aliases` (`userId`, `feedId`)",
+        "CREATE INDEX `feed_url_aliases_user_type_idx` ON `feed_url_aliases` (`userId`, `aliasType`)",
+        "CREATE UNIQUE INDEX `feed_url_aliases_user_hash_unique` ON `feed_url_aliases` (`userId`, `normalizedUrlHash`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "feeds",
+      "create": "CREATE TABLE \"feeds\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `userId` INTEGER NOT NULL,\n  `categoryId` INTEGER NOT NULL,\n  `feedName` varchar(255) NOT NULL,\n  `feedDesc` text,\n  `feedType` varchar(16) DEFAULT NULL,\n  `url` varchar(255) NOT NULL,\n  `favicon` varchar(255) DEFAULT NULL,\n  `errorCount` INTEGER DEFAULT '0',\n  `errorMessage` text,\n  `errorSince` DATETIME DEFAULT NULL,\n  `mutedUntil` DATETIME DEFAULT NULL,\n  `status` TEXT CHECK (`status` IN ('active','error','disabled')) NOT NULL DEFAULT 'active',\n  `feedTrust` REAL NOT NULL DEFAULT 0.75,\n  `feedDuplicationRate` REAL NOT NULL DEFAULT '0',\n  `feedAttentionAvg` REAL NOT NULL DEFAULT '0',\n  `feedDeepReadRatio` REAL NOT NULL DEFAULT '0',\n  `feedSkimRatio` REAL NOT NULL DEFAULT '0',\n  `feedIgnoreRatio` REAL NOT NULL DEFAULT '0',\n  \"feedOpenedOriginalAvg\" REAL NOT NULL DEFAULT '0',\n  \"feedOpenedOriginalRatio\" REAL NOT NULL DEFAULT '0',\n  `feedAttentionSampleSize` INTEGER NOT NULL DEFAULT '0',\n  `feedAttentionUpdatedAt` DATETIME DEFAULT NULL,\n  `crawlSince` DATETIME DEFAULT NULL,\n  `lastFetched` DATETIME DEFAULT NULL,\n  `applyAiAnalysis` INTEGER(1) NOT NULL DEFAULT '1',\n  `generateEmbeddings` INTEGER(1) NOT NULL DEFAULT '1',\n  `feedTags` json NOT NULL,\n  `updateIntervalMinutes` INTEGER DEFAULT NULL,\n  `etag` varchar(2048) DEFAULT NULL,\n  `lastModified` varchar(1024) DEFAULT NULL,\n  `contentHash` varchar(128) DEFAULT NULL,\n  `cacheFreshUntil` DATETIME DEFAULT NULL,\n  `lastAttemptAt` DATETIME DEFAULT NULL,\n  `lastSuccessAt` DATETIME DEFAULT NULL,\n  `lastChangedAt` DATETIME DEFAULT NULL,\n  `lastPublishedAt` DATETIME DEFAULT NULL,\n  `observedEntryIntervalMs` bigint DEFAULT NULL,\n  `consecutiveFailures` INTEGER NOT NULL DEFAULT '0',\n  `nextFetchAt` DATETIME DEFAULT CURRENT_TIMESTAMP,\n  `lastFetchOutcome` varchar(64) DEFAULT NULL,\n  `leaseUntil` DATETIME DEFAULT NULL,\n  `leaseOwner` varchar(64) DEFAULT NULL,\n  `publisherSelfUrl` text,\n  `publisherSelfStatus` varchar(32) DEFAULT NULL,\n  `publisherSelfCheckedAt` DATETIME DEFAULT NULL,\n  `publisherSelfDiagnostic` text,\n  `lastCrawlAt` DATETIME DEFAULT NULL,\n  `lastCrawlStatus` TEXT CHECK (`lastCrawlStatus` IN ('SUCCESS','RECOVERED','FAILED')) DEFAULT NULL,\n  `lastCrawlErrorCategory` varchar(32) DEFAULT NULL,\n  `lastCrawlDurationMs` INTEGER DEFAULT NULL,\n  `lastSuccessfulCrawlAt` DATETIME DEFAULT NULL,\n  `totalCrawlFailures` INTEGER NOT NULL DEFAULT '0',\n  `totalCrawlSuccesses` INTEGER NOT NULL DEFAULT '0',\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, `itemFilter` TEXT DEFAULT NULL, `sourceConfig` JSON DEFAULT NULL, `lastArticleReceivedAt` DATETIME DEFAULT NULL, `pinned` TINYINT(1) NOT NULL DEFAULT 0, `authenticationType` TEXT DEFAULT NULL, `authenticationUsername` VARCHAR(255) DEFAULT NULL, `authenticationPassword` VARCHAR(255) DEFAULT NULL, `sourceAffinity` FLOAT DEFAULT NULL, `initialImportCompletedAt` DATETIME DEFAULT NULL, `ongoingAdmissionWindowDays` INTEGER NOT NULL DEFAULT 30, CONSTRAINT `feeds_categoryId_userId_fkey` FOREIGN KEY (`categoryId`, `userId`) REFERENCES `categories` (`id`, `userId`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `feeds_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `feeds_ibfk_2` FOREIGN KEY (`categoryId`) REFERENCES `categories` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE INDEX `feeds_categoryId_idx` ON `feeds` (`categoryId`)",
+        "CREATE INDEX `feeds_categoryId_userId_fkey` ON `feeds` (`categoryId`, `userId`)",
+        "CREATE INDEX `feeds_due_claim_idx` ON `feeds` (`status`, `nextFetchAt`, `leaseUntil`, `id`)",
+        "CREATE INDEX `feeds_lease_owner_idx` ON `feeds` (`leaseOwner`)",
+        "CREATE INDEX `feeds_userId_categoryId_idx` ON `feeds` (`userId`, `categoryId`)",
+        "CREATE INDEX `feeds_userId_feedName_idx` ON `feeds` (`userId`, `feedName`)",
+        "CREATE INDEX `feeds_userId_idx` ON `feeds` (`userId`)",
+        "CREATE INDEX `feeds_user_due_claim_idx` ON `feeds` (`userId`, `status`, `nextFetchAt`, `leaseUntil`, `id`)",
+        "CREATE UNIQUE INDEX `feeds_id_userId_unique` ON `feeds` (`id`, `userId`)",
+        "CREATE UNIQUE INDEX `feeds_userId_url_unique` ON `feeds` (`userId`, `url`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "generated_feeds",
+      "create": "CREATE TABLE `generated_feeds` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `name` VARCHAR(255) NOT NULL, `description` TEXT DEFAULT NULL, `expression` TEXT NOT NULL, `token` VARCHAR(64) NOT NULL, `enabled` TINYINT(1) NOT NULL DEFAULT 1, `tokenRegeneratedAt` DATETIME NOT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `generated_feeds_userId_idx` ON `generated_feeds` (`userId`)",
+        "CREATE UNIQUE INDEX `generated_feeds_token_unique` ON `generated_feeds` (`token`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "hotlinks",
+      "create": "CREATE TABLE \"hotlinks\" (\n  `userId` INTEGER NOT NULL,\n  `feedId` INTEGER NOT NULL,\n  `sourceArticleId` INTEGER DEFAULT NULL,\n  `url` TEXT NOT NULL,\n  `createdAt` DATETIME DEFAULT NULL\n, CONSTRAINT `hotlinks_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `hotlinks_ibfk_2` FOREIGN KEY (`feedId`) REFERENCES `feeds` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `hotlinks_sourceArticleId_foreign_idx` FOREIGN KEY (`sourceArticleId`) REFERENCES `articles` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE INDEX `hotlinks_feedId_idx` ON `hotlinks` (`feedId`)",
+        "CREATE INDEX `hotlinks_sourceArticleId_idx` ON `hotlinks` (`sourceArticleId`)",
+        "CREATE INDEX `hotlinks_userId_createdAt_idx` ON `hotlinks` (`userId`, `createdAt`)",
+        "CREATE INDEX `hotlinks_userId_feedId_url_idx` ON `hotlinks` (`userId`, `feedId`, `url`)",
+        "CREATE INDEX `hotlinks_userId_url_idx` ON `hotlinks` (`userId`, `url`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "inference_settings",
+      "create": "CREATE TABLE \"inference_settings\" (`id` INTEGER PRIMARY KEY, `baseUrl` VARCHAR(2048) NOT NULL, `apiKeyEncrypted` TEXT, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL, `runtimeOverrides` JSON, CONSTRAINT `inference_settings_singleton` CHECK (`id` = 1))",
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "island_taxonomy",
+      "create": "CREATE TABLE `island_taxonomy` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `identity` varchar(100) NOT NULL UNIQUE, `displayName` varchar(255) NOT NULL, `categoryName` varchar(100) NOT NULL, `description` TEXT, `vector` json DEFAULT NULL, `embedding_model` VARCHAR(64) DEFAULT NULL, `status` TEXT CHECK (`status` IN ('active','hidden','archived')) NOT NULL DEFAULT 'active', `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `island_taxonomy_category_idx` ON `island_taxonomy` (`categoryName`)",
+        "CREATE INDEX `island_taxonomy_status_idx` ON `island_taxonomy` (`status`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "islands",
+      "create": "CREATE TABLE \"islands\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `label` varchar(255) NOT NULL,\n  `weight` REAL NOT NULL DEFAULT '0',\n  `userId` INTEGER NOT NULL,\n  `islandVector` json DEFAULT NULL,\n  `archivedInd` INTEGER(1) NOT NULL DEFAULT '0',\n  `archivedAt` DATETIME DEFAULT NULL,\n  `positiveSignals` json NOT NULL,\n  `populationAudit` json DEFAULT NULL,\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, `generatedLabel` VARCHAR(255) DEFAULT NULL, `embedding_model` VARCHAR(64), `lastBehaviorAt` DATETIME DEFAULT NULL, `supportArticleIds` JSON DEFAULT NULL, `mutedInd` TINYINT(1) NOT NULL DEFAULT 0, CONSTRAINT `islands_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE INDEX `islands_userId_idx` ON `islands` (`userId`)",
+        "CREATE INDEX `islands_user_active_behavior_idx` ON `islands` (`userId`, `archivedInd`, `lastBehaviorAt`)",
+        "CREATE INDEX `islands_user_archived_idx` ON `islands` (`userId`, `archivedInd`)",
+        "CREATE INDEX `islands_user_weight_idx` ON `islands` (`userId`, `weight`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "official_sources",
+      "create": "CREATE TABLE \"official_sources\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `userId` INTEGER NOT NULL,\n  `entity` varchar(128) NOT NULL,\n  `domain` varchar(255) NOT NULL,\n  `enabled` INTEGER(1) NOT NULL DEFAULT '1',\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, CONSTRAINT `official_sources_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE INDEX `official_sources_userId_entity_idx` ON `official_sources` (`userId`, `entity`)",
+        "CREATE INDEX `official_sources_userId_idx` ON `official_sources` (`userId`)",
+        "CREATE UNIQUE INDEX `official_sources_userId_domain_unique` ON `official_sources` (`userId`, `domain`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "oidc_identities",
+      "create": "CREATE TABLE `oidc_identities` (`identityHash` VARCHAR(64) NOT NULL PRIMARY KEY, `issuer` TEXT NOT NULL, `subject` TEXT NOT NULL, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `oidc_identities_user_id` ON `oidc_identities` (`userId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "oidc_transactions",
+      "create": "CREATE TABLE `oidc_transactions` (`stateHash` VARCHAR(64) NOT NULL PRIMARY KEY, `browserHash` VARCHAR(64) NOT NULL, `configurationHash` VARCHAR(64) NOT NULL, `nonce` VARCHAR(64), `codeVerifier` VARCHAR(128), `phase` VARCHAR(16) NOT NULL, `linkUserId` INTEGER REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `userId` INTEGER REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `passwordVersion` VARCHAR(32), `exchangeHash` VARCHAR(64) UNIQUE, `expiresAt` DATETIME NOT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `oidc_transactions_expires_at` ON `oidc_transactions` (`expiresAt`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "password_reset_tokens",
+      "create": "CREATE TABLE `password_reset_tokens` (`id` UUID NOT NULL PRIMARY KEY, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `tokenHash` VARCHAR(64) NOT NULL, `expiresAt` DATETIME NOT NULL, `usedAt` DATETIME DEFAULT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `password_reset_tokens_user_expiry_idx` ON `password_reset_tokens` (`userId`, `expiresAt`)",
+        "CREATE UNIQUE INDEX `password_reset_tokens_hash_unique` ON `password_reset_tokens` (`tokenHash`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "processing_failures",
+      "create": "CREATE TABLE `processing_failures` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `crawlRunId` INTEGER REFERENCES `crawl_runs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `executionId` UUID NOT NULL, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `stage` VARCHAR(64) NOT NULL, `failureType` TEXT NOT NULL DEFAULT 'ERROR', `severity` TEXT NOT NULL DEFAULT 'ERROR', `code` VARCHAR(128) DEFAULT NULL, `errorName` VARCHAR(128) DEFAULT NULL, `message` VARCHAR(2000) NOT NULL, `stackTrace` TEXT DEFAULT NULL, `subjectType` VARCHAR(32) DEFAULT NULL, `subjectId` VARCHAR(128) DEFAULT NULL, `feedId` INTEGER DEFAULT NULL, `articleId` INTEGER DEFAULT NULL, `retryable` TINYINT(1) NOT NULL DEFAULT 0, `attemptNumber` INTEGER DEFAULT NULL, `fingerprint` VARCHAR(64) NOT NULL, `context` JSON DEFAULT NULL, `occurredAt` DATETIME NOT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `processing_failures_crawl_occurred_idx` ON `processing_failures` (`crawlRunId`, `occurredAt`)",
+        "CREATE INDEX `processing_failures_feed_occurred_idx` ON `processing_failures` (`feedId`, `occurredAt`)",
+        "CREATE INDEX `processing_failures_fingerprint_occurred_idx` ON `processing_failures` (`fingerprint`, `occurredAt`)",
+        "CREATE INDEX `processing_failures_user_occurred_idx` ON `processing_failures` (`userId`, `occurredAt`)",
+        "CREATE INDEX `processing_failures_user_stage_occurred_idx` ON `processing_failures` (`userId`, `stage`, `occurredAt`)",
+        "CREATE INDEX `processing_failures_user_type_occurred_idx` ON `processing_failures` (`userId`, `failureType`, `occurredAt`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "processing_jobs",
+      "create": "CREATE TABLE `processing_jobs` (`id` UUID NOT NULL PRIMARY KEY, `type` VARCHAR(64) NOT NULL, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `articleId` INTEGER DEFAULT NULL REFERENCES `articles` (`id`) ON DELETE SET NULL ON UPDATE CASCADE, `dedupeKey` VARCHAR(255) NOT NULL, `payload` JSON NOT NULL, `priority` INTEGER NOT NULL DEFAULT 0, `status` TEXT NOT NULL DEFAULT 'pending', `attempts` INTEGER NOT NULL DEFAULT 0, `maxAttempts` INTEGER NOT NULL DEFAULT 5, `availableAt` DATETIME NOT NULL, `leaseOwner` VARCHAR(64) DEFAULT NULL, `leaseUntil` DATETIME DEFAULT NULL, `lastErrorCode` VARCHAR(128) DEFAULT NULL, `lastErrorMessage` VARCHAR(2000) DEFAULT NULL, `startedAt` DATETIME DEFAULT NULL, `completedAt` DATETIME DEFAULT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `processing_jobs_claim_idx` ON `processing_jobs` (`status`, `priority`, `createdAt`, `availableAt`, `id`)",
+        "CREATE INDEX `processing_jobs_lease_recovery_idx` ON `processing_jobs` (`status`, `leaseUntil`, `id`)",
+        "CREATE INDEX `processing_jobs_user_article_status_idx` ON `processing_jobs` (`userId`, `articleId`, `status`)",
+        "CREATE INDEX `processing_jobs_user_status_available_idx` ON `processing_jobs` (`userId`, `status`, `availableAt`)",
+        "CREATE UNIQUE INDEX `processing_jobs_user_type_dedupe_unique` ON `processing_jobs` (`userId`, `type`, `dedupeKey`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "push_subscriptions",
+      "create": "CREATE TABLE `push_subscriptions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `endpoint` TEXT NOT NULL, `endpointHash` VARCHAR(64) NOT NULL UNIQUE, `p256dh` TEXT NOT NULL, `auth` TEXT NOT NULL, `expirationTime` DATETIME, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `push_subscriptions_userId_idx` ON `push_subscriptions` (`userId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "server_settings",
+      "create": "CREATE TABLE `server_settings` (`key` VARCHAR(100) NOT NULL PRIMARY KEY, `value` JSON NOT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [],
+      "foreignKeys": []
+    },
+    {
+      "name": "sidebar_settings",
+      "create": "CREATE TABLE `sidebar_settings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `showTotalCount` TINYINT(1) NOT NULL DEFAULT 1, `declutterCounts` TINYINT(1) NOT NULL DEFAULT 1, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL, `hideZeroCountItems` TINYINT(1) NOT NULL DEFAULT 0, `automaticallyHideInactiveFeeds` TINYINT(1) NOT NULL DEFAULT 0, `inactiveFeedDays` INTEGER NOT NULL DEFAULT 30, `sortOrder` VARCHAR(32) NOT NULL DEFAULT 'manual', `showFeedFavicons` TINYINT(1) NOT NULL DEFAULT 1, `sortByCurrentSelection` TINYINT(1) NOT NULL DEFAULT 0, `sectionOrder` JSON DEFAULT NULL, `markReadVisibleOnly` TINYINT(1) NOT NULL DEFAULT 0)",
+      "indexes": [
+        "CREATE UNIQUE INDEX `sidebar_settings_userId_unique` ON `sidebar_settings` (`userId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "smart_folders",
+      "create": "CREATE TABLE `smart_folders` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `name` varchar(255) NOT NULL, `query` TEXT NOT NULL, `limitCount` INTEGER NOT NULL DEFAULT '50', `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL, `markAsReadOnScroll` TINYINT(1) NOT NULL DEFAULT 0)",
+      "indexes": [
+        "CREATE INDEX `smart_folders_userId_idx` ON `smart_folders` (`userId`)",
+        "CREATE INDEX `smart_folders_userId_name_idx` ON `smart_folders` (`userId`, `name`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "tags",
+      "create": "CREATE TABLE \"tags\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `articleId` INTEGER NOT NULL,\n  `userId` INTEGER NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `tagType` varchar(255) DEFAULT NULL,\n  `createdAt` DATETIME NOT NULL\n, CONSTRAINT `tags_ibfk_1` FOREIGN KEY (`articleId`) REFERENCES `articles` (`id`) ON UPDATE CASCADE ON DELETE CASCADE, CONSTRAINT `tags_ibfk_2` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE INDEX `tags_name_idx` ON `tags` (`name`)",
+        "CREATE INDEX `tags_userId_name_idx` ON `tags` (`userId`, `name`)",
+        "CREATE INDEX `tags_user_article_name_idx` ON `tags` (`userId`, `articleId`, `name`)",
+        "CREATE UNIQUE INDEX `tags_articleId_name_unique` ON `tags` (`articleId`, `name`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "user_settings",
+      "create": "CREATE TABLE \"user_settings\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `userId` INTEGER NOT NULL,\n  `categoryId` varchar(255) NOT NULL DEFAULT '%',\n  `feedId` varchar(255) NOT NULL DEFAULT '%',\n  `status` varchar(255) NOT NULL DEFAULT 'unread',\n  `sort` varchar(255) NOT NULL DEFAULT 'desc',\n  `minAdvertisementScore` INTEGER NOT NULL DEFAULT '0',\n  \"minToneScore\" INTEGER NOT NULL DEFAULT '0',\n  `minQualityScore` INTEGER NOT NULL DEFAULT '0',\n  `viewMode` varchar(255) NOT NULL DEFAULT 'expanded',\n  `grouping` varchar(255) NOT NULL DEFAULT 'none',\n  `includeDevelopingEvents` INTEGER(1) NOT NULL DEFAULT '0',\n  `prioritizeHighTrust` INTEGER(1) NOT NULL DEFAULT '0',\n  `themeMode` varchar(10) NOT NULL DEFAULT 'system',\n  `startupViewMode` varchar(16) NOT NULL DEFAULT 'last-used',\n  `markAsReadOnScroll` INTEGER(1) NOT NULL DEFAULT '1',\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, `openArticleLinksInNewTab` TINYINT(1) NOT NULL DEFAULT 0, `onboardingCompleted` TINYINT(1) NOT NULL DEFAULT 0, `minOverallQualityScore` INTEGER NOT NULL DEFAULT 0, CONSTRAINT `settings_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON UPDATE CASCADE ON DELETE CASCADE)",
+      "indexes": [
+        "CREATE UNIQUE INDEX `userId` ON \"user_settings\" (`userId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "users",
+      "create": "CREATE TABLE \"users\" (\n  `id` INTEGER PRIMARY KEY AUTOINCREMENT,\n  `username` varchar(255) NOT NULL,\n  `password` varchar(255),\n  `feverCredentialHash` varchar(255),\n  `role` varchar(255) NOT NULL DEFAULT 'user',\n  `lastLogin` DATETIME NOT NULL,\n  `createdAt` DATETIME NOT NULL,\n  `updatedAt` DATETIME NOT NULL\n, `bootstrapAdminClaim` TINYINT(1) DEFAULT NULL, `email` VARCHAR(320) DEFAULT NULL, `emailVerifiedAt` DATETIME DEFAULT NULL, `passwordChangedAt` DATETIME DEFAULT NULL, `personalizationRefreshedAt` DATETIME DEFAULT NULL, CONSTRAINT `users_bootstrap_admin_claim_unique` UNIQUE (`bootstrapAdminClaim`))",
+      "indexes": [
+        "CREATE INDEX `users_personalization_refreshed_at_id` ON `users` (`personalizationRefreshedAt`, `id`)",
+        "CREATE UNIQUE INDEX `users_email_unique` ON `users` (`email`)",
+        "CREATE UNIQUE INDEX `users_feverCredentialHash_unique` ON `users` (`feverCredentialHash`)",
+        "CREATE UNIQUE INDEX `users_username_unique` ON `users` (`username`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "webhook_conditions",
+      "create": "CREATE TABLE `webhook_conditions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `webhookId` INTEGER NOT NULL REFERENCES `webhooks` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `field` VARCHAR(64) NOT NULL, `operator` VARCHAR(32) NOT NULL, `value` TEXT NOT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `webhook_conditions_webhookId_idx` ON `webhook_conditions` (`webhookId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "webhook_deliveries",
+      "create": "CREATE TABLE `webhook_deliveries` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `webhookId` INTEGER NOT NULL REFERENCES `webhooks` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `articleId` INTEGER NOT NULL REFERENCES `articles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `status` TEXT NOT NULL DEFAULT 'pending', `attemptCount` INTEGER NOT NULL DEFAULT 0, `lastAttemptAt` DATETIME DEFAULT NULL, `nextAttemptAt` DATETIME, `httpStatus` INTEGER DEFAULT NULL, `error` VARCHAR(2000) DEFAULT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `webhook_deliveries_articleId_idx` ON `webhook_deliveries` (`articleId`)",
+        "CREATE INDEX `webhook_deliveries_status_nextAttemptAt_idx` ON `webhook_deliveries` (`status`, `nextAttemptAt`, `id`)",
+        "CREATE UNIQUE INDEX `webhook_deliveries_webhook_article_unique` ON `webhook_deliveries` (`webhookId`, `articleId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "webhooks",
+      "create": "CREATE TABLE `webhooks` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `userId` INTEGER NOT NULL REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, `name` VARCHAR(255) NOT NULL, `enabled` TINYINT(1) NOT NULL DEFAULT 1, `endpointUrl` TEXT NOT NULL, `secret` TEXT DEFAULT NULL, `matchMode` TEXT NOT NULL DEFAULT 'ALL', `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `webhooks_userId_idx` ON `webhooks` (`userId`)"
+      ],
+      "foreignKeys": []
+    },
+    {
+      "name": "worker_leases",
+      "create": "CREATE TABLE `worker_leases` (`key` VARCHAR(64) NOT NULL PRIMARY KEY, `owner` VARCHAR(64) NOT NULL, `leaseUntil` DATETIME NOT NULL, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)",
+      "indexes": [
+        "CREATE INDEX `worker_leases_expiry_idx` ON `worker_leases` (`leaseUntil`)"
+      ],
+      "foreignKeys": []
+    }
+  ]
+}

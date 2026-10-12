@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Sequelize, DataTypes } from 'sequelize';
-import { up, down } from '../../migrations/20260917000000-add-article-analysis-provenance.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260917000000-add-article-analysis-provenance.mjs';
 
 describe('article analysis provenance migration', () => {
   it('leaves legacy history unknown, supports repeat application and removes only its own column', async () => {

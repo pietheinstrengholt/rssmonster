@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Sequelize, DataTypes } from 'sequelize';
-import { up, down } from '../../migrations/20260922001000-add-article-authors.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260922001000-add-article-authors.mjs';
 
 describe('authors migration', () => {
   it('preserves unsplit legacy bylines during upgrade and rollback', async () => {

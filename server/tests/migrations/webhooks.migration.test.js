@@ -1,6 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { describe, expect, it, vi } from 'vitest';
-import { up, down } from '../../migrations/20261004000000-create-webhooks.mjs';
+import { up, down } from '../../migrations/pre-2.4/20261004000000-create-webhooks.mjs';
 
 describe('webhooks migration', () => {
   it('creates owned configurations, conditions, and deduplicated deliveries', async () => {

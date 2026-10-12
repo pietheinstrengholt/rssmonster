@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Sequelize, DataTypes } from 'sequelize';
-import { up, down } from '../../migrations/20261009000000-add-article-sync-actions.mjs';
+import { up, down } from '../../migrations/pre-2.4/20261009000000-add-article-sync-actions.mjs';
 describe('article synchronization receipt migration', () => {
   it('enforces account UUID uniqueness, retains deleted article receipts and cascades user deletion', async () => {
     const database = new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false });

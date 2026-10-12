@@ -3,7 +3,7 @@ import { DataTypes } from 'sequelize';
 import { describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const migration = require('../../migrations/20260902002000-create-generated-feeds.js');
+const migration = require('../../migrations/pre-2.4/20260902002000-create-generated-feeds.js');
 
 describe('Generated Feeds migration', () => {
   it('creates the cross-dialect persistence contract and indexes', async () => {

@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260923002000-add-inactive-feed-settings.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260923002000-add-inactive-feed-settings.mjs';
 
 it('backfills owned receipt dates and preserves existing settings through rollback', async () => {
   const query = db.sequelize.getQueryInterface();

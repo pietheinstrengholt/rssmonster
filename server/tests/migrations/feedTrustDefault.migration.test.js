@@ -3,7 +3,7 @@ import { DataTypes, Sequelize } from 'sequelize';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const migration = require('../../migrations/20260829000000-set-neutral-feed-trust-default.js');
+const migration = require('../../migrations/pre-2.4/20260829000000-set-neutral-feed-trust-default.js');
 
 let sequelize;
 

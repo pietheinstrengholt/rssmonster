@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260919002000-add-article-query-performance-indexes.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260919002000-add-article-query-performance-indexes.mjs';
 
 const qi = db.sequelize.getQueryInterface();
 const tables = { articles: 'query_performance_articles', tags: 'query_performance_tags' };

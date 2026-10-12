@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DataTypes } from 'sequelize';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260919000000-add-archiving-settings.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260919000000-add-archiving-settings.mjs';
 
 const { ArchivingSetting, User } = db;
 

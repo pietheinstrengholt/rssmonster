@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260918001000-rename-user-settings.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260918001000-rename-user-settings.mjs';
 
 describe('user settings migration', () => {
   it('preserves saved preferences and uniqueness through rename and rollback', async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Sequelize, DataTypes } from 'sequelize';
-import { up, down } from '../../migrations/20260925002000-add-feed-source-affinity.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260925002000-add-feed-source-affinity.mjs';
 
 describe('feed source affinity migration', () => {
   it('adds a nullable score to existing feeds', async () => {

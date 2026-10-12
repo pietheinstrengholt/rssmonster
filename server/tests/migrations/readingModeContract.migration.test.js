@@ -1,7 +1,7 @@
 import { DataTypes, Sequelize } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20261012001000-standardize-reading-modes.mjs';
+import { up, down } from '../../migrations/pre-2.4/20261012001000-standardize-reading-modes.mjs';
 
 it('preserves SQLite preferences, schema objects, references and sequence through migration, retry and rollback', async () => {
   const sequelize = new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false });

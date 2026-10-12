@@ -3,7 +3,7 @@ import { DataTypes } from 'sequelize';
 import { describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const migration = require('../../migrations/20260828001000-add-processing-jobs.js');
+const migration = require('../../migrations/pre-2.4/20260828001000-add-processing-jobs.js');
 
 describe('processing jobs migration', () => {
   it('creates the cross-dialect durable job contract and indexes', async () => {

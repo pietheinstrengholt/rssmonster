@@ -46,6 +46,29 @@ Before restoring an older database, set `RSSMONSTER_TAG` or `RSSMONSTER_IMAGE`
 in `.env` to the compatible application version. Starting a newer image may
 apply migrations immediately.
 
+### Migration reset 2.4 recovery
+
+Back up application data and migration metadata together: `SequelizeMeta` and
+`RSSMonsterMigrationState` describe the same snapshot as the application tables.
+The whole-database MySQL dump and stopped-process SQLite directory archive below
+include that metadata. A schema-only or data-only restore can create an
+inconsistent history that the 2.4 runner deliberately refuses to repair.
+
+Before upgrading, stop all application writers and verify a restorable backup.
+The migration lock coordinates migrators, not web/worker processes already
+running older code. MySQL DDL may commit before a later failure; SQLite data
+transactions roll back where the migration explicitly uses them. An in-progress
+record blocks automatic replay even when a rollback completed.
+
+After a crash or restore, a SQLite `<database>.migration-lock` directory may
+remain beside the database or be included in an archive. Confirm every migrator
+is stopped before explicitly removing an abandoned filesystem lock. Never delete
+`SequelizeMeta` records or blindly clear an in-progress database marker to force
+startup. Restore a known compatible complete backup, or have an operator verify
+the named migration's schema and data before deciding on recovery. Use
+`npm run db:status` for read-only diagnosis; it does not perform recovery. See
+[migration execution and failures](database-migration-execution.md).
+
 ### Preserve Configuration Secrets
 
 The database does not contain the root `.env`. Preserve it separately because

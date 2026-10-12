@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DataTypes, Sequelize } from 'sequelize';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260918000000-add-server-settings.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260918000000-add-server-settings.mjs';
 
 const verifyMigration = async (sequelize, table) => {
   const query = sequelize.getQueryInterface();

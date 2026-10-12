@@ -3,7 +3,7 @@ import { DataTypes } from 'sequelize';
 import { describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const migration = require('../../migrations/20260828000000-add-generated-semantic-labels.js');
+const migration = require('../../migrations/pre-2.4/20260828000000-add-generated-semantic-labels.js');
 
 describe('generated semantic labels migration', () => {
   it('adds nullable generated fields after the deterministic fields', async () => {

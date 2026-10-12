@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
 const migration = require(
-  '../../migrations/20260904002000-normalize-smart-folder-mark-as-read-on-scroll.js'
+  '../../migrations/pre-2.4/20260904002000-normalize-smart-folder-mark-as-read-on-scroll.js'
 );
 
 describe('Smart Folder mark-as-read-on-scroll normalization migration', () => {

@@ -1,8 +1,8 @@
-import { up as runtimeUp, down as runtimeDown } from '../../migrations/20260918002000-add-inference-runtime-overrides.mjs';
+import { up as runtimeUp, down as runtimeDown } from '../../migrations/pre-2.4/20260918002000-add-inference-runtime-overrides.mjs';
 import { describe, expect, it, vi } from 'vitest';
 import { Sequelize, DataTypes } from 'sequelize';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260911000000-add-inference-settings.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260911000000-add-inference-settings.mjs';
 
 describe('inference settings migration', () => {
   it('uses cross-dialect columns and a database singleton constraint', async () => {

@@ -4,7 +4,7 @@ const {
   deprecatedTaxonomyIdentities,
   taxonomyItems,
   toIdentity
-} = require('../seeders/20260520104500-island-taxonomy.js');
+} = require('../../seeders/20260520104500-island-taxonomy.js');
 
 module.exports = {
   async up(queryInterface) {

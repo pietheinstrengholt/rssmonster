@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260930000000-add-overall-quality-threshold.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260930000000-add-overall-quality-threshold.mjs';
 
 it('leaves existing component thresholds intact and defaults Overall quality to off', async () => {
   const query = db.sequelize.getQueryInterface();

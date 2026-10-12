@@ -80,6 +80,7 @@ export default (sequelize) => {
       // Tracks the event lifecycle as emerging, active, cooling, or archived.
       status: {
         type: DataTypes.ENUM('emerging', 'active', 'cooling', 'archived'),
+        allowNull: false,
         defaultValue: 'emerging'
       }
     },

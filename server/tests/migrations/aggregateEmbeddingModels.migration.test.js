@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Sequelize, DataTypes } from 'sequelize';
-import { up, down } from '../../migrations/20260915000000-add-aggregate-embedding-models.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260915000000-add-aggregate-embedding-models.mjs';
 
 async function withDatabase(run) {
   const sequelize = new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false });

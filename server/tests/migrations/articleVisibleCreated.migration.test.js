@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260922003000-add-article-visible-created-index.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260922003000-add-article-visible-created-index.mjs';
 
 const qi = db.sequelize.getQueryInterface();
 const table = 'visible_created_migration_articles';

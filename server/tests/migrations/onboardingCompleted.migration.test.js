@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260929001000-add-onboarding-completed.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260929001000-add-onboarding-completed.mjs';
 
 it('defaults completion to false and preserves other preferences through rollback', async () => {
   const query = db.sequelize.getQueryInterface();

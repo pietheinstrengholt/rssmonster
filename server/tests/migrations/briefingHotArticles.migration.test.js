@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260925000000-add-briefing-include-hot-articles.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260925000000-add-briefing-include-hot-articles.mjs';
 
 it('enables Hot articles for existing and future preferences and preserves other settings on rollback', async () => {
   const query = db.sequelize.getQueryInterface();

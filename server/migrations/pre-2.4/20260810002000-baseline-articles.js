@@ -1,6 +1,6 @@
 'use strict';
 
-const { addBaselineConstraint, createBaselineTable } = require('../utils/baselineMigrationTable.cjs');
+const { addBaselineConstraint, createBaselineTable } = require('../../utils/baselineMigrationTable.cjs');
 
 module.exports = {
   // Creates this canonical RSSMonster 2.1 schema group.

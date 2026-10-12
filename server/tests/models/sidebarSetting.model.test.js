@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DataTypes } from 'sequelize';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260923000000-add-sidebar-settings.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260923000000-add-sidebar-settings.mjs';
 
 const { SidebarSetting, User } = db;
 

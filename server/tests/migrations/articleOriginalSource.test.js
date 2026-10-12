@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Sequelize, DataTypes } from 'sequelize';
-import { up, down } from '../../migrations/20260922000000-add-article-original-source.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260922000000-add-article-original-source.mjs';
 
 describe('original source migration', () => {
   it('preserves existing articles and supports upgrade and rollback', async () => {

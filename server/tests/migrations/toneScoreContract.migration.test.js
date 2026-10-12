@@ -1,7 +1,7 @@
 import { DataTypes, Sequelize } from 'sequelize';
 import { describe, expect, it, vi } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20261012002000-standardize-tone-score.mjs';
+import { up, down } from '../../migrations/pre-2.4/20261012002000-standardize-tone-score.mjs';
 
 describe('Tone contract migration', () => {
   it('refuses conflicting columns without discarding either value', async () => {

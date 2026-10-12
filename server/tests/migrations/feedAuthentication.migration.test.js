@@ -1,8 +1,8 @@
 import { DataTypes } from 'sequelize';
 import { expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { up, down } from '../../migrations/20260923008000-add-feed-authentication.mjs';
-import { up as expand, down as shrink } from '../../migrations/20260923009000-expand-feed-authentication-password.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260923008000-add-feed-authentication.mjs';
+import { up as expand, down as shrink } from '../../migrations/pre-2.4/20260923009000-expand-feed-authentication-password.mjs';
 
 it('adds nullable authentication fields and preserves feeds on rollback', async () => {
   const query = db.sequelize.getQueryInterface();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Sequelize, DataTypes } from 'sequelize';
-import { up, down } from '../../migrations/20260919001000-add-island-support-article-ids.mjs';
+import { up, down } from '../../migrations/pre-2.4/20260919001000-add-island-support-article-ids.mjs';
 
 describe('Island support IDs migration', () => {
   it('leaves legacy support unknown and preserves Island data across repeat application and rollback', async () => {
