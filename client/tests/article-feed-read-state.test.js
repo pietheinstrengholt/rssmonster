@@ -36,7 +36,7 @@ const createContext = (overrides = {}) => {
     },
     selection: {
       currentSelection: {
-        viewMode: 'full',
+        viewMode: 'expanded',
         grouping: 'event',
         status: 'unread'
       }
@@ -136,9 +136,9 @@ describe('article feed read-state reconciliation', () => {
     }), expect.objectContaining({ id: expect.any(Number) }));
   });
 
-  it('keeps a manually unread Event sibling unread when leaving another Minimal article', async () => {
+  it('keeps a manually unread Event sibling unread when leaving another Headlines article', async () => {
     const context = createContext();
-    context.selectionStore.setCurrentSelection({ viewMode: 'minimal' });
+    context.selectionStore.setCurrentSelection({ viewMode: 'headlines' });
     markArticleUnread.mockResolvedValue({ data: { ...context.articles[1], status: 'unread' } });
     markArticleSeen.mockImplementation(async (id, { grouping }) => ({
       data: {
@@ -149,9 +149,9 @@ describe('article feed read-state reconciliation', () => {
       }
     }));
 
-    await context.toggleMinimalArticleReadStatus({ id: 2, status: 'read' });
-    await context.handleMinimalArticleOpened({ id: 1 });
-    await context.handleMinimalArticleOpened({ id: 3 });
+    await context.toggleHeadlinesArticleReadStatus({ id: 2, status: 'read' });
+    await context.handleHeadlinesArticleOpened({ id: 1 });
+    await context.handleHeadlinesArticleOpened({ id: 3 });
 
     expect(context.articles[0].status).toBe('read');
     expect(context.articles[1].status).toBe('unread');
@@ -387,7 +387,7 @@ describe('article feed read-state reconciliation', () => {
       isDesktopReaderWidth: layout === 'desktop',
       getReadingViewportTop: () => 0
     });
-    context.selectionStore.currentSelection.viewMode = 'minimal';
+    context.selectionStore.currentSelection.viewMode = 'headlines';
     context.selectionStore.currentSelection.markAsReadOnScroll = enabled;
     markArticleSeen.mockResolvedValue({
       data: { ...context.articles[0], status: 'read', readArticles: [context.articles[0]] }
@@ -495,11 +495,11 @@ describe('article feed read-state reconciliation', () => {
     expect(context.pool).toEqual(new Set([1, 2]));
   });
 
-  // Verifies minimal navigation reads the previous item and clears the active item on close.
-  it('handles minimal article open, close, and duplicate in-flight requests', async () => {
+  // Verifies headlines navigation reads the previous item and clears the active item on close.
+  it('handles headlines article open, close, and duplicate in-flight requests', async () => {
     const context = createContext();
-    context.selectionStore.currentSelection.viewMode = 'minimal';
-    context.activeMinimalArticleId = 1;
+    context.selectionStore.currentSelection.viewMode = 'headlines';
+    context.activeHeadlinesArticleId = 1;
     markArticleSeen.mockResolvedValue({
       data: {
         ...context.articles[0],
@@ -507,8 +507,8 @@ describe('article feed read-state reconciliation', () => {
       }
     });
 
-    await context.handleMinimalArticleOpened({ id: 3 });
-    context.handleMinimalArticleClosed({ id: '3' });
+    await context.handleHeadlinesArticleOpened({ id: 3 });
+    context.handleHeadlinesArticleClosed({ id: '3' });
 
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
       grouping: 'event',
@@ -518,19 +518,19 @@ describe('article feed read-state reconciliation', () => {
       selectedStatus: 'unread'
     }, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.pool).toContain(1);
-    expect(context.activeMinimalArticleId).toBeNull();
+    expect(context.activeHeadlinesArticleId).toBeNull();
     expect(context.pendingReadStatusArticleIds.size).toBe(0);
 
     context.pendingReadStatusArticleIds.add(3);
-    await context.markMinimalArticleRead(3);
+    await context.markHeadlinesArticleRead(3);
     expect(markArticleSeen).toHaveBeenCalledOnce();
   });
 
-  // Verifies minimal toggles update counts, pool membership, and active selection.
-  it('toggles minimal articles between unread and read', async () => {
+  // Verifies headlines toggles update counts, pool membership, and active selection.
+  it('toggles headlines articles between unread and read', async () => {
     const context = createContext();
-    context.selectionStore.currentSelection.viewMode = 'minimal';
-    context.activeMinimalArticleId = 2;
+    context.selectionStore.currentSelection.viewMode = 'headlines';
+    context.activeHeadlinesArticleId = 2;
     context.pool.add(2);
     markArticleUnread.mockResolvedValue({
       data: { ...context.articles[1], status: 'unread' }
@@ -539,13 +539,13 @@ describe('article feed read-state reconciliation', () => {
       data: { ...context.articles[0], status: 'read' }
     });
 
-    await context.toggleMinimalArticleReadStatus({ id: 2, status: 'read' });
-    await context.toggleMinimalArticleReadStatus({ id: 1, status: 'unread' });
+    await context.toggleHeadlinesArticleReadStatus({ id: 2, status: 'read' });
+    await context.toggleHeadlinesArticleReadStatus({ id: 1, status: 'unread' });
 
     expect(markArticleUnread).toHaveBeenCalledWith(2, expect.objectContaining({ id: expect.any(Number) }));
     expect(context.overviewStore.decreaseReadCount).toHaveBeenCalledOnce();
     expect(context.pool).not.toContain(2);
-    expect(context.activeMinimalArticleId).toBeNull();
+    expect(context.activeHeadlinesArticleId).toBeNull();
     expect(context.pool).toContain(1);
     expect(context.overviewStore.increaseReadCount).toHaveBeenCalledOnce();
   });
@@ -553,10 +553,10 @@ describe('article feed read-state reconciliation', () => {
   // Verifies shortcut routing and duplicate-submit protection across view modes.
   it('routes shortcut toggles and prevents duplicate read-status requests', async () => {
     const context = createContext();
-    context.toggleMinimalArticleReadStatus = vi.fn().mockResolvedValue();
+    context.toggleHeadlinesArticleReadStatus = vi.fn().mockResolvedValue();
     context.toggleArticleReadStatus = vi.fn().mockResolvedValue();
 
-    context.selectionStore.currentSelection.viewMode = 'minimal';
+    context.selectionStore.currentSelection.viewMode = 'headlines';
     await articleFeedReadStateMethods.toggleShortcutArticleReadStatus.call(
       context,
       { id: 1, status: 'unread' }
@@ -567,7 +567,7 @@ describe('article feed read-state reconciliation', () => {
       { id: 2, status: 'read' }
     );
 
-    expect(context.toggleMinimalArticleReadStatus).toHaveBeenCalledWith({
+    expect(context.toggleHeadlinesArticleReadStatus).toHaveBeenCalledWith({
       id: 1,
       status: 'unread'
     });

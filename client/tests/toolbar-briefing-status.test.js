@@ -22,7 +22,7 @@ function createStore(AIEnabled) {
       ...selectionStore.currentSelection,
       AIEnabled,
       status: 'unread',
-      viewMode: 'full',
+      viewMode: 'expanded',
       sort: 'desc',
       grouping: 'none',
       smartFolderId: null,

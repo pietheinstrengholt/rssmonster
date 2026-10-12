@@ -50,7 +50,7 @@ describe('Reader article speech', () => {
     expect(synthesis.speak).toHaveBeenCalledOnce();
   });
 
-  it.each(['full', 'summarized', 'summaryBullets', 'minimal'])('hides listening outside Reader mode: %s', mode => {
+  it.each(['expanded', 'summarized', 'summaryBullets', 'headlines'])('hides listening outside Reader mode: %s', mode => {
     const { wrapper } = render({}, mode);
     expect(listen(wrapper).exists()).toBe(false);
   });
@@ -84,7 +84,7 @@ describe('Reader article speech', () => {
     const { wrapper, stores } = render();
     await listen(wrapper).trigger('click'); await listen(wrapper).trigger('click');
     synthesis.cancel.mockClear();
-    stores.selectionStore.currentSelection.viewMode = 'full';
+    stores.selectionStore.currentSelection.viewMode = 'expanded';
     await flushPromises();
     expect(synthesis.cancel).toHaveBeenCalledOnce();
     expect(listen(wrapper).exists()).toBe(false);

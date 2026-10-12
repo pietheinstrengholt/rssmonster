@@ -43,7 +43,7 @@ describe('ArticleFeed collection lifecycle contract', () => {
       'collectionSummary',
       'collectionProgress',
       'viewMode',
-      'activeMinimalArticleId'
+      'activeHeadlinesArticleId'
     ]);
 
     for (const removedProp of [
@@ -129,7 +129,7 @@ describe('ArticleFeed collection lifecycle contract', () => {
     };
     context.pool.add(1);
     context.manualUnreadArticleIds.add(1);
-    context.activeMinimalArticleId = 1;
+    context.activeHeadlinesArticleId = 1;
     context.pendingReadStatusArticleIds.add(1);
     context.pendingSeenArticleIds.add(1);
     context.seenPersistenceAttempts.set(1, 2);
@@ -139,7 +139,7 @@ describe('ArticleFeed collection lifecycle contract', () => {
 
     expect(context.pool).toEqual(new Set());
     expect(context.manualUnreadArticleIds.size).toBe(0);
-    expect(context.activeMinimalArticleId).toBeNull();
+    expect(context.activeHeadlinesArticleId).toBeNull();
     expect(context.pendingReadStatusArticleIds.size).toBe(0);
     expect(context.pendingSeenArticleIds.size).toBe(0);
     expect(context.seenPersistenceAttempts.size).toBe(0);

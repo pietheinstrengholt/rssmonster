@@ -30,24 +30,24 @@ afterEach(() => {
 
 describe('Article audio presentation', () => {
   it.each([
-    ['full', false, true], ['reader', false, true],
-    ['minimal', false, false], ['minimal', true, true],
+    ['expanded', false, true], ['reader', false, true],
+    ['headlines', false, false], ['headlines', true, true],
     ['summarized', false, false], ['summaryBullets', false, false]
-  ])('indicates audio and respects %s media gating with expansion %s', (viewMode, isMinimalContentOpen, hasPlayer) => {
-    const wrapper = mountArticle(viewMode, { isMinimalContentOpen });
+  ])('indicates audio and respects %s media gating with expansion %s', (viewMode, isHeadlinesContentOpen, hasPlayer) => {
+    const wrapper = mountArticle(viewMode, { isHeadlinesContentOpen });
     expect(wrapper.find('[aria-label="Audio article"]').exists()).toBe(true);
     expect(wrapper.find('audio').exists()).toBe(hasPlayer);
     expect(wrapper.find('select[aria-label="Playback speed"]').exists()).toBe(hasPlayer);
   });
 
-  it.each([true, false])('indicates audio in the minimal list with mobile layout %s', isMobile => {
+  it.each([true, false])('indicates audio in the headlines list with mobile layout %s', isMobile => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: isMobile, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
-    const wrapper = mountArticle('minimal');
+    const wrapper = mountArticle('headlines');
     expect(wrapper.find('[aria-label="Audio article"]').exists()).toBe(true);
     expect(wrapper.find('audio').exists()).toBe(false);
   });
 
-  it.each(['full', 'minimal'])('only indicates safe playable structured audio in %s', async viewMode => {
+  it.each(['expanded', 'headlines'])('only indicates safe playable structured audio in %s', async viewMode => {
     const wrapper = mountArticle(viewMode);
     for (const media of [
       null,

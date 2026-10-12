@@ -69,7 +69,7 @@ const defaultSelection = () => ({
   ...DEFAULT_ARTICLE_FILTERS,
   sort: 'desc',
   grouping: 'none',
-  viewMode: 'full',
+  viewMode: 'expanded',
   includeDevelopingEvents: false,
   markAsReadOnScroll: true,
   briefingRevision: 0

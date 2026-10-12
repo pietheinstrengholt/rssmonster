@@ -82,7 +82,7 @@ beforeEach(() => {
   fetchSettings.mockResolvedValue({
     data: {
       themeMode: 'dark',
-      viewMode: 'minimal',
+      viewMode: 'headlines',
       grouping: 'event',
       sort: 'quality'
     }
@@ -109,7 +109,7 @@ describe('data store overview and count behavior', () => {
     expect(fetchSettings).toHaveBeenCalledOnce();
     expect(fetchOverview).toHaveBeenCalledWith(
       expect.objectContaining({
-        viewMode: 'minimal',
+        viewMode: 'headlines',
         grouping: 'event',
         sort: 'quality'
       })

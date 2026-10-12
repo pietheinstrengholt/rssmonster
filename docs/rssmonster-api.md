@@ -237,6 +237,12 @@ Maintenance routes can be expensive and should not be polled unnecessarily.
 
 ### Settings, actions, and administration
 
+`PATCH /api/setting/view-mode` accepts `{ "viewMode": "expanded" }` with canonical
+values `reader`, `expanded`, `summarized`, `summaryBullets`, and `headlines`. Legacy
+`full` and `minimal` remain accepted aliases. The response and persisted setting use
+the canonical value; `GET /api/setting` also normalizes older saved values.
+See [Reading-mode migration]({% link reading-mode-migration.md %}) for upgrade details.
+
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | `GET`, `POST` | `/api/setting` | Get or update user settings |
@@ -252,6 +258,7 @@ Maintenance routes can be expensive and should not be polled unnecessarily.
 | `GET` | `/api/setting/events` | Get Event insights |
 | `GET`, `POST` | `/api/setting/official-sources` | Get or update official-source settings |
 | `PATCH` | `/api/setting/developing-events` | Update developing-event settings |
+| `PATCH` | `/api/setting/view-mode` | Save the reading mode |
 | `PATCH` | `/api/setting/theme` | Update the theme |
 | `PATCH` | `/api/setting/startup-view` | Update the startup view |
 | `PATCH` | `/api/setting/mark-as-read-on-scroll` | Update scroll reading behavior |

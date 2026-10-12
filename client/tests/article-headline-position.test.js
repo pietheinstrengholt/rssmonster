@@ -18,7 +18,7 @@ afterEach(() => {
 
 it.each(['list', 'shell', 'window'])('keeps the openedOriginal headline in place on the %s scroll surface', async surface => {
   const stores = createFocusedStores({
-    selection: { currentSelection: { viewMode: 'minimal', grouping: 'none' } }
+    selection: { currentSelection: { viewMode: 'headlines', grouping: 'none' } }
   });
   const scrollRoot = document.createElement('div');
   scrollRoot.style.overflowY = surface === 'shell' ? 'auto' : 'visible';
@@ -35,11 +35,11 @@ it.each(['list', 'shell', 'window'])('keeps the openedOriginal headline in place
   const Harness = defineComponent({
     components: { ArticleListView },
     setup: () => ({ active: ref(1), articles, scrollRoot }),
-    template: `<ArticleListView :articles="articles" :container="articles" view-mode="minimal"
-      :scroll-root="scrollRoot" :active-minimal-article-id="active"
+    template: `<ArticleListView :articles="articles" :container="articles" view-mode="headlines"
+      :scroll-root="scrollRoot" :active-headlines-article-id="active"
       :collection-summary="{ status: 'read', selectedTag: '', unreadCount: 0, sourceCount: 1 }"
       :collection-progress="{ hasLoadedContent: true, hasReachedEnd: false }"
-      @minimal-article-opened="active = $event.id" />`
+      @headlines-article-opened="active = $event.id" />`
   });
   wrapper = mount(Harness, { attachTo: scrollRoot, global: { plugins: [stores.pinia] } });
   const list = wrapper.getComponent(ArticleListView).element;

@@ -21,10 +21,10 @@ export const ARTICLE_STATUS_OPTIONS = createOptions([
 
 export const ARTICLE_VIEW_MODE_OPTIONS = createOptions([
   { value: 'reader', label: 'Reader', desktopOnly: true },
-  { value: 'full', label: 'Expanded', mobileDescription: 'Show the full article content' },
-  { value: 'summarized', label: 'Summarized', mobileLabel: 'Summarized content', mobileDescription: 'Show the AI generated summary' },
-  { value: 'summaryBullets', label: 'Summary Bullets', mobileLabel: 'Summary bullets', mobileDescription: 'Show short summaries as bullet points', requiresAI: true },
-  { value: 'minimal', label: 'Headlines', mobileDescription: 'Show only the article titles' }
+  { value: 'expanded', label: 'Expanded', mobileDescription: 'Show the full article content' },
+  { value: 'summarized', label: 'Summarized', mobileDescription: 'Show the AI generated summary' },
+  { value: 'summaryBullets', label: 'Summary bullets', mobileDescription: 'Show short summaries as bullet points', requiresAI: true },
+  { value: 'headlines', label: 'Headlines', mobileDescription: 'Show only the article titles' }
 ]);
 
 export const ARTICLE_SORT_OPTIONS = createOptions([

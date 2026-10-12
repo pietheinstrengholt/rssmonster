@@ -8,7 +8,7 @@ const browser = await chromium.launch({
 });
 try {
   for (const width of [390, 768, 1440]) {
-    for (const mode of ['minimal', 'full', 'reader']) {
+    for (const mode of ['headlines', 'expanded', 'reader']) {
       for (const theme of ['light', 'dark']) {
         const page = await browser.newPage({ viewport: { width, height: 900 } });
         const failures = [];
@@ -78,7 +78,7 @@ try {
         assert.ok(panel.x >= 0 && panel.x + panel.width <= width, `${width}px ${mode} ${theme}: dialog fits the viewport`);
         const overflow = await dialog.evaluate(element => element.scrollWidth > element.clientWidth);
         assert.equal(overflow, false);
-        if (process.env.ARTICLE_TAG_SCREENSHOT_DIR && mode === 'full' && [390, 1440].includes(width)) {
+        if (process.env.ARTICLE_TAG_SCREENSHOT_DIR && mode === 'expanded' && [390, 1440].includes(width)) {
           await search.fill('research');
           await page.screenshot({ path: `${process.env.ARTICLE_TAG_SCREENSHOT_DIR}/article-tags-${width}-${theme}.png` });
         }

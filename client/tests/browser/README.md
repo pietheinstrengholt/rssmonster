@@ -6,7 +6,7 @@ navigation handler, read-state API adapter and backend controller.
 | Area | Coverage |
 | --- | --- |
 | Timing | `article-reading-time.test.js`: stationary reading, hidden-tab exclusion, timer expiry at 120 seconds, activity renewal, retry and cleanup |
-| Layout/navigation | Same suite: Minimal exposure/opening, Reader switching, Expanded single-article attribution and boundary stability |
+| Layout/navigation | Same suite: Headlines exposure/opening, Reader switching, Expanded single-article attribution and boundary stability |
 | State/settings | Same suite: all three layouts × read/unread × automatic mark-read enabled/disabled |
 | Persistence | `article-feed-read-state.test.js` and server `articleInteractionTime.test.js`: independent observation/state requests, bucket boundaries, preserved timestamps, grouped and bulk reads |
 | Browser geometry | `scripts/test-reading-browser.js`: real nested clipping and scrolling, stationary time, Reader navigation through the production handler |
@@ -68,3 +68,16 @@ From 320px upward the bar must remain 54px tall with controls on one row; smalle
 The same fixture checks the new-articles banner: the visit-context suffix is
 visible from 882px upward and hidden below it, the banner remains 50px tall from
 304px upward with compact spacing below 460px, and narrower widths wrap without horizontal overflow.
+
+## Reading-mode contract migration
+
+`reading-modes.html` mounts the real selection store, desktop/mobile selectors,
+article list, and Reader layout. Run `node scripts/test-reading-modes-browser.js`
+from `client/` with Vite running on its configured port. The script uses
+`READING_TEST_BASE_URL`, `PLAYWRIGHT_MODULE`, and `READING_BROWSER_EXECUTABLE` when
+an external browser runtime is needed.
+
+The fixture restores legacy `full`/`minimal` preferences and verifies canonical
+labels, API saves, content rendering, and Headlines expansion at 390, 768, 900, and
+1440 pixels in light and dark themes. API responses are intercepted; this is
+component/browser contract validation rather than an authenticated deployment test.

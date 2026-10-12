@@ -11,6 +11,7 @@ export const ARTICLE_STATE_ALIASES = Object.freeze({
   favorite: 'saved', clicked: 'openedOriginal'
 });
 
+export const canonicalArticleViewMode = value => value === 'full' ? 'expanded' : value === 'minimal' ? 'headlines' : value;
 export const canonicalArticleStatus = value => ['favorite', 'star'].includes(value) ? 'saved' : ['clicked', 'openedoriginal'].includes(value) ? 'openedOriginal' : value;
 export const canonicalArticleActionKind = value => value === 'set-favorite' ? 'set-saved' : value;
 

@@ -84,7 +84,7 @@ controls and layout differences.
 ### Reading
 
 Use **Reader**, **Expanded**, or **Summarized** mode; **Headlines** offers a denser
-list, while **Summary Bullets** displays generated summaries when analysis is
+list, while **Summary bullets** displays generated summaries when analysis is
 available. Bookmark articles, open original sources, and control when articles
 are marked read. [Keyboard shortcuts](docs/keyboard-shortcuts.md), portrait
 bookmark swipes, and light, dark, or system themes support everyday reading.

@@ -21,11 +21,11 @@ it('saves Expanded and restores it in a new session without an article fetch', a
   const selection = useSelectionStore();
   await selection.fetchSettings();
   expect(selection.currentSelection.viewMode).toBe('summarized');
-  await selection.setViewMode('full');
+  await selection.setViewMode('expanded');
   setActivePinia(createPinia());
   const restored = useSelectionStore();
   await restored.fetchSettings();
-  expect(restored.currentSelection.viewMode).toBe('full');
+  expect(restored.currentSelection.viewMode).toBe('expanded');
 });
 
 it('saves rapid changes in order and keeps the latest selection', async () => {
@@ -34,11 +34,11 @@ it('saves rapid changes in order and keeps the latest selection', async () => {
     .mockResolvedValue({});
   const selection = useSelectionStore();
   const saving = selection.setViewMode('reader');
-  await selection.setViewMode('full');
-  expect(selection.currentSelection.viewMode).toBe('full');
+  await selection.setViewMode('expanded');
+  expect(selection.currentSelection.viewMode).toBe('expanded');
   finishSave({});
   await saving;
-  expect(api.patch.mock.calls.map(([, body]) => body.viewMode)).toEqual(['reader', 'full']);
+  expect(api.patch.mock.calls.map(([, body]) => body.viewMode)).toEqual(['reader', 'expanded']);
 });
 
 it('does not replace a new view with an older settings response', async () => {
@@ -47,10 +47,10 @@ it('does not replace a new view with an older settings response', async () => {
   api.patch.mockResolvedValue({});
   const selection = useSelectionStore();
   const loading = selection.fetchSettings();
-  await selection.setViewMode('full');
+  await selection.setViewMode('expanded');
   finishFetch({ data: { viewMode: 'summarized' } });
   await loading;
-  expect(selection.currentSelection.viewMode).toBe('full');
+  expect(selection.currentSelection.viewMode).toBe('expanded');
 });
 
 it('does not save a queued choice after the session ends', async () => {
@@ -58,13 +58,13 @@ it('does not save a queued choice after the session ends', async () => {
   api.patch.mockImplementationOnce(() => new Promise(resolve => { finishSave = resolve; }));
   const selection = useSelectionStore();
   const saving = selection.setViewMode('reader');
-  await selection.setViewMode('minimal');
+  await selection.setViewMode('headlines');
   selection.invalidateSessionRequests();
   selection.resetSessionState();
   finishSave({});
   await saving;
   expect(api.patch).toHaveBeenCalledTimes(1);
-  expect(selection.currentSelection.viewMode).toBe('full');
+  expect(selection.currentSelection.viewMode).toBe('expanded');
 });
 
 it('keeps a pending choice when settings started loading during its save', async () => {
@@ -86,6 +86,18 @@ it('allows another save after a failed request', async () => {
   api.patch.mockRejectedValueOnce(new Error('Offline')).mockResolvedValue({});
   const selection = useSelectionStore();
   expect(await selection.setViewMode('reader')).toBe(false);
-  await selection.setViewMode('full');
-  expect(api.patch).toHaveBeenLastCalledWith('/setting/view-mode', { viewMode: 'full' });
+  await selection.setViewMode('expanded');
+  expect(api.patch).toHaveBeenLastCalledWith('/setting/view-mode', { viewMode: 'expanded' });
+});
+
+it.each([['full', 'expanded'], ['minimal', 'headlines']])('restores and saves legacy %s as %s', async (legacy, canonical) => {
+  api.get.mockResolvedValue({ data: { viewMode: legacy } });
+  api.patch.mockResolvedValue({});
+  const selection = useSelectionStore();
+  await selection.fetchSettings();
+  expect(selection.currentSelection.viewMode).toBe(canonical);
+  selection.setCurrentSelection({ viewMode: 'reader' });
+  await selection.setViewMode(legacy);
+  expect(selection.currentSelection.viewMode).toBe(canonical);
+  expect(api.patch).toHaveBeenLastCalledWith('/setting/view-mode', { viewMode: canonical });
 });

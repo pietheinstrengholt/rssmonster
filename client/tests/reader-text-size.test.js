@@ -95,7 +95,7 @@ it('keeps the chosen size when opening a different article', async () => {
   expect(wrapper.get('[data-reader-text-size]').attributes('data-reader-text-size')).toBe('large');
 });
 
-it.each(['full', 'summarized', 'minimal'])('leaves %s articles without Reader typography preferences', mode => {
+it.each(['expanded', 'summarized', 'headlines'])('leaves %s articles without Reader typography preferences', mode => {
   const stores = createFocusedStores({ selection: { currentSelection: { viewMode: mode, grouping: 'none' } } });
   wrapper = mount(Article, { props: { ...article, readerDetail: true, readerToolbar: true, readerTextSize: 'large' }, global: { plugins: [stores.pinia] } });
   expect(wrapper.find('[data-reader-text-size]').exists()).toBe(false);

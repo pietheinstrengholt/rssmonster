@@ -73,7 +73,7 @@ function mountArticleList(currentSelection = 'briefing', selectionOverrides = {}
     selection: {
       currentSelection: {
         status: currentSelection,
-        viewMode: 'full',
+        viewMode: 'expanded',
         categoryId: '%',
         feedId: '%',
         tag: null,
@@ -97,7 +97,7 @@ function mountArticleList(currentSelection = 'briefing', selectionOverrides = {}
         hasReachedEnd: false,
         showFeedRefreshProgress: true
       },
-      viewMode: 'full',
+      viewMode: 'expanded',
     },
     global: {
       plugins: [stores.pinia]

@@ -85,7 +85,7 @@ try {
         data = { results, articles: [dto], serverTime: new Date().toISOString() };
       }
       if (url.pathname === '/api/auth/configuration') data = { localAuthEnabled: true };
-      if (url.pathname === '/api/setting') data = { status: '%', viewMode: 'full', sort: 'desc', grouping: 'none', markAsReadOnScroll: false, onboardingCompleted: true };
+      if (url.pathname === '/api/setting') data = { status: '%', viewMode: 'expanded', sort: 'desc', grouping: 'none', markAsReadOnScroll: false, onboardingCompleted: true };
       if (url.pathname.startsWith('/api/manager/overview')) data = { categories: [{ id: 1, name: 'News', feeds: [{ id: 2, name: 'Browser feed' }] }], unreadCount: 1 };
       if (url.pathname === '/api/smartfolders' || url.pathname === '/api/tags/top') data = [];
       if (url.pathname === '/api/articles') {

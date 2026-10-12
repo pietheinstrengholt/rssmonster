@@ -49,7 +49,7 @@ const createStores = ({ AIEnabled = true, AssistantEnabled = true } = {}) => {
       smartFolderId: null,
       sort: 'desc',
       status: 'unread',
-      viewMode: 'full'
+      viewMode: 'expanded'
     }
   });
   overviewStore.$patch({
@@ -218,14 +218,14 @@ describe('DesktopToolbar behavior coverage', () => {
     const wrapper = mountDesktopToolbar();
 
     wrapper.vm.dropdownOptionOpenedOriginal('status', 'read');
-    wrapper.vm.dropdownOptionOpenedOriginal('viewMode', 'minimal');
+    wrapper.vm.dropdownOptionOpenedOriginal('viewMode', 'headlines');
     wrapper.vm.dropdownOptionOpenedOriginal('sort', 'asc');
     wrapper.vm.dropdownOptionOpenedOriginal('grouping', 'none');
     wrapper.vm.dropdownOptionOpenedOriginal('grouping', 'event');
     wrapper.vm.dropdownOptionOpenedOriginal('unknown', 'ignored');
 
     expect(setStatus).toHaveBeenCalledWith('read');
-    expect(setViewMode).toHaveBeenCalledWith('minimal');
+    expect(setViewMode).toHaveBeenCalledWith('headlines');
     expect(setSort).toHaveBeenCalledWith('asc');
     expect(setGrouping).toHaveBeenCalledOnce();
     expect(setGrouping).toHaveBeenCalledWith('event');
@@ -439,12 +439,12 @@ describe('MobileMenuOverlay behavior coverage', () => {
     wrapper.vm.refreshFeeds();
     wrapper.vm.chatAssistant();
     wrapper.vm.selectCategory(10);
-    wrapper.vm.selectViewMode('minimal');
+    wrapper.vm.selectViewMode('headlines');
 
     expect(setShowModal).toHaveBeenCalledWith('NewFeed');
     expect(setChatOpen).toHaveBeenCalledWith(true);
     expect(selectCategory).toHaveBeenCalledWith(10);
-    expect(setViewMode).toHaveBeenCalledWith('minimal');
+    expect(setViewMode).toHaveBeenCalledWith('headlines');
     expect(wrapper.emitted('refresh')).toHaveLength(1);
 
     await vi.advanceTimersByTimeAsync(150);
@@ -460,7 +460,7 @@ describe('MobileMenuOverlay behavior coverage', () => {
 
     wrapper.vm.selectCategory(10);
     const firstTimer = wrapper.vm.mobileCloseTimer;
-    wrapper.vm.selectViewMode('minimal');
+    wrapper.vm.selectViewMode('headlines');
 
     expect(wrapper.vm.mobileCloseTimer).not.toBe(firstTimer);
     expect(vi.getTimerCount()).toBe(1);

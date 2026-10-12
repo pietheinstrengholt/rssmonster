@@ -35,15 +35,15 @@ Changing the current selection starts a new collection. Results from an earlier 
 
 ## Layouts and reading modes
 
-### Full stream
+### Expanded
 
-The full stream presents complete articles one after another. It is intended for continuous reading and preserves the full header, metadata, relevance signals, media, and available article body.
+Expanded presents complete articles one after another. It is intended for continuous reading and preserves the full header, metadata, relevance signals, media, and available article body.
 
 Articles are separated with restrained dividers. Related articles inserted below a parent receive a distinct but subtle background so the grouping is visible without interrupting the reading flow.
 
-### Summarized stream
+### Summarized
 
-The summarized stream keeps the same article context while shortening the body to a plain-text preview. It is intended for faster scanning when full source content would be too long.
+Summarized keeps the same article context while shortening the body to a plain-text preview. It is intended for faster scanning when full source content would be too long.
 
 ### Summary bullets
 
@@ -51,15 +51,15 @@ The bullet-summary view presents extracted summary points instead of the full bo
 
 For unread articles with a predicted reading affinity, the amount of summary detail can vary. Articles expected to deserve deeper attention show more detail, while skimmable items show less. Low-affinity items can suppress a lead image so visual weight follows expected relevance. This adaptation is a reading aid, not a permanent mutation of the article.
 
-### Compact list
+### Headlines
 
-The compact view emphasizes headlines. Each row contains an explicit read-state control, the feed identity, title, concise metadata, time, saved control, and an overflow menu. Read rows are visually quieter than unread rows.
+Headlines emphasizes article titles. Each row contains an explicit read-state control, the feed identity, title, concise metadata, time, saved control, and an overflow menu. Read rows are visually quieter than unread rows.
 
 Selecting a row expands its available content beneath the headline. Opening another row closes the previous reading context and treats the previous article as reviewed. A compact row without usable preview content says so and provides a direct route to the original article.
 
-The compact view is optimized for higher-volume browsing and therefore loads larger groups of articles than content-heavy modes.
+Headlines is optimized for higher-volume browsing and therefore loads larger groups of articles than content-heavy modes.
 
-### Desktop reader
+### Reader
 
 At desktop widths of at least 1024px, Reader uses an article-list pane and a
 selected-article pane alongside the shell's left sidebar. `ArticleReaderLayout.vue`
@@ -115,7 +115,7 @@ only trailing badges that overflow move into the three-dot disclosure. The first
 badge's label truncates at very narrow widths. The disclosure disappears when all
 badges fit again. Vue Teleport moves the existing badge controls into their overflow
 slots, preserving handlers and reactive state; outside press and Escape close the
-panel. Full and compact modes retain their existing metadata presentation.
+panel. Expanded and Headlines modes retain their existing metadata presentation.
 
 Changing the selected Reader article marks the previously selected unread article
 as read. The first article is selected automatically for a new non-empty collection.
@@ -242,10 +242,10 @@ The article body is assembled from the best available content, with article text
 
 Presentation depends on the active reading mode and on whether meaningful text, images, summaries, or video metadata are available:
 
-- Full and reader modes render the available rich article content.
+- Expanded and Reader modes render the available rich article content.
 - Summarized mode presents a shortened plain-text version.
 - Bullet mode presents the available summary points.
-- Compact mode reveals rich content only for the opened row.
+- Headlines reveals rich content only for the opened row.
 
 If no usable preview exists, the interface does not leave an unexplained blank area. It states that no preview is available and offers the original article instead.
 
@@ -292,8 +292,8 @@ Expanded uses the article nearest the upper-middle reading line, with a small
 stability margin when scrolling between cards, including gaps: another article must
 be more than 24px closer before replacing the current visible article.
 
-Minimal headlines record exposure through the existing seen endpoint with zero seconds
-and no read-state change. Opening Minimal content starts timing only when that content
+Headlines rows record exposure through the existing seen endpoint with zero seconds
+and no read-state change. Opening Headlines content starts timing only when that content
 enters the viewport. Existing firstSeen values are preserved. Exposure is deduplicated
 locally per collection; hidden documents do not generate exposure writes.
 
@@ -332,7 +332,7 @@ cannot qualify as a read.
 
 In continuous stream modes, completion occurs when a previously visible article has been passed above the viewport. Temporary disappearance below the viewport does not by itself mean the article was reviewed. Saving the seen state is retried a limited number of times when a transient failure occurs, and local read state is reconciled with the saved result.
 
-Compact and desktop reader modes use deliberate selection changes as the completion signal. Opening another compact article or selecting another reader article marks the previously open unread article as read.
+Headlines and Reader use deliberate selection changes as the completion signal. Opening another Headlines row or selecting another Reader article marks the previously open unread article as read.
 
 Users can explicitly switch any article between read and unread with the available status control or keyboard action. Explicit choices take precedence over passive observation. Marking an article unread does not erase its historical first-seen value or captured viewing duration, and later viewport changes must not silently reverse the user's deliberate choice.
 
@@ -415,7 +415,7 @@ Future changes should preserve these rules:
 
 - Keep content and titles dominant over interface chrome.
 - Make every collection state understandable and recoverable.
-- Preserve the distinction between full, summarized, bullet, compact, and reader experiences.
+- Preserve the distinction between Expanded, Summarized, Summary bullets, Headlines, and Reader experiences.
 - Load large collections incrementally without mixing responses from different selections.
 - Explain article relevance with concise, secondary signals.
 - Keep related and duplicate coverage next to its parent without duplicating rows.

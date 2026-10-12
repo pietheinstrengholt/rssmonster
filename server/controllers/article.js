@@ -1,3 +1,4 @@
+import { canonicalArticleViewMode } from '../utils/articleStateContract.js';
 import htmlToVisibleText from '../services/crawl/content/htmlToVisibleText.js';
 import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
 import db from '../models/index.js';
@@ -359,7 +360,7 @@ export const getArticles = async (req, res) => {
       minQualityScore: req.query.minQualityScore,
       sort: req.query.sort,
       tag: req.query.tag,
-      viewMode: req.query.viewMode,
+      viewMode: canonicalArticleViewMode(req.query.viewMode),
       grouping: req.query.grouping || 'none',
       includeDevelopingEvents: req.query.includeDevelopingEvents === 'true',
       persistSettings: newerThanArticleId === null && req.query.persistSettings !== 'false',
@@ -405,7 +406,7 @@ export const getArticles = async (req, res) => {
     }
 
     if (req.query.includeFirstPage === 'true' && result.itemIds.length > 0) {
-      const pageSize = req.query.viewMode === 'minimal' ? 50 : 20;
+      const pageSize = canonicalArticleViewMode(req.query.viewMode) === 'headlines' ? 50 : 20;
       const firstPageIds = result.itemIds.slice(0, pageSize);
       result.firstPage = await loadArticleDetails(userId, firstPageIds, personalization);
       if (result.diagnostics) result.diagnostics.delivery = {
@@ -775,7 +776,7 @@ const markAsRead = async (req, res, _next) => {
           minQualityScore: body.minQualityScore,
           sort: body.sort,
           tag: body.tag,
-          viewMode: body.viewMode,
+          viewMode: canonicalArticleViewMode(body.viewMode),
           publishedAfter: parsePublicationBound(body.publishedAfter, 'publishedAfter'),
           publishedBefore: parsePublicationBound(body.publishedBefore, 'publishedBefore')
         }

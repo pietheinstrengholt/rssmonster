@@ -170,7 +170,7 @@ describe('layout pagination roots', () => {
     })).toBe(root);
   });
 
-  it.each(['full', 'summarized', 'summaryBullets', 'minimal'])('uses list, shell or browser scrolling according to effective CSS overflow in %s', viewMode => {
+  it.each(['expanded', 'summarized', 'summaryBullets', 'headlines'])('uses list, shell or browser scrolling according to effective CSS overflow in %s', viewMode => {
     const expanded = document.createElement('div');
     const shell = document.createElement('div');
     document.body.append(expanded, shell);

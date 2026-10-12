@@ -40,7 +40,7 @@ const deferred = () => {
 
 // This function creates the component state needed by article loading methods.
 const createLoadingContext = (dataStore = {
-  currentSelection: { status: 'unread', viewMode: 'full', sort: 'desc' },
+  currentSelection: { status: 'unread', viewMode: 'expanded', sort: 'desc' },
   increaseReadCount: vi.fn()
 }) => {
   const stores = createFocusedStores({

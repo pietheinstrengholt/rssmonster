@@ -29,12 +29,12 @@ const createContext = (overrides = {}) => {
       { id: 2, status: 'read' },
       { id: 3, status: 'unread' }
     ],
-    viewMode: 'full',
-    activeMinimalArticleId: null,
+    viewMode: 'expanded',
+    activeHeadlinesArticleId: null,
     selectedArticleId: null,
     scrollRoot,
     $refs: {},
-    minimalArticleRefs: Object.fromEntries(
+    articleRefs: Object.fromEntries(
       [...elements].map(([id, element]) => [id, {
         $el: element,
         openOriginalArticle: vi.fn()
@@ -58,52 +58,52 @@ describe('ArticleListView keyboard navigation', () => {
     const context = createContext();
     const preventDefault = vi.fn();
 
-    context.handleMinimalKeydown({ key: 'j', target: document.body, preventDefault });
+    context.handleArticleKeydown({ key: 'j', target: document.body, preventDefault });
     expect(context.selectedArticleId).toBe(3);
 
-    context.handleMinimalKeydown({ key: 'ArrowDown', target: document.body, preventDefault });
+    context.handleArticleKeydown({ key: 'ArrowDown', target: document.body, preventDefault });
     expect(context.selectedArticleId).toBe(3);
 
-    context.handleMinimalKeydown({ key: 'k', target: document.body, preventDefault });
+    context.handleArticleKeydown({ key: 'k', target: document.body, preventDefault });
     expect(context.selectedArticleId).toBe(2);
 
     expect(preventDefault).toHaveBeenCalledTimes(3);
-    expect(context.minimalArticleRefs[2].$el.scrollIntoView)
+    expect(context.articleRefs[2].$el.scrollIntoView)
       .toHaveBeenCalledWith({ block: 'nearest' });
   });
 
-  // Verifies minimal navigation emits the existing open contract instead of local selection.
+  // Verifies headlines navigation emits the existing open contract instead of local selection.
   it('opens the next compact article through the parent contract', () => {
     const context = createContext({
-      viewMode: 'minimal',
-      activeMinimalArticleId: 1
+      viewMode: 'headlines',
+      activeHeadlinesArticleId: 1
     });
 
-    context.handleMinimalKeydown({
+    context.handleArticleKeydown({
       key: 'ArrowDown',
       target: document.body,
       preventDefault: vi.fn()
     });
 
     expect(context.$emit).toHaveBeenCalledWith(
-      'minimal-article-opened',
+      'headlines-article-opened',
       { id: 2, status: 'read' }
     );
-    expect(context.minimalArticleRefs[1].$el.focus).toHaveBeenCalled();
+    expect(context.articleRefs[1].$el.focus).toHaveBeenCalled();
   });
 
   // Verifies open, read, and saved shortcuts act on the selected article.
   it('routes open, read, and saved shortcuts for the selected article', () => {
     const context = createContext({ selectedArticleId: 2 });
     for (const key of ['Enter', 'm', 's']) {
-      context.handleMinimalKeydown({
+      context.handleArticleKeydown({
         key,
         target: document.body,
         preventDefault: vi.fn()
       });
     }
 
-    expect(context.minimalArticleRefs[2].openOriginalArticle).toHaveBeenCalledOnce();
+    expect(context.articleRefs[2].openOriginalArticle).toHaveBeenCalledOnce();
     expect(context.$emit).toHaveBeenCalledWith(
       'shortcut-toggle-read',
       { id: 2, status: 'read' }
@@ -121,13 +121,13 @@ describe('ArticleListView keyboard navigation', () => {
     expect(context.closestArticleIdToViewport()).toBe(2);
     expect(context.selectedArticle().id).toBe(2);
 
-    context.minimalArticleRefs = {};
+    context.articleRefs = {};
     expect(context.closestArticleIdToViewport()).toBeNull();
     expect(context.selectedArticle()).toBeNull();
   });
 
   // Verifies desktop list modes measure keyboard navigation from their own scroll region.
-  it.each(['full', 'summarized', 'summaryBullets', 'minimal'])('uses the list scroll region as the reading viewport in %s', viewMode => {
+  it.each(['expanded', 'summarized', 'summaryBullets', 'headlines'])('uses the list scroll region as the reading viewport in %s', viewMode => {
     const expandedArticlePane = document.createElement('div');
     expandedArticlePane.className = 'article-list-view--expanded';
     expandedArticlePane.style.overflowY = 'auto';
@@ -137,8 +137,8 @@ describe('ArticleListView keyboard navigation', () => {
       $refs: { expandedArticleScrollRef: expandedArticlePane }
     });
 
-    context.minimalArticleRefs[1].$el.getBoundingClientRect = vi.fn().mockReturnValue({ top: 180 });
-    context.minimalArticleRefs[2].$el.getBoundingClientRect = vi.fn().mockReturnValue({ top: 70 });
+    context.articleRefs[1].$el.getBoundingClientRect = vi.fn().mockReturnValue({ top: 180 });
+    context.articleRefs[2].$el.getBoundingClientRect = vi.fn().mockReturnValue({ top: 70 });
 
     expect(context.closestArticleIdToViewport()).toBe(2);
   });
@@ -146,35 +146,35 @@ describe('ArticleListView keyboard navigation', () => {
   // Verifies compact focus and tabindex state follow the active article.
   it('focuses the active compact article without scrolling when requested', () => {
     const context = createContext({
-      viewMode: 'minimal',
-      activeMinimalArticleId: '2'
+      viewMode: 'headlines',
+      activeHeadlinesArticleId: '2'
     });
 
-    expect(context.isMinimalArticleSelected(2)).toBe(true);
-    expect(context.minimalArticleTabindex(2)).toBe(0);
-    expect(context.minimalArticleTabindex(1)).toBe(-1);
-    context.focusSelectedMinimalArticle({ preventScroll: true });
+    expect(context.isHeadlinesArticleSelected(2)).toBe(true);
+    expect(context.headlinesArticleTabindex(2)).toBe(0);
+    expect(context.headlinesArticleTabindex(1)).toBe(-1);
+    context.focusSelectedHeadlinesArticle({ preventScroll: true });
 
-    expect(context.minimalArticleRefs[2].$el.focus)
+    expect(context.articleRefs[2].$el.focus)
       .toHaveBeenCalledWith({ preventScroll: true });
-    expect(context.minimalArticleRefs[2].$el.scrollIntoView)
+    expect(context.articleRefs[2].$el.scrollIntoView)
       .not.toHaveBeenCalled();
 
-    context.viewMode = 'full';
-    expect(context.minimalArticleTabindex(2)).toBeNull();
+    context.viewMode = 'expanded';
+    expect(context.headlinesArticleTabindex(2)).toBeNull();
   });
 
   it('keeps the first compact article tabbable before a selection is established', () => {
     const context = createContext({
-      viewMode: 'minimal',
-      activeMinimalArticleId: null
+      viewMode: 'headlines',
+      activeHeadlinesArticleId: null
     });
 
-    expect(context.minimalArticleTabindex(1)).toBe(0);
-    expect(context.minimalArticleTabindex(2)).toBe(-1);
+    expect(context.headlinesArticleTabindex(1)).toBe(0);
+    expect(context.headlinesArticleTabindex(2)).toBe(-1);
     expect(context.isArticleSelected(1)).toBe(false);
 
-    context.viewMode = 'full';
+    context.viewMode = 'expanded';
     context.selectedArticleId = 2;
     expect(context.isStreamArticleSelected(2)).toBe(true);
     expect(context.isArticleSelected(2)).toBe(true);
@@ -185,8 +185,8 @@ describe('ArticleListView keyboard navigation', () => {
     const context = createContext({ articles: [] });
     const preventDefault = vi.fn();
 
-    context.handleMinimalKeydown({ key: 'j', target: document.body, preventDefault });
-    context.handleMinimalKeydown({ key: 'x', target: document.body, preventDefault });
+    context.handleArticleKeydown({ key: 'j', target: document.body, preventDefault });
+    context.handleArticleKeydown({ key: 'x', target: document.body, preventDefault });
     context.openSelectedArticle();
     context.toggleSelectedReadStatus();
     context.toggleSelectedSaved();
@@ -213,13 +213,13 @@ describe('ArticleListView keyboard navigation', () => {
           hasReachedEnd: false,
           showFeedRefreshProgress: true
         },
-        viewMode: 'minimal'
+        viewMode: 'headlines'
       },
       global: {
         plugins: [stores.pinia]
       }
     });
-    const handler = wrapper.vm.handleMinimalKeydown;
+    const handler = wrapper.vm.handleArticleKeydown;
 
     expect(addEventListener).toHaveBeenCalledWith('keydown', handler);
     wrapper.unmount();

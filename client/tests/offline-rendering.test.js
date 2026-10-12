@@ -23,7 +23,7 @@ beforeEach(() => {
   store.account = offlineAccount(1);
   store.profile = { enabled: true, activeGeneration: 'ready' };
   store.setReadOnly(true);
-  useSelectionStore().currentSelection.viewMode = 'full';
+  useSelectionStore().currentSelection.viewMode = 'expanded';
   vi.spyOn(offlineReading, 'loadSnapshot').mockResolvedValue([dto]);
 });
 afterEach(() => {

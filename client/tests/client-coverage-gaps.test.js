@@ -437,8 +437,8 @@ describe('ArticleListView DOM contracts', () => {
     scrollContainer.scrollTop = 50;
     scrollContainer.getBoundingClientRect = () => ({ top: 72 });
     const context = {
-      viewMode: 'full',
-      minimalArticleRefs: { 5: { $el: articleElement } },
+      viewMode: 'expanded',
+      articleRefs: { 5: { $el: articleElement } },
       $refs: {
         loadMoreSentinel: sentinel,
         expandedArticleScrollRef: scrollContainer
@@ -454,7 +454,7 @@ describe('ArticleListView DOM contracts', () => {
 
     computedStyle.mockReturnValue({ overflowY: 'visible' });
     expect(ArticleListView.methods.getReadingViewportTop.call(context)).toBe(0);
-    context.viewMode = 'minimal';
+    context.viewMode = 'headlines';
     expect(ArticleListView.methods.getReadingViewportTop.call(context)).toBe(0);
 
     ArticleListView.methods.scrollToTop.call(context);
@@ -474,7 +474,7 @@ describe('ArticleListView DOM contracts', () => {
       props: {
         articles: [],
         container: [],
-        viewMode: 'full',
+        viewMode: 'expanded',
         collectionSummary: {
           status: 'unread', selectedTag: '', unreadCount: 0, sourceCount: 0
         },

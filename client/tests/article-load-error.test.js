@@ -13,7 +13,7 @@ describe.each([
       overview: { categories: [], smartFolders: [] },
       selection: {
         currentSelection: {
-          status: 'unread', categoryId: '%', feedId: '%', viewMode: 'full', grouping: 'none'
+          status: 'unread', categoryId: '%', feedId: '%', viewMode: 'expanded', grouping: 'none'
         }
       }
     });
@@ -30,7 +30,7 @@ describe.each([
         container: [],
         collectionSummary: { status: 'unread', unreadCount: 0, sourceCount: null },
         collectionProgress,
-        ...(component === ArticleListView ? { viewMode: 'full' } : {})
+        ...(component === ArticleListView ? { viewMode: 'expanded' } : {})
       },
       global: { plugins: [stores.pinia], stubs: { ArticleLoadError: false } }
     });

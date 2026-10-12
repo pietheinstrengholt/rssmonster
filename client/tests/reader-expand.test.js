@@ -74,7 +74,7 @@ it('preserves active speech when expanding and restoring', async () => {
   expect(synthesis.speak).toHaveBeenCalledOnce();
 });
 
-it.each(['full', 'summarized', 'minimal'])('hides expansion outside Reader mode: %s', mode => {
+it.each(['expanded', 'summarized', 'headlines'])('hides expansion outside Reader mode: %s', mode => {
   wrapper = mount(Article, { props: { ...article, readerDetail: true, readerToolbar: true }, global: { plugins: [stores(mode).pinia] } });
   expect(button('Expand article').exists()).toBe(false);
 });

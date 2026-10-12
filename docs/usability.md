@@ -56,9 +56,9 @@ offers a link to the original article instead.
 
 ![RSSMonster in Summarized mode](assets/mode-summarized.png)
 
-## Summary Bullets and Headlines
+## Summary bullets and Headlines
 
-**Summary Bullets** shows available generated summary bullets and is offered when
+**Summary bullets** shows available generated summary bullets and is offered when
 AI is enabled. Articles need completed analysis to have those summaries.
 **Headlines** is the most compact list. It supports the **Mark as read while
 scrolling** preference as well as explicit article actions.

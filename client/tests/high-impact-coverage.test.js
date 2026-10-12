@@ -103,7 +103,7 @@ function createListContext(overrides = {}) {
     distance: 0,
     fetchCount: 20,
     remainingItems: 0,
-    viewMode: 'full',
+    viewMode: 'expanded',
     isFlushed: false,
     collectionProgress: {
       hasLoadedContent: true,
@@ -112,9 +112,9 @@ function createListContext(overrides = {}) {
       showFeedRefreshProgress: true
     },
     isArticleEndStateDismissed: false,
-    activeMinimalArticleId: null,
+    activeHeadlinesArticleId: null,
     selectedArticleId: null,
-    minimalArticleRefs: {},
+    articleRefs: {},
     selectionStore: {
       currentSelection: { categoryId: '%', feedId: '%', tag: '' },
       effectiveMarkAsReadOnScroll: false
@@ -189,13 +189,13 @@ describe('Article high-impact decision coverage', () => {
       predictedAffinity: 'deep'
     })).toBe(Infinity);
     expect(compute(Article, 'shouldShowImage', {
-      selectionStore: { currentSelection: { viewMode: 'full' } },
+      selectionStore: { currentSelection: { viewMode: 'expanded' } },
       isMobilePortrait: false,
       isUnread: true,
       predictedAffinity: 'cold'
     })).toBe(false);
     expect(compute(Article, 'shouldShowImage', {
-      selectionStore: { currentSelection: { viewMode: 'full' } },
+      selectionStore: { currentSelection: { viewMode: 'expanded' } },
       isMobilePortrait: false,
       isUnread: false,
       predictedAffinity: 'cold'
@@ -215,21 +215,21 @@ describe('Article high-impact decision coverage', () => {
     })).toBe(false);
     expect(compute(Article, 'hasPresentableMedia', { media: {}, url: '' })).toBe(false);
 
-    for (const viewMode of ['full', 'reader']) {
+    for (const viewMode of ['expanded', 'reader']) {
       expect(compute(Article, 'shouldRenderMedia', {
         hasPresentableMedia: true,
-        shouldShowMinimalContent: false,
+        shouldShowHeadlinesContent: false,
         selectionStore: { currentSelection: { viewMode } }
     })).toBe(true);
     }
     expect(compute(Article, 'shouldRenderMedia', {
       hasPresentableMedia: true,
-      shouldShowMinimalContent: true,
-      selectionStore: { currentSelection: { viewMode: 'minimal' } }
+      shouldShowHeadlinesContent: true,
+      selectionStore: { currentSelection: { viewMode: 'headlines' } }
     })).toBe(true);
     expect(compute(Article, 'shouldRenderMedia', {
       hasPresentableMedia: false,
-      selectionStore: { currentSelection: { viewMode: 'full' } }
+      selectionStore: { currentSelection: { viewMode: 'expanded' } }
     })).toBe(false);
 
     expect(compute(Article, 'eventArticleCountTotal', {
@@ -265,9 +265,9 @@ describe('Article high-impact decision coverage', () => {
       id: 9,
       status: 'unread',
       swipeSuppressClick: false,
-      isMinimalContentOpen: false,
+      isHeadlinesContentOpen: false,
       selectionStore: {
-        currentSelection: { viewMode: 'minimal' },
+        currentSelection: { viewMode: 'headlines' },
         setTag: vi.fn(),
         selectCategory: vi.fn()
       },
@@ -276,10 +276,10 @@ describe('Article high-impact decision coverage', () => {
     };
 
     Article.methods.articleTouched.call(context, { target: document.body });
-    expect(context.$emit).toHaveBeenCalledWith('minimal-article-opened', { id: 9, status: 'unread' });
-    context.isMinimalContentOpen = true;
+    expect(context.$emit).toHaveBeenCalledWith('headlines-article-opened', { id: 9, status: 'unread' });
+    context.isHeadlinesContentOpen = true;
     Article.methods.articleTouched.call(context, { target: document.body });
-    expect(context.$emit).toHaveBeenCalledWith('minimal-article-closed', { id: 9 });
+    expect(context.$emit).toHaveBeenCalledWith('headlines-article-closed', { id: 9 });
 
     const preventDefault = vi.fn();
     const stopPropagation = vi.fn();
@@ -288,7 +288,7 @@ describe('Article high-impact decision coverage', () => {
     expect(preventDefault).toHaveBeenCalledOnce();
     expect(stopPropagation).toHaveBeenCalledOnce();
 
-    Article.methods.toggleMinimalReadStatus.call(context);
+    Article.methods.toggleHeadlinesReadStatus.call(context);
     Article.methods.selectTag.call(context, { name: 'AI' });
     Article.methods.selectTag.call(context, null);
     Article.methods.selectCategory.call(context);
@@ -304,14 +304,14 @@ describe('Article high-impact decision coverage', () => {
     expect(compute(Article, 'isGroupedView', {
       selectionStore: { currentSelection: { grouping: 'none' } }
     })).toBe(false);
-    expect(compute(Article, 'isMinimalView', {
-      selectionStore: { currentSelection: { viewMode: 'minimal' } }
+    expect(compute(Article, 'isHeadlinesView', {
+      selectionStore: { currentSelection: { viewMode: 'headlines' } }
     })).toBe(true);
-    expect(compute(Article, 'shouldShowMinimalContent', {
-      isMinimalView: true, isMinimalContentOpen: true, showMinimalContent: false
+    expect(compute(Article, 'shouldShowHeadlinesContent', {
+      isHeadlinesView: true, isHeadlinesContentOpen: true, showHeadlinesContent: false
     })).toBe(true);
-    expect(compute(Article, 'shouldShowMinimalContent', {
-      isMinimalView: false, isMinimalContentOpen: false, showMinimalContent: true
+    expect(compute(Article, 'shouldShowHeadlinesContent', {
+      isHeadlinesView: false, isHeadlinesContentOpen: false, showHeadlinesContent: true
     })).toBe(true);
   });
 });
@@ -540,22 +540,22 @@ describe('ArticleListView high-impact decision coverage', () => {
   it('covers ref cleanup, dismissal, flush, and watcher callbacks', () => {
     const context = createListContext({
       isArticleEndStateDismissed: true,
-      focusSelectedMinimalArticle: vi.fn()
+      focusSelectedHeadlinesArticle: vi.fn()
     });
     const component = { $el: document.createElement('article') };
 
-    context.setMinimalArticleRef(component, 2);
-    expect(context.minimalArticleRefs[2]).toBe(component);
-    context.setMinimalArticleRef(null, 2);
-    expect(context.minimalArticleRefs[2]).toBeUndefined();
+    context.setArticleRef(component, 2);
+    expect(context.articleRefs[2]).toBe(component);
+    context.setArticleRef(null, 2);
+    expect(context.articleRefs[2]).toBeUndefined();
     context.dismissArticleEndState();
     context.flushPool();
     expect(context.$emit).toHaveBeenCalledWith('flush-pool');
     ArticleListView.watch.container.call(context);
     expect(context.isArticleEndStateDismissed).toBe(false);
     ArticleListView.watch.articles.call(context);
-    ArticleListView.watch.activeMinimalArticleId.call(context);
-    expect(context.focusSelectedMinimalArticle).toHaveBeenCalledTimes(2);
+    ArticleListView.watch.activeHeadlinesArticleId.call(context);
+    expect(context.focusSelectedHeadlinesArticle).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -802,8 +802,8 @@ describe('Vue template handler coverage', () => {
           newerArticleCount: 1,
           showFeedRefreshProgress: true
         },
-        viewMode: 'minimal',
-        activeMinimalArticleId: 1
+        viewMode: 'headlines',
+        activeHeadlinesArticleId: 1
       },
       global: {
         plugins: [stores.pinia],
@@ -817,8 +817,8 @@ describe('Vue template handler coverage', () => {
     });
     const child = wrapper.findComponent({ name: 'Article' });
     const events = [
-      'update-saved', 'update-opened-original', 'minimal-article-opened', 'minimal-article-closed',
-      'toggle-read-status', 'toggle-minimal-read-status', 'event-articles-loaded',
+      'update-saved', 'update-opened-original', 'headlines-article-opened', 'headlines-article-closed',
+      'toggle-read-status', 'toggle-headlines-read-status', 'event-articles-loaded',
       'event-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed',
       'article-not-interested'
     ];
@@ -827,7 +827,7 @@ describe('Vue template handler coverage', () => {
     expect(wrapper.find('.article-refresh-state').exists()).toBe(false);
     expect(wrapper.emitted('forceReload')).toBeUndefined();
 
-    await wrapper.setProps({ viewMode: 'full' });
+    await wrapper.setProps({ viewMode: 'expanded' });
     await wrapper.vm.$nextTick();
     await wrapper.get('.mark-read').trigger('click');
     expect(wrapper.emitted('flush-pool')).toHaveLength(1);
@@ -891,7 +891,7 @@ describe('Vue template handler coverage', () => {
         categories: [{ id: 2, name: 'Technology', feeds: [{ id: 7, favicon: 'feed.ico' }] }]
       },
       selection: {
-        currentSelection: { viewMode: 'full', grouping: 'event' },
+        currentSelection: { viewMode: 'expanded', grouping: 'event' },
         setTag: vi.fn(),
         selectCategory: vi.fn()
       }
@@ -962,10 +962,10 @@ describe('Vue template handler coverage', () => {
     wrapper.findComponent({ name: 'EmitterStub' }).vm.$emit('toggle-read-status');
     expect(wrapper.emitted('toggle-read-status')).toEqual([[{ id: 11, status: 'unread' }]]);
 
-    stores.selectionStore.currentSelection.viewMode = 'minimal';
+    stores.selectionStore.currentSelection.viewMode = 'headlines';
     await wrapper.vm.$nextTick();
     wrapper.findComponent(ArticleHeadlineRow).findComponent({ name: 'EmitterStub' }).vm.$emit('toggle-read-status');
-    expect(wrapper.emitted('toggle-minimal-read-status')).toEqual([[{ id: 11, status: 'unread' }]]);
+    expect(wrapper.emitted('toggle-headlines-read-status')).toEqual([[{ id: 11, status: 'unread' }]]);
     wrapper.unmount();
   });
 

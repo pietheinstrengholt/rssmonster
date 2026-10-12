@@ -29,7 +29,7 @@ describe('mobile Headlines', () => {
   it('uses normal inline padding for mobile expanded content and media', () => {
     const mobileContent = contentSource.split('@media (max-width: 879px) and (orientation: portrait)')[1];
     const mobileArticle = articleSource.split('@media (max-width: 879px) and (orientation: portrait)').slice(1).join('');
-    expect(mobileContent).toMatch(/\.article-content-wrapper--minimal\s*\{\s*padding-inline:\s*var\(--article-space-section, 12px\);/s);
+    expect(mobileContent).toMatch(/\.article-content-wrapper--headlines\s*\{\s*padding-inline:\s*var\(--article-space-section, 12px\);/s);
     expect(mobileArticle).toMatch(/\.article-list-card > \.article-media\s*\{\s*padding-inline:\s*var\(--article-space-section, 12px\);/s);
   });
 
@@ -37,11 +37,11 @@ describe('mobile Headlines', () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
     const stores = createFocusedStores({
       overview: { categories: [] },
-      selection: { currentSelection: { viewMode: 'minimal', grouping: 'none' } }
+      selection: { currentSelection: { viewMode: 'headlines', grouping: 'none' } }
     });
     const wrapper = mount(Article, {
       props: {
-        id: 42, title: 'A headline', isMinimalContentOpen: true,
+        id: 42, title: 'A headline', isHeadlinesContentOpen: true,
         imageUrl: imageState === 'no image' ? '' : imageUrl,
         content: '<p>Expanded reading content.</p>', feed: { feedName: 'A source' }
       },
@@ -55,7 +55,7 @@ describe('mobile Headlines', () => {
     expect(row.element.contains(body.element)).toBe(false);
     expect(row.element.compareDocumentPosition(body.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(row.get('button[aria-label="Article actions"]').exists()).toBe(true);
-    await wrapper.setProps({ isMinimalContentOpen: false });
+    await wrapper.setProps({ isHeadlinesContentOpen: false });
     expect(wrapper.find('[data-reading-content]').exists()).toBe(false);
   });
 
@@ -104,7 +104,7 @@ describe('mobile Headlines', () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: isMobilePortrait, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
     const stores = createFocusedStores({
       overview: { categories: [] },
-      selection: { currentSelection: { viewMode: 'minimal', grouping: 'none' } }
+      selection: { currentSelection: { viewMode: 'headlines', grouping: 'none' } }
     });
     const wrapper = mount(Article, {
       props: { id: 42, title: 'A headline', status: 'unread', contentText: 'Article text', feed: { feedName: 'A source' } },
@@ -116,7 +116,7 @@ describe('mobile Headlines', () => {
       await wrapper.get('button[aria-label="Article actions"]').trigger('click');
       await wrapper.findAll('[role="menuitem"]').find(item => item.text() === (status === 'read' ? 'Mark as unread' : 'Mark as read')).trigger('click');
     }
-    expect(wrapper.emitted('toggle-minimal-read-status')).toEqual([
+    expect(wrapper.emitted('toggle-headlines-read-status')).toEqual([
       [{ id: 42, status: 'unread' }],
       [{ id: 42, status: 'read' }]
     ]);
@@ -125,7 +125,7 @@ describe('mobile Headlines', () => {
   it('offers a working read-state menu action in Expanded mode', async () => {
     const stores = createFocusedStores({
       overview: { categories: [] },
-      selection: { currentSelection: { viewMode: 'full', grouping: 'none' } }
+      selection: { currentSelection: { viewMode: 'expanded', grouping: 'none' } }
     });
     const wrapper = mount(Article, {
       props: { id: 42, title: 'An expanded article', status: 'read', feed: { feedName: 'A source' } },
@@ -197,7 +197,7 @@ describe('mobile Headlines', () => {
       .mockResolvedValueOnce({ data: { savedInd: 0 } });
     const stores = createFocusedStores({
       overview: { categories: [] },
-      selection: { currentSelection: { viewMode: 'minimal', grouping: 'none' } }
+      selection: { currentSelection: { viewMode: 'headlines', grouping: 'none' } }
     });
     const wrapper = mount(Article, {
       props: {
@@ -214,7 +214,7 @@ describe('mobile Headlines', () => {
     }
     expect(savedApi.mock.calls.map(call => call.slice(0, 2))).toEqual([[42, 'mark'], [42, 'unmark']]);
     expect(wrapper.emitted('update-saved')).toEqual([[{ id: 42, savedInd: 1 }], [{ id: 42, savedInd: 0 }]]);
-    expect(wrapper.emitted('minimal-article-opened')).toBeUndefined();
+    expect(wrapper.emitted('headlines-article-opened')).toBeUndefined();
   });
 
   it.each(['OpenAI', 'openai', 'Openai'])('formats %s while preserving tag and similar-article actions', async name => {
@@ -285,7 +285,7 @@ describe('mobile Headlines', () => {
     expect(wrapper.get('[data-reading-content]').text()).toBe('Summarized article text');
   });
 
-  it.each(['minimal', 'full', 'summarized', 'summaryBullets', 'reader'])('preserves image visibility for text-only content in mobile %s mode', viewMode => {
+  it.each(['headlines', 'expanded', 'summarized', 'summaryBullets', 'reader'])('preserves image visibility for text-only content in mobile %s mode', viewMode => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
     const stores = createFocusedStores({
       overview: { categories: [] },
@@ -296,6 +296,6 @@ describe('mobile Headlines', () => {
       global: { plugins: [stores.pinia] }
     });
     wrappers.push(wrapper);
-    expect(wrapper.find(`img[src="${imageUrl}"]`).exists()).toBe(['minimal', 'summarized'].includes(viewMode));
+    expect(wrapper.find(`img[src="${imageUrl}"]`).exists()).toBe(['headlines', 'summarized'].includes(viewMode));
   });
 });

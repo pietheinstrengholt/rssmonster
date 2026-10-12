@@ -11,7 +11,7 @@ const developingEvent = {
 };
 
 // This function creates the store surface shared by article badge tests.
-function createStore(viewMode = 'minimal') {
+function createStore(viewMode = 'headlines') {
   return createFocusedStores({
     overview: {
       categories: [],

@@ -14,7 +14,7 @@ const params = new URLSearchParams(location.search);
 const pinia = createPinia();
 const selection = useSelectionStore(pinia);
 const overview = useOverviewStore(pinia);
-const mode = params.get('mode') || 'full';
+const mode = params.get('mode') || 'expanded';
 // Match the feed's desktop Reader eligibility; smaller screens use the stream.
 const readerLayout = mode === 'reader' && window.matchMedia('(min-width: 1024px)').matches;
 selection.currentSelection.viewMode = mode;

@@ -49,7 +49,7 @@ describe('Article rendering containment', () => {
   });
 
   // Verifies every content-heavy stream mode keeps the observed article root as its containment boundary.
-  it.each(['full', 'summarized', 'summaryBullets', 'reader'])(
+  it.each(['expanded', 'summarized', 'summaryBullets', 'reader'])(
     'uses the stable article card boundary in %s mode',
     viewMode => {
       const card = mountArticle(viewMode).get('.article-card');
@@ -62,7 +62,7 @@ describe('Article rendering containment', () => {
   // Verifies compact, event, and keyboard-selection classes coexist on the same optimized root.
   it('keeps compact and state classes on the observed article root', () => {
     const card = mountArticle(
-      'minimal',
+      'headlines',
       { isEventArticle: true },
       { class: 'article-list-card-selected', 'aria-current': 'true', tabindex: '0' }
     ).get('.article-card');

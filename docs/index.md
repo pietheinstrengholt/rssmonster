@@ -26,7 +26,7 @@ The default SQLite Docker deployment provides a lightweight reader. Use the
 MySQL deployment with inference and its AI worker for background analysis and
 semantic features; these are not enabled by default in the SQLite quick start.
 
-Choose [Expanded, Reader, Summarized, Summary Bullets, or Headlines]({% link usability.md %})
+Choose [Expanded, Reader, Summarized, Summary bullets, or Headlines]({% link usability.md %})
 to suit your reading session and screen. [Bookmarks]({% link bookmarks.md %}),
 [keyboard shortcuts]({% link keyboard-shortcuts.md %}), and configurable
 [read behavior]({% link marking-articles-read.md %}) help you work through your subscriptions.

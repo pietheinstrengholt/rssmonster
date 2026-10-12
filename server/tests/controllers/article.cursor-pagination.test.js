@@ -69,6 +69,20 @@ describe('article cursor pagination', () => {
     await sequelize.authenticate();
   }, 50_000);
 
+  it('hydrates the same Headlines page for canonical and legacy modes', async () => {
+    const { user, feed } = await createUserFeed('reading-mode');
+    for (let index = 0; index < 51; index++) {
+      await createArticle(user, feed, `Headline ${index}`, new Date('2026-10-01T12:00:00Z'));
+    }
+    for (const [viewMode, pageSize] of [['headlines', 50], ['minimal', 50], ['expanded', 20], ['full', 20]]) {
+      const response = await request(app).get('/api/articles')
+        .query({ status: 'unread', viewMode, includeFirstPage: true, persistSettings: false })
+        .set('Authorization', authHeaderFor(user));
+      expect(response.status).toBe(200);
+      expect(response.body.firstPage).toHaveLength(pageSize);
+    }
+  });
+
   it('applies both calendar bounds to lists, arrivals and matching bulk actions', async () => {
     const { user, category, feed } = await createUserFeed('calendar-range');
     const old = await createArticle(user, feed, 'Science old', new Date('2026-01-01T09:00:00Z'));

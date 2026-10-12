@@ -27,7 +27,7 @@ const more = () => wrapper.get('button[aria-label="More actions"]');
 const action = label => wrapper.findAll('[role="menuitem"]').find(button => button.text() === label);
 
 describe('article list bulk actions', () => {
-  it.each(['full', 'summarized', 'summaryBullets', 'minimal'])('offers bulk actions in %s', async viewMode => {
+  it.each(['expanded', 'summarized', 'summaryBullets', 'headlines'])('offers bulk actions in %s', async viewMode => {
     renderList(viewMode);
     await more().trigger('click');
     expect(wrapper.get('[role="menu"]').isVisible()).toBe(true);
@@ -45,7 +45,7 @@ describe('article list bulk actions', () => {
   });
 
   it('offers the menu when the collection context is absent', async () => {
-    renderList('minimal', 'briefing');
+    renderList('headlines', 'briefing');
     await more().trigger('click');
     expect(action('Mark all visible as read').isVisible()).toBe(true);
   });

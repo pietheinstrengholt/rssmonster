@@ -112,7 +112,7 @@ describe('articleSearch.service', () => {
       minAdvertisementScore: 0,
       minSentimentScore: 0,
       minQualityScore: 0,
-      viewMode: 'full',
+      viewMode: 'expanded',
       grouping: 'none'
     });
 

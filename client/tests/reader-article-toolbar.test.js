@@ -123,7 +123,7 @@ describe('Reader article toolbar', () => {
     expect(document.activeElement).toBe(trigger.element);
   });
 
-  it.each(['full', 'summarized', 'minimal'])('leaves %s without the Reader toolbar', mode => {
+  it.each(['expanded', 'summarized', 'headlines'])('leaves %s without the Reader toolbar', mode => {
     const focused = stores();
     focused.selectionStore.currentSelection.viewMode = mode;
     wrapper = mount(Article, { props: { ...article, readerDetail: true, readerToolbar: true }, global: { plugins: [focused.pinia] } });

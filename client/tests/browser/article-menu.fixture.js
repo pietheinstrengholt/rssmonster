@@ -19,7 +19,7 @@ const app = createApp({
     title: `Article ${id}`,
     content: '<p>A short article preview.</p>',
     feed: { feedName: 'Example feed' },
-    onToggleMinimalReadStatus: () => { document.body.dataset.selectedArticle = String(id); }
+    onToggleHeadlinesReadStatus: () => { document.body.dataset.selectedArticle = String(id); }
   }))
 });
 app.use(pinia);

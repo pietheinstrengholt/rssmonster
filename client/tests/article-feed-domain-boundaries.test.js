@@ -120,7 +120,7 @@ describe('ArticleFeed visibility tracking', () => {
     const context = {
       ...createFocusedStores({
         selection: {
-          currentSelection: { viewMode: 'full' }
+          currentSelection: { viewMode: 'expanded' }
         }
       }),
       pool: new Set(),
@@ -291,7 +291,7 @@ describe('ArticleFeed visibility tracking', () => {
     const context = {
       ...createFocusedStores({
         selection: {
-          currentSelection: { viewMode: 'minimal' }
+          currentSelection: { viewMode: 'headlines' }
         }
       }),
       isDesktopReaderWidth: false,
@@ -308,7 +308,7 @@ describe('ArticleFeed visibility tracking', () => {
 
     expect(context.pool).toEqual(new Set([12]));
     expect(context.markArticleSeen).toHaveBeenCalledWith(12, 0, expect.objectContaining({
-      selection: expect.objectContaining({ viewMode: 'minimal' })
+      selection: expect.objectContaining({ viewMode: 'headlines' })
     }));
   });
 

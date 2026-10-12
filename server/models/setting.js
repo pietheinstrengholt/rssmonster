@@ -1,3 +1,4 @@
+import { canonicalArticleViewMode } from '../utils/articleStateContract.js';
 import { DataTypes } from 'sequelize';
 
 export default (sequelize) => {
@@ -71,11 +72,12 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
-      // Stores the selected article presentation layout, defaulting to full.
+      // Stores the selected article presentation layout, defaulting to expanded.
       viewMode: {
         type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: 'full'
+        defaultValue: 'expanded',
+        set(value) { this.setDataValue('viewMode', canonicalArticleViewMode(value)); }
       },
       // Stores article grouping as none or event.
       grouping: {

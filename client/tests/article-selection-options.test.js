@@ -30,15 +30,20 @@ describe('article selection option configuration', () => {
     ]);
   });
 
+  it('uses the same canonical reading-mode labels on all surfaces', () => {
+    expect(ARTICLE_VIEW_MODE_OPTIONS.map(option => option.label)).toEqual(['Reader', 'Expanded', 'Summarized', 'Summary bullets', 'Headlines']);
+    expect(ARTICLE_VIEW_MODE_OPTIONS.every(option => !option.mobileLabel || option.mobileLabel === option.label)).toBe(true);
+  });
+
   it('filters AI options and represents Reader as a desktop-only capability', () => {
     expect(optionValues(getAvailableArticleOptions(ARTICLE_VIEW_MODE_OPTIONS, {
       aiEnabled: false,
       mobile: false
-    }))).toEqual(['reader', 'full', 'summarized', 'minimal']);
+    }))).toEqual(['reader', 'expanded', 'summarized', 'headlines']);
     expect(optionValues(getAvailableArticleOptions(ARTICLE_VIEW_MODE_OPTIONS, {
       aiEnabled: true,
       mobile: true
-    }))).toEqual(['full', 'summarized', 'summaryBullets', 'minimal']);
+    }))).toEqual(['expanded', 'summarized', 'summaryBullets', 'headlines']);
     expect(optionValues(getAvailableArticleOptions(ARTICLE_STATUS_OPTIONS, {
       aiEnabled: false
     }))).toEqual(['unread', 'saved', 'hot', 'openedOriginal', 'read']);

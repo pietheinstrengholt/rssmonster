@@ -81,7 +81,7 @@ function mountArticle(props = {}) {
     selection: {
       currentSelection: {
         grouping: 'event',
-        viewMode: 'full'
+        viewMode: 'expanded'
       }
     }
   });

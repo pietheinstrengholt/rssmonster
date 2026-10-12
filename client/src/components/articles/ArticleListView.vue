@@ -3,7 +3,7 @@
     class="article-list-view"
     ref="expandedArticleScrollRef"
     :class="{
-      'article-list-view--expanded': viewMode === 'full',
+      'article-list-view--expanded': viewMode === 'expanded',
       'article-list-view--empty': isCollectionEmpty
     }"
   >
@@ -47,21 +47,21 @@
         v-for="article in articles"
         v-bind="article"
         :key="article.id"
-        :ref="element => setMinimalArticleRef(element, article.id)"
+        :ref="element => setArticleRef(element, article.id)"
         :class="{
-          'article-list-card-selected': isMinimalArticleSelected(article.id),
+          'article-list-card-selected': isHeadlinesArticleSelected(article.id),
           'article-stream-card-selected': isStreamArticleSelected(article.id)
         }"
         :aria-current="isArticleSelected(article.id) ? 'true' : null"
-        :tabindex="minimalArticleTabindex(article.id)"
-        :isMinimalContentOpen="String(article.id) === String(activeMinimalArticleId)"
+        :tabindex="headlinesArticleTabindex(article.id)"
+        :isHeadlinesContentOpen="String(article.id) === String(activeHeadlinesArticleId)"
         @update-tags="$emit('update-tags', $event)"
         @update-saved="$emit('update-saved', $event)"
         @update-openedOriginal="$emit('update-opened-original', $event)"
-        @minimal-article-opened="openMinimalArticle"
-        @minimal-article-closed="$emit('minimal-article-closed', $event)"
+        @headlines-article-opened="openHeadlinesArticle"
+        @headlines-article-closed="$emit('headlines-article-closed', $event)"
         @toggle-read-status="$emit('toggle-read-status', $event)"
-        @toggle-minimal-read-status="$emit('toggle-minimal-read-status', $event)"
+        @toggle-headlines-read-status="$emit('toggle-headlines-read-status', $event)"
         @event-articles-loaded="$emit('event-articles-loaded', $event)"
         @event-articles-collapsed="$emit('event-articles-collapsed', $event)"
         @duplicate-articles-loaded="$emit('duplicate-articles-loaded', $event)"
@@ -160,10 +160,10 @@ export default {
     'update-tags',
     'update-saved',
     'update-opened-original',
-    'minimal-article-opened',
-    'minimal-article-closed',
+    'headlines-article-opened',
+    'headlines-article-closed',
     'toggle-read-status',
-    'toggle-minimal-read-status',
+    'toggle-headlines-read-status',
     'event-articles-loaded',
     'event-articles-collapsed',
     'duplicate-articles-loaded',
@@ -209,24 +209,24 @@ export default {
       type: String,
       required: true
     },
-    activeMinimalArticleId: {
+    activeHeadlinesArticleId: {
       type: [Number, String],
       default: null
     }
   },
   data() {
     return {
-      minimalArticleRefs: {},
+      articleRefs: {},
       selectedArticleId: null,
       bulkSelectedArticleId: null,
       isArticleEndStateDismissed: false
     };
   },
   mounted() {
-    window.addEventListener('keydown', this.handleMinimalKeydown);
+    window.addEventListener('keydown', this.handleArticleKeydown);
   },
   beforeUnmount() {
-    window.removeEventListener('keydown', this.handleMinimalKeydown);
+    window.removeEventListener('keydown', this.handleArticleKeydown);
   },
   computed: {
     ...mapStores(useOverviewStore, useSelectionStore, useFeedRefreshStore, useUiStore),
@@ -237,7 +237,7 @@ export default {
           || selection.ageCutoff !== 'all' || selection.dateRange !== 'all'));
     },
     useRefinedTopbars() {
-      return ['minimal', 'full', 'summarized', 'summaryBullets'].includes(this.viewMode);
+      return ['headlines', 'expanded', 'summarized', 'summaryBullets'].includes(this.viewMode);
     },
     // Exposes the active status from the explicit collection presentation contract.
     currentSelection() {
@@ -296,7 +296,7 @@ export default {
     },
     // Returns whether this stream supports the end state, including mobile Reader fallback.
     supportsArticleEndState() {
-      return ['full', 'reader', 'summarized'].includes(this.viewMode);
+      return ['expanded', 'reader', 'summarized'].includes(this.viewMode);
     },
     // Returns the shared end, action, dismissal, and refresh presentation state.
     collectionTailState() {
@@ -321,19 +321,19 @@ export default {
     },
     // Restores compact-article focus after content changes.
     articles() {
-      this.$nextTick(() => this.focusSelectedMinimalArticle({ preventScroll: true }));
+      this.$nextTick(() => this.focusSelectedHeadlinesArticle({ preventScroll: true }));
     },
-    activeMinimalArticleId() {
-      this.$nextTick(() => this.focusSelectedMinimalArticle({ preventScroll: true }));
+    activeHeadlinesArticleId() {
+      this.$nextTick(() => this.focusSelectedHeadlinesArticle({ preventScroll: true }));
     }
   },
   methods: {
     // Keeps the openedOriginal headline in place when the previously open article collapses.
-    openMinimalArticle(article) {
+    openHeadlinesArticle(article) {
       const element = this.getArticleElement(article.id);
       const top = element?.getBoundingClientRect().top;
       const scrollRoot = this.getPaginationScrollRoot();
-      this.$emit('minimal-article-opened', article);
+      this.$emit('headlines-article-opened', article);
       this.$nextTick(() => {
         if (!element) return;
         const offset = element.getBoundingClientRect().top - top;
@@ -344,7 +344,7 @@ export default {
     },
     // Returns the rendered article root owned through this layout's component refs.
     getArticleElement(articleId) {
-      return this.minimalArticleRefs[articleId]?.$el || null;
+      return this.articleRefs[articleId]?.$el || null;
     },
     // Returns the component-owned pagination sentinel.
     getLoadMoreSentinel() {
@@ -377,31 +377,31 @@ export default {
       if (articleStream) articleStream.scrollTop = 0;
     },
     // Stores compact article component refs by article id.
-    setMinimalArticleRef(element, articleId) {
+    setArticleRef(element, articleId) {
       if (element) {
-        this.minimalArticleRefs[articleId] = element;
+        this.articleRefs[articleId] = element;
       } else {
-        delete this.minimalArticleRefs[articleId];
+        delete this.articleRefs[articleId];
       }
     },
     // Returns whether an article is the active compact selection.
-    isMinimalArticleSelected(articleId) {
-      return this.viewMode === 'minimal' && String(articleId) === String(this.activeMinimalArticleId);
+    isHeadlinesArticleSelected(articleId) {
+      return this.viewMode === 'headlines' && String(articleId) === String(this.activeHeadlinesArticleId);
     },
     // Returns whether keyboard navigation selected an article in a reading stream.
     isStreamArticleSelected(articleId) {
-      return this.viewMode !== 'minimal' && String(articleId) === String(this.selectedArticleId);
+      return this.viewMode !== 'headlines' && String(articleId) === String(this.selectedArticleId);
     },
     // Returns whether either article presentation currently owns the selection.
     isArticleSelected(articleId) {
-      return this.isMinimalArticleSelected(articleId) || this.isStreamArticleSelected(articleId);
+      return this.isHeadlinesArticleSelected(articleId) || this.isStreamArticleSelected(articleId);
     },
     // Returns the compact article focus order without touching other modes.
-    minimalArticleTabindex(articleId) {
-      if (this.viewMode !== 'minimal') return null;
-      const hasActiveArticle = this.activeMinimalArticleId !== null;
+    headlinesArticleTabindex(articleId) {
+      if (this.viewMode !== 'headlines') return null;
+      const hasActiveArticle = this.activeHeadlinesArticleId !== null;
       const isInitialArticle = !hasActiveArticle && String(articleId) === String(this.articles[0]?.id);
-      return this.isMinimalArticleSelected(articleId) || isInitialArticle ? 0 : -1;
+      return this.isHeadlinesArticleSelected(articleId) || isInitialArticle ? 0 : -1;
     },
     // Hides the article end state until the current article session changes.
     dismissArticleEndState() {
@@ -412,7 +412,7 @@ export default {
       this.$emit('flush-pool');
     },
     // Handles compact headline keyboard navigation.
-    handleMinimalKeydown(event) {
+    handleArticleKeydown(event) {
       const command = getArticleKeyboardCommand(event);
       if (!command) return;
       if (!this.articles.length) return;
@@ -449,8 +449,8 @@ export default {
     },
     // Returns the selected article index for the active list mode.
     selectedArticleIndex() {
-      const selectedId = this.viewMode === 'minimal'
-        ? this.activeMinimalArticleId
+      const selectedId = this.viewMode === 'headlines'
+        ? this.activeHeadlinesArticleId
         : this.selectedArticleId ?? this.closestArticleIdToViewport();
 
       return this.articles.findIndex(article => String(article.id) === String(selectedId));
@@ -463,7 +463,7 @@ export default {
       let closestDistance = Infinity;
 
       for (const article of this.articles) {
-        const element = this.minimalArticleRefs[article.id]?.$el;
+        const element = this.articleRefs[article.id]?.$el;
         if (!element) continue;
 
         const distance = Math.abs(element.getBoundingClientRect().top - viewportTop);
@@ -480,9 +480,9 @@ export default {
       const article = this.articles[index];
       if (!article) return;
 
-      if (this.viewMode === 'minimal') {
-        this.$emit('minimal-article-opened', { id: article.id, status: article.status });
-        this.$nextTick(() => this.focusSelectedMinimalArticle());
+      if (this.viewMode === 'headlines') {
+        this.$emit('headlines-article-opened', { id: article.id, status: article.status });
+        this.$nextTick(() => this.focusSelectedHeadlinesArticle());
         return;
       }
 
@@ -490,10 +490,10 @@ export default {
       this.$nextTick(() => this.scrollSelectedArticleIntoView());
     },
     // Focuses and scrolls the selected compact article into view.
-    focusSelectedMinimalArticle({ preventScroll = false } = {}) {
-      if (this.viewMode !== 'minimal' || this.activeMinimalArticleId === null) return;
+    focusSelectedHeadlinesArticle({ preventScroll = false } = {}) {
+      if (this.viewMode !== 'headlines' || this.activeHeadlinesArticleId === null) return;
 
-      const selectedComponent = this.minimalArticleRefs[this.activeMinimalArticleId];
+      const selectedComponent = this.articleRefs[this.activeHeadlinesArticleId];
       const selectedElement = selectedComponent?.$el;
       if (!selectedElement) return;
 
@@ -505,14 +505,14 @@ export default {
     },
     // Scrolls the selected expanded article into view.
     scrollSelectedArticleIntoView() {
-      const selectedComponent = this.minimalArticleRefs[this.selectedArticleId];
+      const selectedComponent = this.articleRefs[this.selectedArticleId];
       const selectedElement = selectedComponent?.$el;
       selectedElement?.scrollIntoView({ block: 'nearest' });
     },
     // Returns the currently selected article for shortcut actions.
     selectedArticle() {
-      const selectedId = this.viewMode === 'minimal'
-        ? this.activeMinimalArticleId
+      const selectedId = this.viewMode === 'headlines'
+        ? this.activeHeadlinesArticleId
         : this.selectedArticleId ?? this.closestArticleIdToViewport();
 
       return this.articles.find(article => String(article.id) === String(selectedId)) || null;
@@ -522,7 +522,7 @@ export default {
       const selectedArticle = this.selectedArticle();
       if (!selectedArticle) return;
 
-      const selectedComponent = this.minimalArticleRefs[selectedArticle.id];
+      const selectedComponent = this.articleRefs[selectedArticle.id];
       selectedComponent?.openOriginalArticle?.();
     },
     // Requests a read status toggle for the selected article.

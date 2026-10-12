@@ -39,7 +39,7 @@ const mountMobileMenu = () => {
         AIEnabled: false,
         categoryId: '%',
         feedId: '%',
-        viewMode: 'full'
+        viewMode: 'expanded'
       }
     },
     ui: {

@@ -7,7 +7,7 @@ const context = {
   ...createArticleFeedVisibilityState(),
   articles: [{ id: 1, status: 'read' }, { id: 2, status: 'unread' }],
   pendingSeenArticleIds: new Set(),
-  selectionStore: { currentSelection: { viewMode: 'full', status: 'unread' }, effectiveMarkAsReadOnScroll: false },
+  selectionStore: { currentSelection: { viewMode: 'expanded', status: 'unread' }, effectiveMarkAsReadOnScroll: false },
   getSelectedReadingArticleId: () => null,
   markArticleSeen: async (id, seconds, options) => { summaries.push({ id, seconds, options }); return true; },
   $nextTick: callback => requestAnimationFrame(callback),

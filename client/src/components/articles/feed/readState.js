@@ -12,7 +12,7 @@ export function createArticleFeedReadState() {
     // is used to keep track of which articles are already flagged as passed
     pool: new Set(),
     isFlushed: false,
-    activeMinimalArticleId: null,
+    activeHeadlinesArticleId: null,
     manualUnreadArticleIds: new Set(),
     pendingReadStatusArticleIds: new Set(),
     pendingSeenArticleIds: new Set(),
@@ -26,7 +26,7 @@ export const articleFeedReadStateMethods = {
   // Clears read-tracking state before a new article collection becomes active.
   resetReadTracking() {
     this.pool = new Set();
-    this.activeMinimalArticleId = null;
+    this.activeHeadlinesArticleId = null;
     this.manualUnreadArticleIds.clear();
     this.pendingReadStatusArticleIds.clear();
     this.pendingSeenArticleIds.clear();
@@ -158,12 +158,12 @@ export const articleFeedReadStateMethods = {
     }
   },
 
-  // Opens a minimal article and marks the previously open unread article as read.
-  async handleMinimalArticleOpened({ id }) {
-    if (this.selectionStore.currentSelection.viewMode !== 'minimal') return;
+  // Opens a headlines article and marks the previously open unread article as read.
+  async handleHeadlinesArticleOpened({ id }) {
+    if (this.selectionStore.currentSelection.viewMode !== 'headlines') return;
 
-    const previousArticleId = this.activeMinimalArticleId;
-    this.activeMinimalArticleId = id;
+    const previousArticleId = this.activeHeadlinesArticleId;
+    this.activeHeadlinesArticleId = id;
 
     if (!previousArticleId || String(previousArticleId) === String(id)) return;
 
@@ -171,18 +171,18 @@ export const articleFeedReadStateMethods = {
     if (!previousArticle || previousArticle.status === 'read'
       || this.manualUnreadArticleIds.has(Number(previousArticleId))) return;
 
-    await this.markMinimalArticleRead(previousArticleId);
+    await this.markHeadlinesArticleRead(previousArticleId);
   },
 
-  // Closes the currently open minimal article content.
-  handleMinimalArticleClosed({ id }) {
-    if (String(this.activeMinimalArticleId) === String(id)) {
-      this.activeMinimalArticleId = null;
+  // Closes the currently open headlines article content.
+  handleHeadlinesArticleClosed({ id }) {
+    if (String(this.activeHeadlinesArticleId) === String(id)) {
+      this.activeHeadlinesArticleId = null;
     }
   },
 
-  // Marks a minimal article as read and updates local read counts.
-  async markMinimalArticleRead(articleId) {
+  // Marks a headlines article as read and updates local read counts.
+  async markHeadlinesArticleRead(articleId) {
     const pendingArticleId = Number(articleId);
     const normalizedArticleId = Number.isFinite(pendingArticleId) ? pendingArticleId : articleId;
     if (this.pendingReadStatusArticleIds.has(normalizedArticleId)
@@ -206,23 +206,23 @@ export const articleFeedReadStateMethods = {
       });
       this.pool.add(normalizedArticleId);
     } catch (error) {
-      console.error('Error marking minimal article as read:', error);
+      console.error('Error marking headlines article as read:', error);
     } finally {
       this.pendingReadStatusArticleIds.delete(normalizedArticleId);
     }
   },
 
-  // Toggles a minimal article between read and unread from the status icon.
-  async toggleMinimalArticleReadStatus({ id, status }) {
-    if (this.selectionStore.currentSelection.viewMode !== 'minimal') return;
+  // Toggles a headlines article between read and unread from the status icon.
+  async toggleHeadlinesArticleReadStatus({ id, status }) {
+    if (this.selectionStore.currentSelection.viewMode !== 'headlines') return;
 
     const pendingArticleId = Number(id);
     const normalizedArticleId = Number.isFinite(pendingArticleId) ? pendingArticleId : id;
     if (this.pendingReadStatusArticleIds.has(normalizedArticleId)) return;
 
     this.pendingReadStatusArticleIds.add(normalizedArticleId);
-    if (String(this.activeMinimalArticleId) === String(id)) {
-      this.activeMinimalArticleId = null;
+    if (String(this.activeHeadlinesArticleId) === String(id)) {
+      this.activeHeadlinesArticleId = null;
     }
 
     try {
@@ -251,7 +251,7 @@ export const articleFeedReadStateMethods = {
       this.pool.add(normalizedArticleId);
     } catch (error) {
       if (status === 'read') this.manualUnreadArticleIds.delete(normalizedArticleId);
-      console.error('Error toggling minimal article read status:', error);
+      console.error('Error toggling headlines article read status:', error);
       notifyActionError('Could not update the article status. Please try again.', error);
     } finally {
       this.pendingReadStatusArticleIds.delete(normalizedArticleId);
@@ -260,8 +260,8 @@ export const articleFeedReadStateMethods = {
 
   // Toggles an article between read and unread from a keyboard shortcut.
   async toggleShortcutArticleReadStatus({ id, status }) {
-    if (this.selectionStore.currentSelection.viewMode === 'minimal') {
-      await this.toggleMinimalArticleReadStatus({ id, status });
+    if (this.selectionStore.currentSelection.viewMode === 'headlines') {
+      await this.toggleHeadlinesArticleReadStatus({ id, status });
       return;
     }
 

@@ -9,6 +9,7 @@ const aliases = Object.freeze({
   totalFavorites: 'totalSaved', totalClicked: 'totalOpenedOriginal', totalClickedArticles: 'totalOpenedOriginalArticles',
   favorite: 'saved', clicked: 'openedOriginal'
 });
+export const canonicalArticleViewMode = value => value === 'full' ? 'expanded' : value === 'minimal' ? 'headlines' : value;
 export const canonicalArticleStatus = value => ['favorite', 'star'].includes(value) ? 'saved' : ['clicked', 'openedoriginal'].includes(value) ? 'openedOriginal' : value;
 export const canonicalArticleActionKind = value => value === 'set-favorite' ? 'set-saved' : value;
 export const canonicalArticleExpression = value => typeof value !== 'string' ? value : value.replace(
@@ -22,7 +23,8 @@ export function canonicalArticleState(value) {
   return Object.fromEntries(Object.entries(value).flatMap(([key, item]) => {
     const canonical = Object.hasOwn(aliases, key) ? aliases[key] : key;
     if (canonical !== key && Object.hasOwn(value, canonical)) return [];
-    const normalized = key === 'status' || key === 'actionType' ? canonicalArticleStatus(item)
+    const normalized = key === 'viewMode' ? canonicalArticleViewMode(item)
+      : key === 'status' || key === 'actionType' ? canonicalArticleStatus(item)
       : key === 'kind' ? canonicalArticleActionKind(item)
         : key === 'query' || key === 'search' || key === 'expression' ? canonicalArticleExpression(item)
           : canonicalArticleState(item);

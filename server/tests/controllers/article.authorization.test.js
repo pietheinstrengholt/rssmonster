@@ -1221,7 +1221,7 @@ describe('article ownership authorization', () => {
         categoryId: '%',
         feedId: '%',
         includeFirstPage: true,
-        viewMode: 'minimal'
+        viewMode: 'headlines'
       })
       .set('Authorization', authHeaderFor(owner));
 

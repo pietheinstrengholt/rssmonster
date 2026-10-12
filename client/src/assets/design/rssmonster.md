@@ -24,7 +24,7 @@ RSSMonster is designed as a calm, information-dense reading workspace. The inter
 
 The system is built from pale neutral surfaces, thin borders, native system typography, and one primary blue selection language. Orange identifies the RSSMonster brand and feed creation, green confirms successful or completed actions, and red or pink marks saved, errors, warnings, and destructive actions. Supporting badge colors appear only when they communicate article signals such as similarity, duplication, quality, sentiment, or rule-generated tags.
 
-The experience has three related modes. The standard stream presents complete or minimal article rows in one reading pane. Reader mode adds a compact article list beside a dedicated article pane. Mobile mode replaces the persistent desktop chrome with a sticky toolbar and an overlay menu while keeping the same selections, article states, and semantic colors.
+The experience has three related modes. The standard stream presents Expanded articles or Headlines rows in one reading pane. Reader mode adds a compact article list beside a dedicated article pane. Mobile mode replaces the persistent desktop chrome with a sticky toolbar and an overlay menu while keeping the same selections, article states, and semantic colors.
 
 ## Colors
 
@@ -171,7 +171,7 @@ At `880px` and above, RSSMonster uses the desktop toolbar and persistent sidebar
 
 Between `768px` and `879px`, the sidebar remains persistent while the mobile toolbar replaces the desktop toolbar. The main surface uses document scrolling to avoid nested overflow traps. This hybrid state is important: it is not simply a scaled desktop view or a widened phone view.
 
-Below `768px`, the sidebar disappears and navigation moves into the mobile overlay. In portrait layouts below `880px`, article padding tightens, headlines reduce to 18px, metadata gaps shrink, and the toolbar overlays the top of the content. Minimal article rows support horizontal swipe actions while vertical scrolling remains native.
+Below `768px`, the sidebar disappears and navigation moves into the mobile overlay. In portrait layouts below `880px`, article padding tightens, headlines reduce to 18px, metadata gaps shrink, and the toolbar overlays the top of the content. Headlines rows support horizontal swipe actions while vertical scrolling remains native.
 
 At roughly `640px`, article media and floated content adapt to the available width. Daily Briefing and preference layouts collapse further below `576px`, and authentication padding tightens below `600px`. The goal is to preserve article order, readable measure, complete controls, and clear state—not to preserve desktop column geometry.
 

@@ -37,7 +37,7 @@ const createStore = (selection = {}) => createFocusedStores({
       sort: 'desc',
       status: 'unread',
       tag: null,
-      viewMode: 'full',
+      viewMode: 'expanded',
       ...selection
     }
   }

@@ -1,4 +1,4 @@
-import { canonicalArticleStatus } from '../utils/articleStateContract.js';
+import { canonicalArticleStatus, canonicalArticleViewMode } from '../utils/articleStateContract.js';
 import { getInferenceEnvironment } from '../services/inference/runtimeConfiguration.js';
 import { isActiveIsland, islandExpiresAt } from '../services/islands/islandDeadline.js';
 import { loadSidebarSettings } from '../services/sidebarSettings.js';
@@ -256,7 +256,7 @@ export const completeOnboarding = async (req, res) => {
       defaults: {
         onboardingCompleted: true,
         sort: aiEnabled ? 'recommended' : 'desc',
-        viewMode: aiEnabled ? 'reader' : 'full',
+        viewMode: aiEnabled ? 'reader' : 'expanded',
         grouping: aiEnabled ? 'event' : 'none',
         includeDevelopingEvents: aiEnabled
       }
@@ -288,7 +288,7 @@ export const getSettings = async (req, res, _next) => {
     let minSentimentScore = 0;
     let minQualityScore = 0;
     let minOverallQualityScore = 0;
-    let viewMode = aiEnabled ? "reader" : "full";
+    let viewMode = aiEnabled ? "reader" : "expanded";
     let grouping = aiEnabled ? "event" : "none";
     let includeDevelopingEvents = aiEnabled;
     let prioritizeHighTrust = false;
@@ -320,7 +320,7 @@ export const getSettings = async (req, res, _next) => {
         feedId = settings.feedId;
         status = canonicalArticleStatus(settings.status);
         sort = settings.sort;
-        viewMode = settings.viewMode || 'full';
+        viewMode = canonicalArticleViewMode(settings.viewMode) || 'expanded';
         grouping = settings.grouping || 'none';
       }
     }
@@ -473,13 +473,13 @@ export const setIncludeDevelopingEvents = async (req, res, _next) => {
 export const setViewMode = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
-    const { viewMode } = req.body;
+    const viewMode = canonicalArticleViewMode(req.body.viewMode);
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    if (!['reader', 'full', 'summarized', 'summaryBullets', 'minimal'].includes(viewMode)) {
+    if (!['reader', 'expanded', 'summarized', 'summaryBullets', 'headlines'].includes(viewMode)) {
       return res.status(400).json({ error: 'Unsupported article view mode' });
     }
 

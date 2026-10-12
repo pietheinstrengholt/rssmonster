@@ -181,7 +181,7 @@ export const articleFeedVisibilityMethods = {
     const candidates = [];
     let newExposure = false;
     const requiresSelection = this.isReaderLayoutActive
-      || this.selectionStore.currentSelection.viewMode === 'minimal';
+      || this.selectionStore.currentSelection.viewMode === 'headlines';
     for (const [key, root] of this.observedArticleElements) {
       const id = Number(key);
       if (this.visibleMap.get(id) === false) continue;

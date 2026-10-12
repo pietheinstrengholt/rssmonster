@@ -66,7 +66,7 @@ describe('settings controller', () => {
     const user = await createUser();
     const other = await createUser();
     await Setting.create({ userId: other.id, viewMode: 'summarized' });
-    for (const viewMode of ['summarized', 'full', 'reader', 'minimal', 'summaryBullets']) {
+    for (const viewMode of ['summarized', 'expanded', 'reader', 'headlines', 'summaryBullets']) {
       const saved = await request(app).patch('/api/setting/view-mode')
         .set('Authorization', authHeaderFor(user)).send({ viewMode });
       expect(saved.status).toBe(200);
@@ -76,6 +76,18 @@ describe('settings controller', () => {
     expect((await Setting.findOne({ where: { userId: other.id } })).viewMode).toBe('summarized');
   });
 
+  it.each([['full', 'expanded'], ['minimal', 'headlines']])('accepts legacy %s and persists %s', async (legacy, canonical) => {
+    const user = await createUser();
+    const auth = authHeaderFor(user);
+    const saved = await request(app).patch('/api/setting/view-mode').set('Authorization', auth).send({ viewMode: legacy });
+    expect(saved.status).toBe(200);
+    expect(saved.body.viewMode).toBe(canonical);
+    expect((await Setting.findOne({ where: { userId: user.id } })).viewMode).toBe(canonical);
+    // Simulate a persisted preference from before the database migration.
+    await Setting.sequelize.getQueryInterface().bulkUpdate('user_settings', { viewMode: legacy }, { userId: user.id });
+    expect((await request(app).get('/api/setting').set('Authorization', auth)).body.viewMode).toBe(canonical);
+  });
+
   it('rejects invalid and unauthenticated article view changes', async () => {
     const user = await createUser();
     for (const viewMode of ['invalid', null, 1]) {
@@ -83,7 +95,7 @@ describe('settings controller', () => {
         .set('Authorization', authHeaderFor(user)).send({ viewMode });
       expect(response.status).toBe(400);
     }
-    const response = await request(app).patch('/api/setting/view-mode').send({ viewMode: 'full' });
+    const response = await request(app).patch('/api/setting/view-mode').send({ viewMode: 'expanded' });
     expect(response.status).toBe(401);
     expect(await Setting.findOne({ where: { userId: user.id } })).toBeNull();
   });
@@ -134,7 +146,7 @@ describe('settings controller', () => {
         minAdvertisementScore: 0,
         minSentimentScore: 0,
         minQualityScore: 0,
-        viewMode: 'full',
+        viewMode: 'expanded',
         grouping: 'none',
         includeDevelopingEvents: false,
         prioritizeHighTrust: false,
@@ -203,7 +215,7 @@ describe('settings controller', () => {
       minAdvertisementScore: 10,
       minSentimentScore: 20,
       minQualityScore: 30,
-      viewMode: 'minimal',
+      viewMode: 'headlines',
       grouping: 'event',
       includeDevelopingEvents: true,
       prioritizeHighTrust: true,
@@ -226,7 +238,7 @@ describe('settings controller', () => {
         minAdvertisementScore: 10,
         minSentimentScore: 20,
         minQualityScore: 30,
-        viewMode: 'full',
+        viewMode: 'expanded',
         grouping: 'none',
         includeDevelopingEvents: true,
         prioritizeHighTrust: true,
@@ -255,7 +267,7 @@ describe('settings controller', () => {
       minAdvertisementScore: 10,
       minSentimentScore: 20,
       minQualityScore: 30,
-      viewMode: 'minimal',
+      viewMode: 'headlines',
       grouping: 'event',
       startupViewMode: 'last-used'
     });
@@ -274,7 +286,7 @@ describe('settings controller', () => {
         minAdvertisementScore: 10,
         minSentimentScore: 20,
         minQualityScore: 30,
-        viewMode: 'minimal',
+        viewMode: 'headlines',
         grouping: 'event',
         startupViewMode: 'last-used',
         AIEnabled: false

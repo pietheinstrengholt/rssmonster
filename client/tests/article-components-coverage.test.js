@@ -63,7 +63,7 @@ const ARTICLE_TYPOGRAPHY_FIXTURE = `
 // Mounts article content with representative full-view defaults.
 const mountArticleContent = (props = {}) => mount(ArticleContent, {
   props: {
-    viewMode: 'full',
+    viewMode: 'expanded',
     content: '<p>Readable article content.</p>',
     ...props
   }
@@ -359,18 +359,18 @@ describe('ArticleContent presentation', () => {
     expect(summarizeArticleContent(words.join(' '))).toBe(words.slice(0, 100).join(' '));
   });
 
-  // Verifies minimal content remains opt-in and null sentinel content stays hidden.
-  it('honors minimal visibility and the null-content sentinel', async () => {
+  // Verifies headlines content remains opt-in and null sentinel content stays hidden.
+  it('honors headlines visibility and the null-content sentinel', async () => {
     const wrapper = mountArticleContent({
-      viewMode: 'minimal',
-      showMinimalContent: false
+      viewMode: 'headlines',
+      showHeadlinesContent: false
     });
 
     expect(wrapper.find('.article-content-wrapper').exists()).toBe(false);
-    await wrapper.setProps({ showMinimalContent: true });
+    await wrapper.setProps({ showHeadlinesContent: true });
     expect(wrapper.get('.article-full-content').text()).toBe('Readable article content.');
     await wrapper.setProps({
-      viewMode: 'full',
+      viewMode: 'expanded',
       content: '<html><head></head><body>null</body></html>'
     });
     expect(wrapper.find('.article-full-content').exists()).toBe(false);

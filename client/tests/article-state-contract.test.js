@@ -25,3 +25,8 @@ describe('saved and opened-original compatibility', () => {
     expect(smartFolderRulePreview('saved:true openedOriginal:true').map(rule => rule.label)).toEqual(['Saved', 'Opened originals']);
   });
 });
+
+it('normalizes reading modes in restored browser settings and nested snapshots', () => {
+  expect(canonicalArticleState({ viewMode: 'full', settings: { viewMode: 'minimal' }, content: 'full minimal' }))
+    .toEqual({ viewMode: 'expanded', settings: { viewMode: 'headlines' }, content: 'full minimal' });
+});

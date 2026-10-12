@@ -85,7 +85,7 @@ function mountReader(article = createArticle()) {
 }
 
 // This function mounts the standard article component in the requested list mode.
-function mountArticle(props = {}, viewMode = 'full') {
+function mountArticle(props = {}, viewMode = 'expanded') {
   const stores = createFocusedStores({
     overview: { categories: [] },
     selection: { currentSelection: { viewMode, grouping: 'none' } }
@@ -247,7 +247,7 @@ describe('Article empty previews', () => {
     );
   });
 
-  it.each(['full', 'minimal'])('shows the fallback in %s mode when contentHtml is empty', viewMode => {
+  it.each(['expanded', 'headlines'])('shows the fallback in %s mode when contentHtml is empty', viewMode => {
     const wrapper = mountArticle({
       contentHtml: '',
       description: '',
@@ -272,7 +272,7 @@ describe('Article empty previews', () => {
 
   it('uses the existing click behavior without opening the compact row', async () => {
     markOpenedOriginal.mockClear();
-    const wrapper = mountArticle({ contentHtml: '' }, 'minimal');
+    const wrapper = mountArticle({ contentHtml: '' }, 'headlines');
     const link = wrapper.get('.article-preview-empty__link');
 
     expect(link.attributes()).toMatchObject({
@@ -285,7 +285,7 @@ describe('Article empty previews', () => {
     await Promise.resolve();
 
     expect(markOpenedOriginal).toHaveBeenCalledWith(1);
-    expect(wrapper.emitted('minimal-article-opened')).toBeUndefined();
+    expect(wrapper.emitted('headlines-article-opened')).toBeUndefined();
   });
 
   it('renders unsafe compact article URLs without title or fallback navigation', () => {
@@ -294,7 +294,7 @@ describe('Article empty previews', () => {
       description: '',
       imageUrl: '',
       url: 'data:text/html,<script>alert(1)</script>'
-    }, 'minimal');
+    }, 'headlines');
 
     expect(wrapper.get('.article-link').element.tagName).toBe('SPAN');
     expect(wrapper.find('a.article-link').exists()).toBe(false);
@@ -331,7 +331,7 @@ describe('Reader article presentation boundary', () => {
     expect(wrapper.getComponent({ name: 'ArticleItem' }).props('readerDetail')).toBe(true);
   });
 
-  it.each(['reader', 'full', 'summarized', 'summaryBullets'])('scopes detail presentation in %s mode', viewMode => {
+  it.each(['reader', 'expanded', 'summarized', 'summaryBullets'])('scopes detail presentation in %s mode', viewMode => {
     const wrapper = mountArticle({ readerDetail: true, feed: { feedName: 'Example', favicon: 'https://example.com/icon.png' } }, viewMode);
     const isReader = viewMode === 'reader';
     expect(wrapper.classes('article-reader-detail')).toBe(isReader);

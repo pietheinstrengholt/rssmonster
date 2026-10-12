@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Reading-mode names | **Expanded** is `full`; **Headlines** is `minimal`; documentation also calls these Full stream and Compact list. **Summary Bullets** appears as Summary bullets and Summarized Bullets in other surfaces/docs. These are aliases, not additional modes. | [Selection options](client/src/config/articleSelectionOptions.js), [article documentation](client/src/components/articles/README.md), [shell documentation](client/src/components/shell/README.md) |
 | Summarized / AI summary | The mobile description for **Summarized** says “Show the AI generated summary,” but this mode takes the first 100 words of canonical `contentText`. Stored summary bullets are a separate presentation. | [Selection options](client/src/config/articleSelectionOptions.js), [content component](client/src/components/articles/ArticleContent.vue), [content service](client/src/services/articleContentService.js) |
 | Event / story / similar articles | Grouping is called **Events**, mobile calls it **Cluster per event**, and the Event-expansion control says **similar articles**. That control fetches Event members, rather than a general similarity search. **Developing story** and **Same story, different sources** add further story terminology. | [Selection options](client/src/config/articleSelectionOptions.js), [metadata](client/src/components/articles/ArticleMeta.vue), [Event expansion](client/src/components/articles/helpers/articleExpansion.js), [story sources](client/src/components/articles/ArticleStorySourcesPopover.vue) |
 | Developing events / developing stories | The ordinary `includeDevelopingEvents` setting, Briefing's developing-events summary preference, and `developing:true`/“Show only developing stories” have different scopes. Smart Folder preview chips label `developing:true` **Developing events**, obscuring the strict developing-story filter. | [Unread preferences](client/src/components/dialogs/UnreadConfigurationModal.vue), [Briefing contract](client/src/components/briefing/README.md), [query preview](client/src/services/currentViewSmartFolder.js) |
@@ -28,6 +27,12 @@ not necessarily indicate a functional defect.
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+Reading modes use **Reader** (`reader`), **Expanded** (`expanded`),
+**Summarized** (`summarized`), **Summary bullets** (`summaryBullets`), and
+**Headlines** (`headlines`) across UI, source, APIs, and persisted settings.
+Legacy `full` and `minimal` inputs normalize to `expanded` and `headlines`.
+See [the migration guide](docs/reading-mode-migration.md).
 
 **Saved and Opened originals:** canonical UI, source, API, database and persisted
 expression names are now `saved` and `openedOriginal`. Legacy names remain only
@@ -234,14 +239,14 @@ Evidence: [Date ranges](client/src/services/articleDateRange.js),
 
 ## Reading presentation and content
 
-### Reader, Expanded, Headlines, Summarized, and Summary Bullets
+### Reader, Expanded, Headlines, Summarized, and Summary bullets
 
 - **Reader** (`reader`): a list pane and selected-Article reading pane, alongside
   the sidebar at widths of at least 1024px; below that it falls back to a stream.
-- **Expanded** (`full`): a continuous stream of available rich Article content.
-- **Headlines** (`minimal`): compact rows with content revealed for the opened row.
+- **Expanded** (`expanded`): a continuous stream of available rich Article content.
+- **Headlines** (`headlines`): compact rows with content revealed for the opened row.
 - **Summarized** (`summarized`): the first 100 words of normalized `contentText`.
-- **Summary Bullets** (`summaryBullets`): stored `contentSummaryBullets`, with an
+- **Summary bullets** (`summaryBullets`): stored `contentSummaryBullets`, with an
   explicit unavailable state when no usable summary exists.
 
 **Expand** in the Reader toolbar hides its list pane while preserving the
@@ -271,7 +276,7 @@ fallback. It affects Reader typography rather than Article content or read state
 
 Evidence: [Reading modes](client/src/config/articleSelectionOptions.js),
 [Article presentation](client/src/components/articles/Article.vue),
-[Reader behavior](client/src/components/articles/README.md#desktop-reader),
+[Reader behavior](client/src/components/articles/README.md#reader),
 [shell boundaries](client/src/config/responsiveLayout.js),
 [theme modes](client/src/services/theme.js),
 [Reader text size](client/src/services/readerTextSize.js).

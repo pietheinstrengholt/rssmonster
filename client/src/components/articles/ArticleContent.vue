@@ -1,6 +1,6 @@
 <template>
-  <div v-if="viewMode === 'full' || viewMode === 'reader' || viewMode === 'summarized'" class="article-content-wrapper" :class="{ 'article-content-with-thumbnail': shouldShowFallbackImage && isInlineLeadImage }"><div v-if="shouldShowFallbackImage" :class="['media-content', 'enclosure', 'article-lead-image', `article-lead-image--${imageDisplayMode}`]" :style="thumbnailStyle"><img class="article-lead-image__media" :src="imageUrl" :width="leadImageDimensions.width || undefined" :height="leadImageDimensions.height || undefined" alt="" loading="lazy" decoding="async" @load="handleLeadImageLoad" @error="handleLeadImageError" /></div><p v-if="viewMode === 'summarized' && hasContent" data-reading-content class="article-full-content"><HighlightedText :text="summarizedContent" :terms="highlightTerms" /></p><div v-else-if="hasContent" data-reading-content class="article-full-content" v-html="renderedContent"></div></div>
-  <div v-else-if="viewMode === 'minimal' && showMinimalContent" class="article-content-wrapper article-content-wrapper--minimal"><div v-if="hasContent" data-reading-content class="article-full-content" v-html="renderedContent"></div></div>
+  <div v-if="viewMode === 'expanded' || viewMode === 'reader' || viewMode === 'summarized'" class="article-content-wrapper" :class="{ 'article-content-with-thumbnail': shouldShowFallbackImage && isInlineLeadImage }"><div v-if="shouldShowFallbackImage" :class="['media-content', 'enclosure', 'article-lead-image', `article-lead-image--${imageDisplayMode}`]" :style="thumbnailStyle"><img class="article-lead-image__media" :src="imageUrl" :width="leadImageDimensions.width || undefined" :height="leadImageDimensions.height || undefined" alt="" loading="lazy" decoding="async" @load="handleLeadImageLoad" @error="handleLeadImageError" /></div><p v-if="viewMode === 'summarized' && hasContent" data-reading-content class="article-full-content"><HighlightedText :text="summarizedContent" :terms="highlightTerms" /></p><div v-else-if="hasContent" data-reading-content class="article-full-content" v-html="renderedContent"></div></div>
+  <div v-else-if="viewMode === 'headlines' && showHeadlinesContent" class="article-content-wrapper article-content-wrapper--headlines"><div v-if="hasContent" data-reading-content class="article-full-content" v-html="renderedContent"></div></div>
   <div v-else-if="viewMode === 'summaryBullets'" class="article-content-wrapper"><p v-if="analysisInProgress" class="article-full-content" role="status">Analyzing…</p><ul v-else-if="canShowAnalysis && contentSummaryBullets && contentSummaryBullets.length" data-reading-content class="article-summary"><li v-for="(bullet, index) in contentSummaryBullets.slice(0, visibleBulletCount)" :key="index"><HighlightedText :text="bullet" :terms="highlightTerms" /></li></ul><p v-else class="article-full-content">No summary available.</p></div>
 </template>
 <script>
@@ -16,7 +16,7 @@ import { hasUsableArticleAnalysis, isArticleAnalysisInProgress } from '../../ser
 
 export default {
   components: { HighlightedText },
-  props: { openArticleLinksInNewTab: { type: Boolean, default: false }, viewMode: { type: String, default: '' }, content: { type: String, default: '' }, contentText: { type: String, default: '' }, imageUrl: { type: String, default: '' }, imageWidth: { type: [Number, String], default: null }, imageHeight: { type: [Number, String], default: null }, imageMimeType: { type: String, default: '' }, imageSource: { type: String, default: '' }, contentSummaryBullets: { type: Array, default: () => [] }, aiAnalysisStatus: { type: String, default: '' }, visibleBulletCount: { type: Number, default: Infinity }, shouldShowImage: { type: Boolean, default: true }, showMinimalContent: { type: Boolean, default: false }, highlightTerms: { type: Array, default: () => [] } },
+  props: { openArticleLinksInNewTab: { type: Boolean, default: false }, viewMode: { type: String, default: '' }, content: { type: String, default: '' }, contentText: { type: String, default: '' }, imageUrl: { type: String, default: '' }, imageWidth: { type: [Number, String], default: null }, imageHeight: { type: [Number, String], default: null }, imageMimeType: { type: String, default: '' }, imageSource: { type: String, default: '' }, contentSummaryBullets: { type: Array, default: () => [] }, aiAnalysisStatus: { type: String, default: '' }, visibleBulletCount: { type: Number, default: Infinity }, shouldShowImage: { type: Boolean, default: true }, showHeadlinesContent: { type: Boolean, default: false }, highlightTerms: { type: Array, default: () => [] } },
   data() {
     return {
       loadedImageUrl: '',
@@ -111,7 +111,7 @@ export default {
   font-weight: 400;
 }
 
-.article-content-wrapper--minimal {
+.article-content-wrapper--headlines {
   margin: 0;
   padding: var(--article-space-section, 12px) 16px;
   background: var(--surface-page);
@@ -242,12 +242,12 @@ export default {
 }
 
 @media (max-width: 879px) and (orientation: portrait) {
-  .article-content-wrapper--minimal {
+  .article-content-wrapper--headlines {
     padding-inline: var(--article-space-section, 12px);
   }
 }
 
-:global(:root[data-theme='dark'] .article-card .article-content-wrapper--minimal) {
+:global(:root[data-theme='dark'] .article-card .article-content-wrapper--headlines) {
   background: var(--surface-page);
   border-bottom-color: var(--border-subtle);
 }

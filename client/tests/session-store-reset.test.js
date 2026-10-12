@@ -230,7 +230,7 @@ describe('coordinated Pinia session reset', () => {
       data: {
         categoryId: '12',
         themeMode: 'dark',
-        viewMode: 'minimal'
+        viewMode: 'headlines'
       }
     });
     await expect(newRequest).resolves.toBe(true);
@@ -246,7 +246,7 @@ describe('coordinated Pinia session reset', () => {
     expect(authStore).toMatchObject({ token: 'new-token', role: 'admin' });
     expect(selectionStore.currentSelection).toMatchObject({
       categoryId: '12',
-      viewMode: 'minimal'
+      viewMode: 'headlines'
     });
     expect(selectionStore.settingsStatus).toBe('success');
     expect(uiStore.themeMode).toBe('dark');

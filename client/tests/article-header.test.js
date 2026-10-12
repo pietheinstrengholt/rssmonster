@@ -30,7 +30,7 @@ function mountArticleHeader(props = {}) {
 }
 
 describe('Open original action', () => {
-  it.each(['reader', 'full', 'minimal', 'summarized', 'summaryBullets'])('keeps only the headline link in %s', async viewMode => {
+  it.each(['reader', 'expanded', 'headlines', 'summarized', 'summaryBullets'])('keeps only the headline link in %s', async viewMode => {
     const wrapper = mountArticleHeader({ viewMode, url: 'https://example.com/article' });
     expect(wrapper.text()).not.toContain('Open original');
     const headline = wrapper.get('a');
@@ -352,7 +352,7 @@ describe('ArticleHeader Reader presentation', () => {
     expect(wrapper.getComponent({ name: 'ArticleActionsMenu' }).props('isReaderMode')).toBe(true);
   });
 
-  it.each(['full', 'summarized', 'summaryBullets', 'minimal'])('keeps Reader controls out of %s mode', viewMode => {
+  it.each(['expanded', 'summarized', 'summaryBullets', 'headlines'])('keeps Reader controls out of %s mode', viewMode => {
     const wrapper = mountArticleHeader({ viewMode });
     expect(wrapper.find('.article-reader-source').exists()).toBe(false);
     expect(wrapper.find('.article-reader-saved').exists()).toBe(false);

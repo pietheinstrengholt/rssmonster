@@ -12,7 +12,7 @@ try {
   const page = await browser.newPage();
   for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 }]) {
     await page.setViewportSize(viewport);
-    for (const mode of ['expanded', 'minimal']) {
+    for (const mode of ['expanded', 'headlines']) {
       for (const theme of ['light', 'dark']) {
         await page.goto(`${process.env.READING_TEST_BASE_URL || 'http://localhost:5173'}/tests/browser/article-menu.html?mode=${mode}&theme=${theme}`);
         const trigger = page.getByRole('button', { name: 'Article actions', exact: true }).first();
@@ -24,7 +24,7 @@ try {
           return item.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2));
         }));
         assert.ok(exposed, `${mode}, ${theme}, ${viewport.width}px: every action must be exposed over adjacent articles`);
-        if (mode === 'minimal') {
+        if (mode === 'headlines') {
           await menu.getByRole('menuitem', { name: 'Mark as read', exact: true }).click();
           assert.equal(await page.locator('body').getAttribute('data-selected-article'), '1');
           assert.equal(await trigger.getAttribute('aria-expanded'), 'false');

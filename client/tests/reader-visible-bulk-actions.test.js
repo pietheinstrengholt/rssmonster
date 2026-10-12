@@ -59,7 +59,7 @@ const actions = [
 ];
 
 describe('Reader visible bulk actions', () => {
-  it.each(['reader', 'full', 'summarized', 'summaryBullets', 'minimal'].flatMap(mode => actions.map(([action, api]) => [mode, action, api])))('%s %s sends only on-screen articles, recalculated after scrolling', async (mode, action, api) => {
+  it.each(['reader', 'expanded', 'summarized', 'summaryBullets', 'headlines'].flatMap(mode => actions.map(([action, api]) => [mode, action, api])))('%s %s sends only on-screen articles, recalculated after scrolling', async (mode, action, api) => {
     const { context, scroll } = setup(mode);
     await context.handleReaderBulkAction({ action, selectedArticleId: 20 });
     expect(api.mock.calls[0][0]).toEqual([1, 2, 3, 4, 5]);

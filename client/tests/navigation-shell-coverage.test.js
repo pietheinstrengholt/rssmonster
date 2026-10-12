@@ -86,7 +86,7 @@ function createStore() {
       sort: 'desc',
       status: 'unread',
       tag: null,
-      viewMode: 'full'
+      viewMode: 'expanded'
     }
   });
   uiStore.$patch({
@@ -229,7 +229,7 @@ describe('desktop toolbar interactions', () => {
     const store = createStore();
     const wrapper = mountToolbar(DesktopToolbar, store);
 
-    wrapper.vm.dropdownOptionOpenedOriginal('viewMode', 'minimal');
+    wrapper.vm.dropdownOptionOpenedOriginal('viewMode', 'headlines');
     wrapper.vm.dropdownOptionOpenedOriginal('sort', 'asc');
     wrapper.vm.dropdownOptionOpenedOriginal('grouping', 'none');
     wrapper.vm.dropdownOptionOpenedOriginal('grouping', 'event');
@@ -237,7 +237,7 @@ describe('desktop toolbar interactions', () => {
     wrapper.vm.handleForceReload();
     wrapper.vm.chatAssistant();
 
-    expect(store.selectionStore.setViewMode).toHaveBeenCalledWith('minimal');
+    expect(store.selectionStore.setViewMode).toHaveBeenCalledWith('headlines');
     expect(store.selectionStore.setSelectedSort).toHaveBeenCalledWith('asc');
     expect(store.selectionStore.setGrouping).toHaveBeenCalledTimes(1);
     expect(store.selectionStore.setGrouping).toHaveBeenCalledWith('event');
@@ -325,7 +325,7 @@ describe('mobile options menu actions', () => {
     await vi.advanceTimersByTimeAsync(150);
 
     expect(store.selectionStore.selectCategory).toHaveBeenCalledWith('%');
-    expect(store.selectionStore.setViewMode).toHaveBeenCalledWith('minimal');
+    expect(store.selectionStore.setViewMode).toHaveBeenCalledWith('headlines');
     expect(store.uiStore.setShowModal).toHaveBeenCalledWith('NewFeed');
     expect(store.uiStore.setChatAssistantOpen).toHaveBeenCalledWith(true);
     expect(wrapper.emitted('refresh')).toHaveLength(1);

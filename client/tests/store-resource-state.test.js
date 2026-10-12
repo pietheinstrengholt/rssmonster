@@ -72,9 +72,9 @@ describe('focused store resource state', () => {
     await expect(store.fetchSettings()).rejects.toThrow('settings offline');
     expect(store.settingsStatus).toBe('error');
     expect(store.settingsError).toMatchObject({ message: 'settings offline' });
-    expect(store.currentSelection.viewMode).toBe('full');
+    expect(store.currentSelection.viewMode).toBe('expanded');
 
-    fetchSettings.mockResolvedValueOnce({ data: { viewMode: 'minimal' } });
+    fetchSettings.mockResolvedValueOnce({ data: { viewMode: 'headlines' } });
     const retry = store.fetchSettings();
     expect(store.settingsStatus).toBe('loading');
     expect(store.settingsError).toBeNull();
@@ -82,7 +82,7 @@ describe('focused store resource state', () => {
 
     expect(store.settingsStatus).toBe('success');
     expect(store.settingsError).toBeNull();
-    expect(store.currentSelection.viewMode).toBe('minimal');
+    expect(store.currentSelection.viewMode).toBe('headlines');
   });
 
   // Verifies obsolete settings failures cannot replace newer successful state.

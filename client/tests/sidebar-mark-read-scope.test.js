@@ -24,7 +24,7 @@ const element = (parent, bounds) => {
   return node;
 };
 
-function setup(viewMode = 'full') {
+function setup(viewMode = 'expanded') {
   const stores = createFocusedStores({
     selection: { currentSelection: { viewMode, grouping: 'event', status: 'unread' } },
     overview: {
@@ -94,7 +94,7 @@ describe('Sidebar mark-as-read scope', () => {
     expect(wrapper.emitted('forceReload')).toHaveLength(1);
   });
 
-  it.each(['full', 'minimal', 'reader'])('marks only on-screen articles in %s, respecting nested clipping', async viewMode => {
+  it.each(['expanded', 'headlines', 'reader'])('marks only on-screen articles in %s, respecting nested clipping', async viewMode => {
     const { uiStore, context } = setup(viewMode);
     uiStore.sidebarSettings.markReadVisibleOnly = true;
     await flushPromises();

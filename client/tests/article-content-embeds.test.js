@@ -6,18 +6,18 @@ import ArticleContent from '../src/components/articles/ArticleContent.vue';
 function mountArticleContent(content) {
   return mount(ArticleContent, {
     props: {
-      viewMode: 'full',
+      viewMode: 'expanded',
       content
     }
   });
 }
 
 describe('ArticleContent embeds', () => {
-  it.each(['full', 'reader', 'minimal'])('opens body links in a new tab in %s mode when enabled', async viewMode => {
+  it.each(['expanded', 'reader', 'headlines'])('opens body links in a new tab in %s mode when enabled', async viewMode => {
     const wrapper = mount(ArticleContent, {
       props: {
         viewMode,
-        showMinimalContent: true,
+        showHeadlinesContent: true,
         openArticleLinksInNewTab: true,
         content: '<p><a href="https://example.com" rel="nofollow opener">Plain</a><a href="https://example.org" target="_self">Self</a><a href="https://example.net" target="publisher">Named</a></p>'
       }
@@ -121,7 +121,7 @@ describe('ArticleContent embeds', () => {
     const relativeImageUrl = '/publisher/image.jpg';
     const wrapper = mount(ArticleContent, {
       props: {
-        viewMode: 'full',
+        viewMode: 'expanded',
         content: `<p>Intro</p><img src="${relativeImageUrl}">`,
         imageUrl: new URL(relativeImageUrl, window.location.href).href
       }
@@ -134,7 +134,7 @@ describe('ArticleContent embeds', () => {
   it('keeps media-only markup while treating it as unreadable article text', () => {
     const wrapper = mount(ArticleContent, {
       props: {
-        viewMode: 'full',
+        viewMode: 'expanded',
         content: '<picture><img src="https://example.com/image.jpg" alt="Publisher image"></picture>',
         imageUrl: 'https://example.com/fallback.jpg'
       }

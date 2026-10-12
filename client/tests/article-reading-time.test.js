@@ -31,7 +31,7 @@ beforeEach(() => {
   vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
   vi.stubGlobal('innerHeight', 800);
   context = { ...createArticleFeedVisibilityState(), articles: [], pendingSeenArticleIds: new Set(),
-    selectionStore: { currentSelection: { viewMode: 'full', status: 'unread', grouping: 'event' } },
+    selectionStore: { currentSelection: { viewMode: 'expanded', status: 'unread', grouping: 'event' } },
     getSelectedReadingArticleId: () => null, markArticleSeen: vi.fn().mockResolvedValue(true),
     readingTrackingStarted: true };
   for (const [name, method] of Object.entries(articleFeedVisibilityMethods)) context[name] = method.bind(context);
@@ -43,7 +43,7 @@ afterEach(() => {
 });
 
 describe('eligible reading time', () => {
-  it.each(['minimal', 'reader', 'full'].flatMap(viewMode =>
+  it.each(['headlines', 'reader', 'expanded'].flatMap(viewMode =>
     ['read', 'unread'].flatMap(status => [true, false].map(autoRead => ({ viewMode, status, autoRead })))
   ))('records stationary content independently of read state: %j', async ({ viewMode, status, autoRead }) => {
     article(1);
@@ -51,7 +51,7 @@ describe('eligible reading time', () => {
     context.selectionStore.currentSelection.viewMode = viewMode;
     context.selectionStore.effectiveMarkAsReadOnScroll = autoRead;
     context.isReaderLayoutActive = viewMode === 'reader';
-    context.getSelectedReadingArticleId = () => viewMode === 'full' ? null : 1;
+    context.getSelectedReadingArticleId = () => viewMode === 'expanded' ? null : 1;
     refreshAt(0);
     now = 60000;
     await context.finishReadingSession();
@@ -145,28 +145,28 @@ describe('eligible reading time', () => {
     expect(context.persistedVisibleDuration.has(1)).toBe(false);
   });
 
-  it('records Minimal headline exposure once with zero reading seconds', async () => {
+  it('records Headlines headline exposure once with zero reading seconds', async () => {
     const { root, content } = article(1, 0, 100, false);
     root.getBoundingClientRect = content.getBoundingClientRect;
-    context.selectionStore.currentSelection.viewMode = 'minimal';
+    context.selectionStore.currentSelection.viewMode = 'headlines';
     refreshAt(0); await context.seenPersistenceQueue;
     refreshAt(10000); await context.finishReadingSession();
     expect(context.visibleDuration.get(1)).toBe(0);
     expect(context.markArticleSeen).toHaveBeenCalledExactlyOnceWith(1, 0,
       expect.objectContaining({ attentionOnly: true }));
   });
-  it('waits for opened Minimal content to enter the viewport', () => {
+  it('waits for opened Headlines content to enter the viewport', () => {
     const a = article(1, 900, 1200);
-    context.selectionStore.currentSelection.viewMode = 'minimal';
+    context.selectionStore.currentSelection.viewMode = 'headlines';
     context.getSelectedReadingArticleId = () => 1;
     refreshAt(0); refreshAt(10000);
     expect(context.visibleSince.size).toBe(0);
     a.move(100, 700); refreshAt(20000); now = 35000;
     expect(total(1)).toBe(15000);
   });
-  it('does not time unselected content in Minimal or desktop Reader layouts', () => {
+  it('does not time unselected content in Headlines or desktop Reader layouts', () => {
     article(1);
-    context.selectionStore.currentSelection.viewMode = 'minimal';
+    context.selectionStore.currentSelection.viewMode = 'headlines';
     refreshAt(0); now = 10000;
     expect(total(1)).toBe(0);
     context.selectionStore.currentSelection.viewMode = 'reader';
@@ -294,7 +294,7 @@ describe('eligible reading time', () => {
     await context.finishReadingSession(); await context.finishReadingSession();
     expect(context.markArticleSeen).toHaveBeenCalledTimes(1);
     expect(context.markArticleSeen).toHaveBeenCalledWith(1, 20, { attentionOnly: true, readingWordCount: 3,
-      selection: { viewMode: 'full', status: 'unread', grouping: 'event' } });
+      selection: { viewMode: 'expanded', status: 'unread', grouping: 'event' } });
   });
   it('renews grace on nested scrolling, keyboard and touch events', () => {
     context.$nextTick = callback => callback();

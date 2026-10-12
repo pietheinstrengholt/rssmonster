@@ -61,7 +61,7 @@ including unloaded matching articles, or **Mark all visible as read** when that
 sidebar preference is enabled.
 
 The collection's three-dot **More actions** menu is available in Reader,
-Expanded, Summarized, Summary Bullets, and Headlines views, including compact
+Expanded, Summarized, Summary bullets, and Headlines views, including compact
 layouts. It can:
 
 - Mark all visible articles as read.

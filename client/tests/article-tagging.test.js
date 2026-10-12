@@ -400,7 +400,7 @@ describe('article tagging dialog', () => {
 });
 
 describe('article tagging integration', () => {
-  it.each(['full', 'minimal', 'reader'])('disables unsupported tagging on expanded duplicate articles in %s mode', async mode => {
+  it.each(['expanded', 'headlines', 'reader'])('disables unsupported tagging on expanded duplicate articles in %s mode', async mode => {
     useSelectionStore().currentSelection.viewMode = mode;
     wrapper = mount(Article, { attachTo: document.body, props: { id: 42, duplicateOfArticleId: 41, title: 'Duplicate', readerDetail: mode === 'reader' }, global: { plugins: [pinia] } });
     await click(document.querySelector('[aria-label="Article actions"]'));
@@ -430,7 +430,7 @@ describe('article tagging integration', () => {
     ]);
   });
 
-  it.each(['full', 'minimal', 'reader'])('opens both workflows and updates visible chips in %s mode', async mode => {
+  it.each(['expanded', 'headlines', 'reader'])('opens both workflows and updates visible chips in %s mode', async mode => {
     useSelectionStore().currentSelection.viewMode = mode;
     wrapper = mount(Article, {
       attachTo: document.body,
@@ -455,7 +455,7 @@ describe('article tagging integration', () => {
 
   it('renders newly assigned manual tags in mobile metadata', async () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
-    useSelectionStore().currentSelection.viewMode = 'minimal';
+    useSelectionStore().currentSelection.viewMode = 'headlines';
     wrapper = mount(Article, { attachTo: document.body, props: { id: 42, tags: clone(persisted), title: 'Mobile article' }, global: { plugins: [pinia] } });
     await click(document.querySelector('[aria-label="Article actions"]')); await click(button('Add tags'));
     await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull());

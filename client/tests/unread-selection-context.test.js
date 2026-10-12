@@ -45,7 +45,7 @@ function createStore(setShowModal = vi.fn(), setCurrentSelection = vi.fn()) {
         search: '',
         categoryId: '%',
         feedId: '%',
-        viewMode: 'full'
+        viewMode: 'expanded'
       }
     },
     ui: {
@@ -418,7 +418,7 @@ describe('UnreadSelectionContext', () => {
           hasReachedEnd: false,
           showFeedRefreshProgress: true
         },
-        viewMode: 'full',
+        viewMode: 'expanded',
       },
       global: {
         plugins: [stores.pinia]
@@ -456,7 +456,7 @@ describe('UnreadSelectionContext', () => {
   });
 
   it.each([
-    ['standard', ArticleListView, { viewMode: 'full' }],
+    ['standard', ArticleListView, { viewMode: 'expanded' }],
     ['reader', ArticleReaderLayout, {}]
   ])('keeps the save shortcut available in an empty %s unread list', (_mode, component, extraProps) => {
     const stores = createStore();

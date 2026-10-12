@@ -48,7 +48,7 @@ Each vertical scroll surface has one explicit owner:
 
 - On mobile, the single-column shell and browser viewport provide the reading flow.
 - At `768px+`, `.app-shell__sidebar` scrolls independently. In the hybrid layout, `.app-shell__main` owns article scrolling.
-- At `880px+`, Expanded, Summarized, Summarized Bullets, and Headlines own their native scrollbar on `.article-list-view`, below the desktop toolbar.
+- At `880px+`, Expanded, Summarized, Summary bullets, and Headlines own their native scrollbar on `.article-list-view`, below the desktop toolbar.
 - Reader view owns separate native scrollbars on `.article-reader__list` and `.article-reader__content`.
 
 On desktop, the shell main pane clips overflow when it contains an article list or Reader layout, leaving scrolling to those panes. Other shell screens retain main-pane scrolling. Loading and empty article lists can shrink into the available space, and the loading component contains its absolutely positioned accessibility label so it cannot extend the document.
@@ -119,7 +119,7 @@ The filter and action groups may shrink, and dropdown labels may compress, but c
 
 Desktop presents separate dropdowns for:
 
-- **View:** Reader, Expanded, Summarized, Summary Bullets when AI is enabled, and Headlines.
+- **View:** Reader, Expanded, Summarized, Summary bullets when AI is enabled, and Headlines.
 - **Show:** Daily briefing when AI is enabled, Unread, Saved, Hot, OpenedOriginal, and Read.
 - **Sort:** Newest and Oldest, plus Top Stories, Recommended, and Quality when AI is enabled.
 - **Grouping:** None, Events when AI is enabled.
@@ -302,7 +302,7 @@ Future shell changes should preserve:
 - Semantic stacking tokens instead of arbitrary z-index values
 - Component-owned BEM structural naming instead of generic layout IDs
 - Mobile safe-area support and background-scroll locking
-- AI feature gating for briefing, Summary Bullets, AI sorting, grouping, and chat
+- AI feature gating for briefing, Summary bullets, AI sorting, grouping, and chat
 - The distinction between live overview counts and smart-folder snapshots
 - Search focus integration with the wider application
 - Desktop query validation unless mobile and desktop behavior are intentionally unified
