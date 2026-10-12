@@ -34,7 +34,7 @@ export const normalizeInferenceUrl = value => {
   } catch { throw new InferenceConfigurationError('Enter an HTTP(S) endpoint without credentials, query parameters, or fragments'); }
 };
 export const getEnvironmentInferenceConfiguration = (environment = process.env) => {
-  const baseUrl = environment.INFERENCE_BASE_URL?.trim() || environment.INFERENCE_URL?.trim();
+  const baseUrl = environment.INFERENCE_BASE_URL?.trim();
   return baseUrl ? { source: 'environment', baseUrl, apiKey: environment.INFERENCE_API_KEY || null, configurable: false } : null;
 };
 const model = async () => (await import('../../models/index.js')).default.InferenceSetting;

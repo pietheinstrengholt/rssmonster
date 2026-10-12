@@ -42,7 +42,7 @@ unless a filter's detailed description below states otherwise.
 | Author | `author:name`, `author:"full name"` |
 | Tag | `tag:name`, `tag:"multiword name"` |
 | Language | `language:en`, using an exact two- or three-letter code |
-| Saved | `saved:true`, `saved:false`, `star:true`, `star:false` |
+| Saved | `saved:true`, `saved:false` |
 | Read state | `unread:true`, `unread:false`, `read:true`, `read:false` |
 | Interaction state | `openedOriginal:true`, `openedOriginal:false`, `seen:true`, `seen:false` |
 | Hot state | `hot:true`, `hot:false` |
@@ -78,8 +78,8 @@ operators are not part of the query language.
 ### Article state
 
 - `unread:true|false` includes unread or read articles. `read:true|false` provides the inverse form.
-- `saved:true|false` includes saved or unsaved articles. `favorite:true|false` and `star:true|false` remain aliases with the same behavior.
-- `openedOriginal:true|false` includes articles with at least one recorded original opening or none. `clicked:true|false` remains an alias.
+- `saved:true|false` includes saved or unsaved articles.
+- `openedOriginal:true|false` includes articles with at least one recorded original opening or none.
 - `seen:true|false` includes articles that have or have not appeared on screen.
 - `hot:true|false` includes articles marked hot or not hot within the active feed/category scope.
 

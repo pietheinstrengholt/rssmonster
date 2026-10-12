@@ -25,7 +25,7 @@ const DEFAULT_BATCH_SIZE = Number.parseInt(
 );
 
 // This function parses supported command-line options.
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const options = {
     batchSize: DEFAULT_BATCH_SIZE,
     dryRun: false,
@@ -37,7 +37,7 @@ function parseArgs(argv) {
   for (const arg of argv.slice(2)) {
     if (arg === '--dry-run') {
       options.dryRun = true;
-    } else if (['--saved-and-opened-originals-only', '--stars-and-clicks-only'].includes(arg)) {
+    } else if (arg === '--saved-and-opened-originals-only') {
       options.includeFeedbackSignals = false;
     } else if (arg.startsWith('--batchSize=')) {
       options.batchSize = Number(arg.split('=')[1]);
@@ -45,6 +45,8 @@ function parseArgs(argv) {
       options.limit = Number(arg.split('=')[1]);
     } else if (arg.startsWith('--userId=')) {
       options.userId = Number(arg.split('=')[1]);
+    } else {
+      throw new Error(`Unsupported option: ${arg}`);
     }
   }
 

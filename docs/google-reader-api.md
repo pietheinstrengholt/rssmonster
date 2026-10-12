@@ -155,7 +155,6 @@ still be recorded during release smoke testing.
   and stores subscriptions without requiring outbound discovery or successful
   parsing. The guarded crawler validates content afterward. Uploads are held in
   memory and are limited to 1 MiB; no user-controlled filename is written.
-- `FEED_MAX_COUNT` controls the maximum claimed crawl batch size. Deployments
-  using the previous `MAX_FEEDCOUNT` name remain temporarily supported when the
-  new name is absent. This is not a subscription-count cap, so the API does not
-  misrepresent it as one.
+- `FEED_MAX_COUNT` controls the maximum claimed crawl batch size. Use this
+  canonical setting in environment configuration and saved crawl settings.
+  This is not a subscription-count cap, so the API does not misrepresent it as one.

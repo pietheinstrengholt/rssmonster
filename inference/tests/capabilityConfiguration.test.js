@@ -82,20 +82,13 @@ describe('capability configuration', () => {
     });
   });
 
-  it('preserves legacy remote models despite stale local model and dimension settings', () => {
-    const environment = {
-      EMBEDDING_PROVIDER: 'openai', EMBEDDING_MODEL: 'local/model', EMBEDDING_DIMENSIONS: '1024',
-      OPENAI_EMBEDDING_MODEL: 'old-embedding', OPENAI_EMBEDDING_DIMENSIONS: '1536',
-      GENERATION_PROVIDER: 'openai', GENERATION_MODEL: 'local/generation',
-      OPENAI_MODEL_CRAWL: 'old-article', OPENAI_MODEL_SMART_FOLDERS: 'old-folders',
-      OPENAI_MODEL_FEED_REDISCOVERY: 'old-feed', OPENAI_API_KEY: 'legacy-secret'
-    };
-    expect(getEmbeddingConfig(environment)).toMatchObject({ modelId: 'old-embedding', dimensions: 1536 });
-    expect(getGenerationConfig(environment)).toMatchObject({ modelId: 'old-article', smartFolderModel: 'old-folders', feedRediscoveryModel: 'old-feed' });
-    const output = logger();
-    validateProviderConfiguration(environment, output);
-    expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('Deprecated configuration'));
-    expect(JSON.stringify(output.warn.mock.calls)).not.toContain('legacy-secret');
+  it('ignores obsolete model settings and rejects obsolete provider names', () => {
+    expect(getEmbeddingConfig({ ...remote('EMBEDDING'), OPENAI_EMBEDDING_MODEL: 'retired', OPENAI_EMBEDDING_DIMENSIONS: '1' }))
+      .toMatchObject({ modelId: 'EMBEDDING-model', dimensions: 1536 });
+    for (const value of ['openai', 'qwen']) expect(() => getEmbeddingConfig({ EMBEDDING_PROVIDER: value })).toThrow();
+    expect(() => getArticleScoringConfig({ CLASSIFICATION_PROVIDER: 'modernbert' })).toThrow();
+    expect(getArticleScoringConfig({ ARTICLE_SCORING_PROVIDER: 'modernbert', MODERNBERT_MODEL: 'retired' }))
+      .toMatchObject({ provider: 'openai-compatible', modelId: 'gpt-4o-mini' });
   });
 
   it('uses capability credentials ahead of legacy aliases without leaking settings', () => {
@@ -125,18 +118,18 @@ describe('capability configuration', () => {
     const blanks = { EMBEDDING_MODEL: '', EMBEDDING_DIMENSIONS: '', OPENAI_EMBEDDING_DIMENSIONS: '' };
     expect(getEmbeddingConfig({ ...local, ...blanks }).dimensions).toBe(1024);
     expect(getEmbeddingConfig({ ...remote('EMBEDDING'), ...blanks }).dimensions).toBe(1536);
-    expect(getEmbeddingConfig({ EMBEDDING_PROVIDER: 'openai', ...blanks }).dimensions).toBe(1536);
-    expect(getCompatibleClientOptions('ASSISTANT', {
+    expect(() => getEmbeddingConfig({ EMBEDDING_PROVIDER: 'openai', ...blanks })).toThrow();
+    expect(() => getCompatibleClientOptions('ASSISTANT', {
       ASSISTANT_API_KEY: '', ASSISTANT_BASE_URL: '', OPENAI_API_KEY: 'legacy', OPENAI_BASE_URL: 'http://legacy/v1'
-    })).toEqual({ apiKey: 'legacy', baseURL: 'http://legacy/v1' });
+    })).toThrow('ASSISTANT_API_KEY is required');
   });
 
 
-  it('preserves implicit legacy provider model selection', () => {
+  it('uses canonical model and dimension settings with the default compatible provider', () => {
     expect(getEmbeddingConfig({ EMBEDDING_MODEL: 'stale/local', EMBEDDING_DIMENSIONS: '1024' }))
-      .toMatchObject({ modelId: 'text-embedding-3-small', dimensions: 1536 });
+      .toMatchObject({ modelId: 'stale/local', dimensions: 1024 });
     expect(getGenerationConfig({ GENERATION_MODEL: 'stale/local' }))
-      .toMatchObject({ modelId: 'gpt-4o-mini', smartFolderModel: 'gpt-4.1-mini' });
+      .toMatchObject({ modelId: 'stale/local', smartFolderModel: 'stale/local' });
   });
 
 });

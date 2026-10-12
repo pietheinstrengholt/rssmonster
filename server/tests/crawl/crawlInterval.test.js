@@ -21,10 +21,10 @@ describe('crawl interval controls', () => {
     expect(crawlController.shouldCrawlFeed(feed, now)).toBe(true);
   });
 
-  it('prefers FEED_MAX_COUNT while temporarily accepting legacy MAX_FEEDCOUNT', () => {
+  it('uses FEED_MAX_COUNT and ignores its retired alias', () => {
     expect(resolveFeedMaxCount({ FEED_MAX_COUNT: '25', MAX_FEEDCOUNT: '12' }))
       .toBe(25);
-    expect(resolveFeedMaxCount({ MAX_FEEDCOUNT: '12' })).toBe(12);
+    expect(resolveFeedMaxCount({ MAX_FEEDCOUNT: '12' })).toBe(100);
     expect(resolveFeedMaxCount({})).toBe(100);
     expect(resolveFeedMaxCount({ FEED_MAX_COUNT: 'invalid', MAX_FEEDCOUNT: '12' }))
       .toBe(100);

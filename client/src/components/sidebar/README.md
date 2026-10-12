@@ -126,6 +126,8 @@ Scrolling is never a count mutation. Navigation changes which live count dimensi
 
 Future changes should preserve the distinction between snapshot counts and live overview counts, and should update global, category, and feed values as one consistent hierarchy whenever a mutation affects article membership.
 
-The Daily briefing navigation count carries a **global** label: it covers the
-user's subscriptions and Briefing eligibility preferences. Category, feed, and
+Daily briefing has hover text explaining the view and its count. The sidebar shows
+the number without a **global** label. The count covers matching articles across
+the user's subscriptions for the configured Briefing period and eligibility
+preferences, rather than the number of stories in the summary. Category, feed, and
 tag filters can narrow the displayed article list without changing that count.

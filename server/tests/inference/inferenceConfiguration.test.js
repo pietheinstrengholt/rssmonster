@@ -72,7 +72,7 @@ describe('deployment inference configuration', () => {
     await clearInferenceConfiguration();
     expect((await getEffectiveInferenceConfiguration()).source).toBe('none');
   });
-  it.each(['INFERENCE_BASE_URL', 'INFERENCE_URL'])('prioritizes %s and rejects direct writes without reading stale DB credentials', async name => {
+  it.each(['INFERENCE_BASE_URL'])('prioritizes %s and rejects direct writes without reading stale DB credentials', async name => {
     await save();
     await db.InferenceSetting.unscoped().update({ apiKeyEncrypted: 'corrupt' }, { where: { id: 1 } });
     vi.stubEnv(name, 'http://deployment.example');

@@ -16,13 +16,13 @@ const clear = () => Object.values(fields).forEach(([name]) => vi.stubEnv(name, '
 afterEach(() => { vi.unstubAllEnvs(); vi.resetModules(); });
 
 describe('Island decay configuration', () => {
-  it('retains legacy half-life variables while preferring valid canonical values', async () => {
+  it('ignores obsolete half-life variables and uses canonical values only', async () => {
     clear();
     vi.stubEnv('ISLAND_CLICK_HALF_LIFE_DAYS', '17.5');
     vi.stubEnv('ISLAND_FAVORITE_HALF_LIFE_DAYS', '62');
-    expect(await load()).toMatchObject({ lastOpenedOriginalAt: 17.5, savedAt: 62 });
+    expect(await load()).toMatchObject({ lastOpenedOriginalAt: 30, savedAt: 365 });
     vi.stubEnv('ISLAND_OPENED_ORIGINAL_HALF_LIFE_DAYS', '31');
-    expect(await load()).toMatchObject({ lastOpenedOriginalAt: 31, savedAt: 62 });
+    expect(await load()).toMatchObject({ lastOpenedOriginalAt: 31, savedAt: 365 });
   });
   it('uses documented defaults and ignores the retired time-constant and floor options', async () => {
     clear();

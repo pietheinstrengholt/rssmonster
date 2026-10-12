@@ -47,8 +47,16 @@ describe('analyzeArticleContent response validation', () => {
     OpenAIMock.mockClear();
     modernBertScore.mockReset();
     qwenGenerate.mockReset();
-    vi.stubEnv('OPENAI_API_KEY', 'test-key');
-    vi.stubEnv('OPENAI_MODEL_CRAWL', 'test-model');
+    vi.stubEnv('EMBEDDING_API_KEY', 'test-key');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', 'test-key');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', 'test-key');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', 'test-key');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
+    vi.stubEnv('GENERATION_ARTICLE_MODEL', 'test-model');
+    vi.stubEnv('CLASSIFICATION_MODEL', 'test-model');
     vi.stubEnv('SKIP_ARTICLE_CLASSIFICATION_ANALYSIS', '');
   });
 
@@ -104,10 +112,10 @@ describe('analyzeArticleContent response validation', () => {
   });
 
   it.each([
-    [{ sentimentScore: 80 }, 80],
+    [{ sentimentScore: 80 }, 70],
     [{ sentimentScore: 80, toneScore: 20 }, 20],
     [{ sentimentScore: 80, toneScore: null }, 0]
-  ])('accepts legacy model output with canonical precedence (%j)', async (scores, expected) => {
+  ])('uses only the canonical model score (%j)', async (scores, expected) => {
     completionsCreate.mockResolvedValue({ choices: [{ message: { content: JSON.stringify({
       ...scores, contentSummaryBullets: ['A fact'], tags: ['research'], advertisementScore: 80, qualityScore: 80
     }) } }] });
@@ -118,7 +126,10 @@ describe('analyzeArticleContent response validation', () => {
   });
 
   it('passes the configured base URL to the OpenAI client', async () => {
-    vi.stubEnv('OPENAI_BASE_URL', 'https://litellm.example/v1');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('GENERATION_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('ASSISTANT_BASE_URL', 'https://litellm.example/v1');
     await import('../src/classifications/articleClassificationService.js');
 
     expect(OpenAIMock).toHaveBeenCalledWith({
@@ -186,7 +197,7 @@ describe('analyzeArticleContent response validation', () => {
     logSpy.mockRestore();
   });
 
-  it('accepts writingScore as a legacy fallback for OpenAI scoring', async () => {
+  it('does not use writingScore as an alternative to qualityScore', async () => {
     completionsCreate
       .mockResolvedValueOnce({ choices: [{ message: { content: '{}' } }] })
       .mockResolvedValueOnce({ choices: [{ message: { content: '{}' } }] })
@@ -211,7 +222,7 @@ describe('analyzeArticleContent response validation', () => {
     expect(result).toMatchObject({
       advertisementScore: 90,
       toneScore: 80,
-      qualityScore: 90
+      qualityScore: 70
     });
   });
 
@@ -333,8 +344,7 @@ describe('analyzeArticleContent response validation', () => {
     [undefined, 'test-model'],
     ['Short text', 'test-model']
   ])('uses defaults for locally ineligible content %#', async (text, model) => {
-    vi.stubEnv('OPENAI_MODEL_CRAWL', model);
-    vi.stubEnv('OPENAI_MODEL_NAME', '');
+    vi.stubEnv('GENERATION_ARTICLE_MODEL', model);
     const { default: analyzeArticleContent } = await import(
       '../src/classifications/articleClassificationService.js'
     );
@@ -357,7 +367,14 @@ describe('analyzeArticleContent response validation', () => {
 
   // Uses local defaults when no API key was configured at module initialization.
   it('does not create an OpenAI client without an API key', async () => {
-    vi.stubEnv('OPENAI_API_KEY', '');
+    vi.stubEnv('EMBEDDING_API_KEY', '');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', '');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', '');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', '');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
     const { default: analyzeArticleContent } = await import(
       '../src/classifications/articleClassificationService.js'
     );
@@ -373,8 +390,15 @@ describe('analyzeArticleContent response validation', () => {
   });
 
   it('scores content from 200 characters without generating summaries or tags', async () => {
-    vi.stubEnv('OPENAI_API_KEY', '');
-    vi.stubEnv('ARTICLE_SCORING_PROVIDER', 'modernbert');
+    vi.stubEnv('EMBEDDING_API_KEY', '');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', '');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', '');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', '');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
+    vi.stubEnv('CLASSIFICATION_PROVIDER', 'local');
     modernBertScore.mockResolvedValue({
       advertisementScore: 90,
       toneScore: 80,
@@ -407,8 +431,8 @@ describe('analyzeArticleContent response validation', () => {
   });
 
   it('routes Qwen generation and OpenAI article scoring independently', async () => {
-    vi.stubEnv('GENERATION_PROVIDER', 'qwen');
-    vi.stubEnv('ARTICLE_SCORING_PROVIDER', 'openai');
+    vi.stubEnv('GENERATION_PROVIDER', 'local');
+    vi.stubEnv('CLASSIFICATION_PROVIDER', 'openai-compatible');
     qwenGenerate
       .mockResolvedValueOnce('{"contentSummaryBullets":["Generated locally"]}')
       .mockResolvedValueOnce('{"tags":["local"]}');
@@ -445,8 +469,8 @@ describe('analyzeArticleContent response validation', () => {
   });
 
   it('routes OpenAI generation and ModernBERT article scoring independently', async () => {
-    vi.stubEnv('GENERATION_PROVIDER', 'openai');
-    vi.stubEnv('ARTICLE_SCORING_PROVIDER', 'modernbert');
+    vi.stubEnv('GENERATION_PROVIDER', 'openai-compatible');
+    vi.stubEnv('CLASSIFICATION_PROVIDER', 'local');
     completionsCreate
       .mockResolvedValueOnce({
         choices: [{ message: { content: '{"contentSummaryBullets":["Generated remotely"]}' } }]
@@ -620,14 +644,14 @@ describe('analyzeArticleContent response validation', () => {
     const retried = await request(app).post('/api/classifications/article').send(input);
 
     expect(retried.status).toBe(200);
-    expect(retried.body).toEqual({ ...analysis, sentimentScore: analysis.toneScore });
+    expect(retried.body).toEqual(analysis);
     errorSpy.mockRestore();
   });
 
   it('rejects Qwen generation failures instead of completing partial analysis', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.stubEnv('GENERATION_PROVIDER', 'qwen');
-    vi.stubEnv('ARTICLE_SCORING_PROVIDER', 'modernbert');
+    vi.stubEnv('GENERATION_PROVIDER', 'local');
+    vi.stubEnv('CLASSIFICATION_PROVIDER', 'local');
     qwenGenerate.mockRejectedValue(new Error('generation failed'));
     modernBertScore.mockResolvedValue({
       advertisementScore: 80,
@@ -651,8 +675,8 @@ describe('analyzeArticleContent response validation', () => {
     'INFERENCE_QUEUE_FULL',
     'INFERENCE_QUEUE_ABORTED'
   ])('propagates Qwen queue control error %s without fallback', async code => {
-    vi.stubEnv('GENERATION_PROVIDER', 'qwen');
-    vi.stubEnv('ARTICLE_SCORING_PROVIDER', 'modernbert');
+    vi.stubEnv('GENERATION_PROVIDER', 'local');
+    vi.stubEnv('CLASSIFICATION_PROVIDER', 'local');
     const queueError = Object.assign(new Error('queue control error'), { code });
     qwenGenerate.mockRejectedValue(queueError);
     const { default: analyzeArticleContent } = await import(
@@ -667,8 +691,15 @@ describe('analyzeArticleContent response validation', () => {
   });
 
   it('passes request cancellation context to ModernBERT scoring', async () => {
-    vi.stubEnv('OPENAI_API_KEY', '');
-    vi.stubEnv('ARTICLE_SCORING_PROVIDER', 'modernbert');
+    vi.stubEnv('EMBEDDING_API_KEY', '');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', '');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', '');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', '');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
+    vi.stubEnv('CLASSIFICATION_PROVIDER', 'local');
     const controller = new AbortController();
     modernBertScore.mockResolvedValue({
       advertisementScore: 80,

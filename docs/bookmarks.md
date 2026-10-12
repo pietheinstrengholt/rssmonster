@@ -48,7 +48,7 @@ For example, this query shows bookmarked Nintendo articles ordered by quality:
 saved:true Nintendo sort:quality
 ```
 
-The legacy alias `star:true` has the same effect. See the
+See the
 [Search Guide]({% link search.md %}) and [Smart Folders]({% link smart-folders.md %}) for more ways to
 build saved views around bookmarks.
 

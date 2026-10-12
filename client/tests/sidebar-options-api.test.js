@@ -239,6 +239,21 @@ describe('Options API sidebar contracts', () => {
     wrapper.unmount();
   });
 
+  it('explains Daily briefing and its subscription-wide article count on hover without a global label', () => {
+    const stores = initializeStores();
+    stores.selectionStore.currentSelection.AIEnabled = true;
+    stores.selectionStore.currentSelection.categoryId = 10;
+    const wrapper = mountSidebar(stores.pinia);
+    const briefing = wrapper.findAll('.sidebar-status-item').find(item => item.text().includes('Daily briefing'));
+    expect(briefing.text()).toBe('Daily briefing4');
+    expect(briefing.attributes('title')).toContain('Daily briefing highlights recent coverage');
+    expect(briefing.attributes('title')).toContain('matching articles across all your subscriptions for the configured period');
+    expect(briefing.attributes('title')).toContain('not the number of stories in the summary');
+    expect(briefing.attributes('title')).toContain('without changing this count');
+    expect(briefing.attributes('aria-description')).toBe(briefing.attributes('title'));
+    wrapper.unmount();
+  });
+
   it('hides zero counts across sections using the current selection and keeps matching children', async () => {
     const stores = initializeStores();
     const category = stores.overviewStore.categories[0];

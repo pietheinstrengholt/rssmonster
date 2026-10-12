@@ -1,6 +1,5 @@
 import express from 'express';
 import articleClassificationService from '../classifications/articleClassificationService.js';
-import { withLegacyToneScore } from '../classifications/toneScoreContract.js';
 import {
   canWriteInferenceResponse,
   createRequestCancellation,
@@ -21,7 +20,7 @@ export const createClassificationsRouter = ({ service = articleClassificationSer
         signal: cancellation.signal
       });
       if (!cancellation.isDisconnected() && canWriteInferenceResponse(req, res)) {
-        res.status(200).json(withLegacyToneScore(result));
+        res.status(200).json(result);
       }
     } catch (error) {
       if (handleInferenceQueueError(error, req, res)) return;

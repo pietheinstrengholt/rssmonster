@@ -179,6 +179,15 @@ Compact icons before the title explain the article type or why it may deserve at
 
 Source-specific and media-specific icons take precedence where they explain the format more clearly than a generic relevance icon. The intent is to provide fast recognition without turning the header into a crowded badge row.
 
+Article metadata uses **Positive learned preference** and **Negative learned
+preference** badges, based on the stored `interestScore`, independently of the
+overall recommendation score. The badges require nonzero, finite interest.
+When ranking attribution is available, the badge opens **Why this article was
+ranked**, including the preference direction and the existing ranking signals.
+Without attribution it remains a static badge. Neutral or missing personal
+interest does not receive a preference badge. No scoring or ranking
+formula is computed in the client.
+
 Reader detail keeps the title focused on the article. The selected article exposes
 read/unread directly in the sticky toolbar and also in its article actions menu.
 

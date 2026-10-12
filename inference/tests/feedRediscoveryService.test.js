@@ -21,24 +21,26 @@ vi.mock('../src/generation/providers/qwenGenerationProvider.js', () => ({
   default: { generate: mocked.qwenGenerate }
 }));
 
-const originalApiKey = process.env.OPENAI_API_KEY;
+const originalApiKey = process.env.GENERATION_API_KEY;
 const originalGenerationProvider = process.env.GENERATION_PROVIDER;
 
 describe('rediscoverRssUrl', () => {
   beforeEach(() => {
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
     vi.resetModules();
     mocked.createCompletion.mockReset();
     mocked.qwenGenerate.mockReset();
     mocked.OpenAIMock.mockClear();
-    delete process.env.OPENAI_API_KEY;
+    delete process.env.GENERATION_API_KEY;
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.unstubAllEnvs();
     if (originalApiKey === undefined) {
-      delete process.env.OPENAI_API_KEY;
+      delete process.env.GENERATION_API_KEY;
     } else {
-      process.env.OPENAI_API_KEY = originalApiKey;
+      process.env.GENERATION_API_KEY = originalApiKey;
     }
     if (originalGenerationProvider === undefined) {
       delete process.env.GENERATION_PROVIDER;
@@ -56,12 +58,12 @@ describe('rediscoverRssUrl', () => {
       feedName: 'Publisher',
       websiteUrl: 'https://example.com',
       oldRssUrl: 'https://example.com/old.xml'
-    })).rejects.toThrow('OpenAI API key not configured');
+    })).rejects.toThrow('GENERATION_API_KEY is required');
     expect(mocked.createCompletion).not.toHaveBeenCalled();
   });
 
   it('returns the strict JSON replacement suggested by OpenAI', async () => {
-    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.GENERATION_API_KEY = 'test-key';
     mocked.createCompletion.mockResolvedValue({
       choices: [{
         message: {
@@ -104,8 +106,11 @@ describe('rediscoverRssUrl', () => {
   });
 
   it('passes the configured base URL to the OpenAI client', async () => {
-    process.env.OPENAI_API_KEY = 'test-key';
-    vi.stubEnv('OPENAI_BASE_URL', 'https://litellm.example/v1');
+    process.env.GENERATION_API_KEY = 'test-key';
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('GENERATION_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('ASSISTANT_BASE_URL', 'https://litellm.example/v1');
     await import('../src/feedRediscovery/feedRediscoveryService.js');
 
     expect(mocked.OpenAIMock).toHaveBeenCalledWith({
@@ -115,7 +120,7 @@ describe('rediscoverRssUrl', () => {
   });
 
   it('omits temperature when configured for a compatible gateway', async () => {
-    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.GENERATION_API_KEY = 'test-key';
     vi.stubEnv('OPENAI_OMIT_TEMPERATURE', 'true');
     mocked.createCompletion.mockResolvedValue({
       choices: [{ message: { content: '{"url":null,"confidence":0,"reason":"No replacement."}' } }]
@@ -135,7 +140,7 @@ describe('rediscoverRssUrl', () => {
   });
 
   it('keeps feed rediscovery debug logs free of supplied URLs', async () => {
-    process.env.GENERATION_PROVIDER = 'qwen';
+    process.env.GENERATION_PROVIDER = 'local';
     vi.stubEnv('INFERENCE_DEBUG', 'true');
     mocked.qwenGenerate.mockResolvedValue(
       '{"url":null,"confidence":0,"reason":"No replacement."}'
@@ -165,7 +170,7 @@ describe('rediscoverRssUrl', () => {
   });
 
   it('rejects missing or malformed JSON completion content', async () => {
-    process.env.OPENAI_API_KEY = 'test-key';
+    process.env.GENERATION_API_KEY = 'test-key';
     mocked.createCompletion
       .mockResolvedValueOnce({ choices: [] })
       .mockResolvedValueOnce({
@@ -189,7 +194,7 @@ describe('rediscoverRssUrl', () => {
   });
 
   it('uses Qwen and reports its name for invalid JSON', async () => {
-    process.env.GENERATION_PROVIDER = 'qwen';
+    process.env.GENERATION_PROVIDER = 'local';
     mocked.qwenGenerate
       .mockResolvedValueOnce('{"url":null,"confidence":0,"reason":"No replacement."}')
       .mockResolvedValueOnce('invalid');

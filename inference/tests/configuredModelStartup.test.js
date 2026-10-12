@@ -31,10 +31,10 @@ describe('configured model startup', () => {
       generationProvider,
       logger,
       environment: {
-        OPENAI_API_KEY: 'test-key',
-        EMBEDDING_PROVIDER: 'qwen',
-        GENERATION_PROVIDER: 'qwen',
-        ARTICLE_SCORING_PROVIDER: 'modernbert'
+        EMBEDDING_API_KEY: 'test-key', EMBEDDING_BASE_URL: 'https://api.openai.com/v1', GENERATION_API_KEY: 'test-key', GENERATION_BASE_URL: 'https://api.openai.com/v1', CLASSIFICATION_API_KEY: 'test-key', CLASSIFICATION_BASE_URL: 'https://api.openai.com/v1', ASSISTANT_API_KEY: 'test-key', ASSISTANT_BASE_URL: 'https://api.openai.com/v1',
+        EMBEDDING_PROVIDER: 'local',
+        GENERATION_PROVIDER: 'local',
+        CLASSIFICATION_PROVIDER: 'local'
       }
     })).resolves.toEqual([
       { provider: 'qwen', model: 'qwen/model', loaded: true },
@@ -62,10 +62,10 @@ describe('configured model startup', () => {
       generationProvider,
       logger,
       environment: {
-        OPENAI_API_KEY: 'test-key',
-        EMBEDDING_PROVIDER: 'openai',
-        GENERATION_PROVIDER: 'openai',
-        ARTICLE_SCORING_PROVIDER: 'openai'
+        EMBEDDING_API_KEY: 'test-key', EMBEDDING_BASE_URL: 'https://api.openai.com/v1', GENERATION_API_KEY: 'test-key', GENERATION_BASE_URL: 'https://api.openai.com/v1', CLASSIFICATION_API_KEY: 'test-key', CLASSIFICATION_BASE_URL: 'https://api.openai.com/v1', ASSISTANT_API_KEY: 'test-key', ASSISTANT_BASE_URL: 'https://api.openai.com/v1',
+        EMBEDDING_PROVIDER: 'openai-compatible',
+        GENERATION_PROVIDER: 'openai-compatible',
+        CLASSIFICATION_PROVIDER: 'openai-compatible'
       }
     })).resolves.toEqual([]);
 
@@ -85,9 +85,9 @@ describe('configured model startup', () => {
       articleScoringProvider: createScoringProvider(),
       logger,
       environment: {
-        OPENAI_API_KEY: 'test-key',
-        EMBEDDING_PROVIDER: 'qwen',
-        ARTICLE_SCORING_PROVIDER: 'modernbert'
+        EMBEDDING_API_KEY: 'test-key', EMBEDDING_BASE_URL: 'https://api.openai.com/v1', GENERATION_API_KEY: 'test-key', GENERATION_BASE_URL: 'https://api.openai.com/v1', CLASSIFICATION_API_KEY: 'test-key', CLASSIFICATION_BASE_URL: 'https://api.openai.com/v1', ASSISTANT_API_KEY: 'test-key', ASSISTANT_BASE_URL: 'https://api.openai.com/v1',
+        EMBEDDING_PROVIDER: 'local',
+        CLASSIFICATION_PROVIDER: 'local'
       }
     })).rejects.toThrow('load failed');
 
@@ -104,9 +104,9 @@ describe('configured model startup', () => {
       articleScoringProvider: createScoringProvider(),
       logger,
       environment: {
-        OPENAI_API_KEY: 'test-key',
-        EMBEDDING_PROVIDER: 'qwen',
-        ARTICLE_SCORING_PROVIDER: 'openai'
+        EMBEDDING_API_KEY: 'test-key', EMBEDDING_BASE_URL: 'https://api.openai.com/v1', GENERATION_API_KEY: 'test-key', GENERATION_BASE_URL: 'https://api.openai.com/v1', CLASSIFICATION_API_KEY: 'test-key', CLASSIFICATION_BASE_URL: 'https://api.openai.com/v1', ASSISTANT_API_KEY: 'test-key', ASSISTANT_BASE_URL: 'https://api.openai.com/v1',
+        EMBEDDING_PROVIDER: 'local',
+        CLASSIFICATION_PROVIDER: 'openai-compatible'
       }
     })).rejects.toThrow(
       'Configured embedding model did not report loaded after initialization'

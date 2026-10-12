@@ -119,10 +119,31 @@ describe('ArticleMeta', () => {
     expect(wrapper.find('.article-provenance-separator').exists()).toBe(false);
   });
 
-  it('renders a Matches your interests badge for an article with an interest score', () => {
-    const wrapper = mountArticleMeta({ hasInterestScore: true });
+  it('renders a positive learned preference badge for a positive interest score', () => {
+    const wrapper = mountArticleMeta({ hasInterestScore: true, interestScore: 0.4 });
 
-    expect(wrapper.get('.recommended-badge').text()).toBe('Matches your interests');
+    expect(wrapper.get('.recommended-badge').text()).toBe('Positive learned preference');
+  });
+
+  it.each([false, true])('shows negative preference without confusing it with positive ranking (%s)', async isRecommendationView => {
+    const wrapper = mountArticleMeta({ hasInterestScore: true, interestScore: '-0.3', isRecommendationView,
+      recommendation: { score: 0.75, reasons: [{ code: 'freshness', value: 0.8 }] }
+    }, { attachTo: document.body });
+    const trigger = wrapper.get('.recommended-badge');
+    expect(trigger.text()).toBe('Negative learned preference');
+    await trigger.trigger('click');
+    await flushPromises();
+    const panel = document.querySelector('.recommendation-explanation-panel');
+    expect(panel.textContent).toContain('Why this article was ranked');
+    expect(panel.textContent).toContain('This article has a negative learned preference.');
+    expect(panel.textContent).toContain('75% recommendation score');
+    wrapper.unmount();
+  });
+
+  it('shows negative preference without attribution reasons', () => {
+    const wrapper = mountArticleMeta({ hasInterestScore: true, interestScore: -0.3 });
+    expect(wrapper.get('.recommended-badge').text()).toBe('Negative learned preference');
+    wrapper.unmount();
   });
 
   it('omits the Recommended badge without an interest score', () => {
@@ -133,7 +154,7 @@ describe('ArticleMeta', () => {
 
   it('shows a negative score in the recommendation explanation', async () => {
     const wrapper = mountArticleMeta({
-      hasInterestScore: true,
+      hasInterestScore: true, interestScore: 0.4,
       isRecommendationView: true,
       recommendation: { score: -0.163, reasons: [{ code: 'freshness', value: 0.1 }] }
     }, { attachTo: document.body });
@@ -146,7 +167,7 @@ describe('ArticleMeta', () => {
 
   it('explains recommendation reasons from the article metadata badge', async () => {
     const wrapper = mountArticleMeta({
-      hasInterestScore: true,
+      hasInterestScore: true, interestScore: 0.4,
       isRecommendationView: true,
       recommendation: {
         score: 0.7591,
@@ -177,11 +198,11 @@ describe('ArticleMeta', () => {
     await flushPromises();
     const trigger = wrapper.get('.recommended-badge');
 
-    expect(trigger.text()).toBe('Why recommended');
+    expect(trigger.text()).toBe('Positive learned preference');
     expect(trigger.element.tagName).toBe('BUTTON');
     expect(trigger.attributes()).toMatchObject({
       'aria-expanded': 'false',
-      'aria-label': 'Why recommended. Explain why this article was recommended'
+      'aria-label': 'Positive learned preference. Explain this article’s ranking'
     });
 
     await trigger.trigger('click');
@@ -220,7 +241,7 @@ describe('ArticleMeta', () => {
 
   it('opens the attributed island from the recommendation explanation', async () => {
     const wrapper = mountArticleMeta({
-      hasInterestScore: true,
+      hasInterestScore: true, interestScore: 0.4,
       isRecommendationView: true,
       recommendation: { reasons: [{ code: 'interest_match', island: { id: 7, name: 'Race' } }] }
     }, { attachTo: document.body });
@@ -237,7 +258,7 @@ describe('ArticleMeta', () => {
 
   it('keeps unattributed interest text noninteractive', async () => {
     const wrapper = mountArticleMeta({
-      hasInterestScore: true,
+      hasInterestScore: true, interestScore: 0.4,
       isRecommendationView: true,
       recommendation: { reasons: [{ code: 'interest_match', island: { name: 'Race' } }] }
     }, { attachTo: document.body });
@@ -249,7 +270,7 @@ describe('ArticleMeta', () => {
 
   it('keeps the interest label outside recommendation-ranked views', async () => {
     const wrapper = mountArticleMeta({
-      hasInterestScore: true,
+      hasInterestScore: true, interestScore: 0.4,
       recommendation: {
         score: 0.5,
         reasons: [{ code: 'interest_match', value: 0.4 }]
@@ -257,7 +278,7 @@ describe('ArticleMeta', () => {
     });
     await flushPromises();
 
-    expect(wrapper.get('.recommended-badge').text()).toBe('Matches your interests');
+    expect(wrapper.get('.recommended-badge').text()).toBe('Positive learned preference');
     expect(wrapper.get('.recommended-badge').element.tagName).toBe('BUTTON');
   });
 
@@ -273,10 +294,10 @@ describe('ArticleMeta', () => {
 
     expect(wrapper.find('.recommended-badge').exists()).toBe(false);
 
-    await wrapper.setProps({ hasInterestScore: true });
+    await wrapper.setProps({ hasInterestScore: true, interestScore: 0.4 });
     await flushPromises();
 
-    expect(wrapper.get('.recommended-badge').text()).toBe('Why recommended');
+    expect(wrapper.get('.recommended-badge').text()).toBe('Positive learned preference');
   });
 
   // Verifies mobile metadata keeps analysis score indicators hidden.

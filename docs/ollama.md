@@ -203,8 +203,7 @@ With development diagnostics enabled, startup also logs:
 This check uses the assistant's own endpoint, credentials, and model. It follows
 the same five-second timeout, no-retry, and non-blocking behavior as the generation
 handshake, with `Assistant handshake failed` warnings on failure. An unconfigured
-assistant is skipped. Existing legacy OpenAI credential/endpoint fallbacks still
-apply. A successful check does not verify tool calling, streaming, or response
+assistant is skipped. Configure assistant credentials and its endpoint explicitly. A successful check does not verify tool calling, streaming, or response
 quality; it only confirms that the endpoint lists the configured model.
 Server-side assistant permissions are configured separately; see
 [Assistant and MCP](assistant.md).

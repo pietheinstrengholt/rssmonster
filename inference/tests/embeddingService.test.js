@@ -80,7 +80,7 @@ describe('embedding service', () => {
     const service = createEmbeddingService({
       provider,
       environment: {
-        EMBEDDING_PROVIDER: 'qwen',
+        EMBEDDING_PROVIDER: 'local',
         EMBEDDING_QUEUE_MAX_PENDING: '1'
       }
     });
@@ -123,7 +123,7 @@ describe('embedding service', () => {
     const service = createEmbeddingService({
       provider,
       environment: {
-        EMBEDDING_PROVIDER: 'qwen',
+        EMBEDDING_PROVIDER: 'local',
         EMBEDDING_QUEUE_MAX_PENDING: '1'
       }
     });

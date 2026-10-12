@@ -8,7 +8,7 @@ const local = { EMBEDDING_PROVIDER: 'local', GENERATION_PROVIDER: 'local', CLASS
 const external = {
   EMBEDDING_PROVIDER: 'openai-compatible', GENERATION_PROVIDER: 'openai-compatible',
   CLASSIFICATION_PROVIDER: 'openai-compatible', ASSISTANT_PROVIDER: 'openai-compatible',
-  OPENAI_BASE_URL: 'https://private-provider.example/v1?token=private-token', OPENAI_API_KEY: 'private-key',
+  EMBEDDING_BASE_URL: 'https://private-provider.example/v1?token=private-token', GENERATION_BASE_URL: 'https://private-provider.example/v1?token=private-token', CLASSIFICATION_BASE_URL: 'https://private-provider.example/v1?token=private-token', ASSISTANT_BASE_URL: 'https://private-provider.example/v1?token=private-token', EMBEDDING_API_KEY: 'private-key',  GENERATION_API_KEY: 'private-key',  CLASSIFICATION_API_KEY: 'private-key',  ASSISTANT_API_KEY: 'private-key',
   EMBEDDING_MODEL: 'embed-model', EMBEDDING_DIMENSIONS: '512', GENERATION_MODEL: 'generate-model',
   CLASSIFICATION_MODEL: 'score-model', ASSISTANT_MODEL: 'assistant-model'
 };
@@ -77,7 +77,7 @@ describe('inference discovery contract', () => {
     expect(model.isLoaded).not.toHaveBeenCalled();
   });
   it('represents absent remote credentials with explicit null metadata during startup', async () => {
-    const { app } = setup({ ...external, OPENAI_API_KEY: '' }, 'starting');
+    const { app } = setup({ ...external, EMBEDDING_API_KEY: '', EMBEDDING_BASE_URL: 'https://api.openai.com/v1', GENERATION_API_KEY: '', GENERATION_BASE_URL: 'https://api.openai.com/v1', CLASSIFICATION_API_KEY: '', CLASSIFICATION_BASE_URL: 'https://api.openai.com/v1', ASSISTANT_API_KEY: '', ASSISTANT_BASE_URL: 'https://api.openai.com/v1' }, 'starting');
     const result = (await request(app).get('/api/capabilities')).body.capabilities;
     expect(result.embeddings).toEqual({ configured: false, available: false, provider: null, model: null, dimensions: null });
     expect(result.assistant).toEqual({ configured: false, available: false, provider: null, model: null });

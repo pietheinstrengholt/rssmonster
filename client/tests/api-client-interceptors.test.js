@@ -76,9 +76,9 @@ describe('shared API base URL', () => {
 });
 
 describe('shared API response interceptor', () => {
-  it('normalizes JSON Article-state aliases while preserving canonical values', async () => {
+  it('preserves canonical JSON Article state without adding response aliases', async () => {
     const response = await api.get('/articles', { adapter: resolveResponse({
-      data: { articles: [{ id: 41, favoriteInd: 1, savedInd: 0, clickedAmount: 3 }] }
+      data: { articles: [{ id: 41, savedInd: 0, openedOriginalCount: 3 }] }
     }) });
     expect(response.data.articles).toEqual([{ id: 41, savedInd: 0, openedOriginalCount: 3 }]);
   });

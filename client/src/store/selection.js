@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia';
-import { canonicalArticleState, canonicalArticleStatus } from '../services/articleStateContract.js';
 import { articleAgeCutoffOptions } from '../services/articleAgeCutoff.js';
 import { articleDateRangeOptions, resolveArticleDateRange } from '../services/articleDateRange.js';
 import { fetchSettings as fetchSettingsAPI, saveViewMode, completeOnboarding } from '../api/settings';
@@ -255,7 +254,6 @@ export const useSelectionStore = defineStore('selection', {
 
     // This action normalizes a partial selection while preserving unspecified values.
     setCurrentSelection(selection = {}) {
-      selection = canonicalArticleState(selection);
       useUiStore().setChatAssistantOpen(false);
 
       const previous = this.currentSelection;
@@ -295,7 +293,6 @@ export const useSelectionStore = defineStore('selection', {
 
     // This action applies selection and related UI changes as one coherent transition.
     applySelection(selection, { closeChat = true } = {}) {
-      selection = canonicalArticleState(selection);
       selection = this.restoreSmartFolderPresentation(selection);
       const previousStatus = this.currentSelection.status;
       this.$patch({
@@ -321,7 +318,6 @@ export const useSelectionStore = defineStore('selection', {
 
     // This action selects an article status and constructs an active Briefing query when required.
     setSelectedStatus(status) {
-      status = canonicalArticleStatus(status);
       this.applySelection({
         status,
         search: status === 'briefing'

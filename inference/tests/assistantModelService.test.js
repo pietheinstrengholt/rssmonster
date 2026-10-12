@@ -21,7 +21,7 @@ describe('assistant model service', () => {
     const provider = { getModel: vi.fn().mockResolvedValue(model) };
     const createProvider = vi.fn(() => provider);
     const service = createAssistantModelService({
-      environment: { OPENAI_API_KEY: 'key', ASSISTANT_MODEL: 'agent-model' },
+      environment: { EMBEDDING_API_KEY: 'key', EMBEDDING_BASE_URL: 'https://api.openai.com/v1', GENERATION_API_KEY: 'key', GENERATION_BASE_URL: 'https://api.openai.com/v1', CLASSIFICATION_API_KEY: 'key', CLASSIFICATION_BASE_URL: 'https://api.openai.com/v1', ASSISTANT_API_KEY: 'key', ASSISTANT_BASE_URL: 'https://api.openai.com/v1', ASSISTANT_MODEL: 'agent-model' },
       createProvider
     });
     await expect(service.respond({ request: { input: [] } })).resolves.toEqual({ output: [] });
@@ -39,11 +39,12 @@ describe('assistant model service', () => {
   });
 
   it('creates the default OpenAI provider', async () => {
-    const service = createAssistantModelService({ environment: { OPENAI_API_KEY: 'default-key' } });
+    const service = createAssistantModelService({ environment: { EMBEDDING_API_KEY: 'default-key', EMBEDDING_BASE_URL: 'https://api.openai.com/v1', GENERATION_API_KEY: 'default-key', GENERATION_BASE_URL: 'https://api.openai.com/v1', CLASSIFICATION_API_KEY: 'default-key', CLASSIFICATION_BASE_URL: 'https://api.openai.com/v1', ASSISTANT_API_KEY: 'default-key', ASSISTANT_BASE_URL: 'https://api.openai.com/v1' } });
 
     await expect(service.respond({ request: {} })).resolves.toEqual({ output: ['default'] });
     expect(OpenAIProviderMock).toHaveBeenCalledWith({
       apiKey: 'default-key',
+      baseURL: 'https://api.openai.com/v1',
       useResponses: false
     });
   });
@@ -51,8 +52,8 @@ describe('assistant model service', () => {
   it('passes the configured base URL to the Chat Completions provider', async () => {
     const service = createAssistantModelService({
       environment: {
-        OPENAI_API_KEY: 'default-key',
-        OPENAI_BASE_URL: 'https://litellm.example/v1'
+        EMBEDDING_API_KEY: 'default-key',  GENERATION_API_KEY: 'default-key',  CLASSIFICATION_API_KEY: 'default-key',  ASSISTANT_API_KEY: 'default-key',
+        EMBEDDING_BASE_URL: 'https://litellm.example/v1', GENERATION_BASE_URL: 'https://litellm.example/v1', CLASSIFICATION_BASE_URL: 'https://litellm.example/v1', ASSISTANT_BASE_URL: 'https://litellm.example/v1'
       }
     });
 

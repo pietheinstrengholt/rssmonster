@@ -5,7 +5,7 @@ const environmentKeys = [
   'GENERATION_MODEL',
   'GENERATION_DTYPE',
   'GENERATION_QUEUE_MAX_PENDING',
-  'ARTICLE_SCORING_PROVIDER',
+  'CLASSIFICATION_PROVIDER',
   'MODERNBERT_QUEUE_MAX_PENDING'
 ];
 const originalEnvironment = Object.fromEntries(
@@ -15,11 +15,11 @@ const originalEnvironment = Object.fromEntries(
 vi.mock('dotenv', () => ({
   default: {
     config: vi.fn(() => {
-      process.env.GENERATION_PROVIDER = 'qwen';
+      process.env.GENERATION_PROVIDER = 'local';
       process.env.GENERATION_MODEL = 'test/dotenv-generation-model';
       process.env.GENERATION_DTYPE = 'q8';
       process.env.GENERATION_QUEUE_MAX_PENDING = '2';
-      process.env.ARTICLE_SCORING_PROVIDER = 'modernbert';
+      process.env.CLASSIFICATION_PROVIDER = 'local';
       process.env.MODERNBERT_QUEUE_MAX_PENDING = '3';
       return { parsed: {} };
     })

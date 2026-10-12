@@ -6,9 +6,9 @@
     list-class="recommendation-explanation-list"
     :trigger-label="triggerLabel"
     trigger-class="recommended-badge"
-    :aria-label="`${triggerLabel}. Explain why this article was recommended`"
-    dialog-title="Why this article was promoted"
-    :summary="explanation.summary"
+    :aria-label="`${triggerLabel}. Explain this article’s ranking`"
+    dialog-title="Why this article was ranked"
+    :summary="preferenceSummary"
     :items="explanation.items"
     :footer-label="explanation.scoreLabel"
   >
@@ -31,6 +31,7 @@ export default {
   components: { ArticleExplanationPopover },
   emits: ['inspect-interest'],
   props: {
+    interestScore: { type: [Number, String], default: 0 },
     recommendation: {
       type: Object,
       required: true
@@ -41,6 +42,12 @@ export default {
     }
   },
   computed: {
+    preferenceSummary() {
+      const score = Number(this.interestScore);
+      return Number.isFinite(score) && score !== 0
+        ? `This article has a ${score < 0 ? 'negative' : 'positive'} learned preference. ${this.explanation.summary}`
+        : this.explanation.summary;
+    },
     explanation() {
       return buildArticleRecommendationExplanation(this.recommendation);
     }

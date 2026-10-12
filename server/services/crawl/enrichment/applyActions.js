@@ -71,16 +71,12 @@ function applyActions(actions, article = {}) {
 
       // Saved action: marks article as saved
       case 'saved':
-      case 'favorite':
-      // Retain legacy automation types during the contract migration.
-      case 'star':
         result.savedInd = 1;
         result.savedAt = new Date();
         break;
 
       // Opened-original state is independent of read status.
       case 'openedOriginal':
-      case 'clicked':
         result.openedOriginalCount = 1;
         result.lastOpenedOriginalAt = new Date();
         break;

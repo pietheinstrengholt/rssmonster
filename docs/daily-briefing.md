@@ -26,8 +26,10 @@ source totals, newly created [Events]({% link events.md %}), and matched
 to four event stories, followed by the full collection of matching articles.
 
 Read, bookmark, and navigate these articles with the same controls as other
-collections. Where available, **Why recommended** explains the signals behind
-an article's recommendation. See [Scoring and Ranking]({% link scoring.md %}) for
+collections. **Positive learned preference** and **Negative learned preference**
+badges describe the direction of your personal-interest signal, separately from
+the overall recommendation score. Where attribution is available, selecting the
+badge opens **Why this article was ranked** with the ranking signals. See [Scoring and Ranking]({% link scoring.md %}) for
 how those signals contribute to ordering.
 
 The story excerpts come from stored article text; missing source text can
@@ -54,7 +56,7 @@ load, you can still read the article list.
 | Include Hot articles | Enabled by default. Includes Hot articles that meet your briefing filters; disabling it excludes all Hot articles, even if they also match your interests or belong to a qualifying Event. |
 | Mark as read while scrolling | Marks briefing articles as read after they pass the viewport. Available only when **Only unread articles** is enabled; separate from the Unread view's scrolling setting. |
 | Include developing coverage in the summary | Uses new coverage of continuing events in the morning story overview without restricting the article list to developing stories. |
-| Show only interest-matched articles | Limits the briefing to articles with nonzero stored interest, including negative values; Recommended still applies negative interest as a penalty. |
+| Show only articles with learned preferences | Includes positive and negative learned preferences and excludes neutral or absent preferences. Eligibility still uses nonzero stored interest; Recommended still applies negative interest as a penalty. |
 | Show only developing stories | Limits the article collection to qualifying unread articles selected as new event coverage. |
 
 The two **Show only** options are mutually exclusive. Switching one on switches

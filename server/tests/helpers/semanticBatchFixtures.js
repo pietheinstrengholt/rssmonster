@@ -1,4 +1,4 @@
-import { canonicalArticleState } from '../../utils/articleStateContract.js';
+import { canonicalArticleState } from '../../migrations/lib/articleStateMigration.mjs';
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { resolveSemanticVectorFixturePath } from '../../utils/semanticVectorFixtures.js';

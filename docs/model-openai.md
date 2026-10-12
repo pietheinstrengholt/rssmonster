@@ -65,10 +65,9 @@ loaded for a capability selected as external.
 Assistant reasoning is optional and belongs in `server/.env`.
 
 See [Inference]({% link inference.md %}#capability-configuration) for mixed
-endpoint examples, container networking, configuration validation, and legacy
-migration. Keep credentials exclusively in inference. Existing `openai`
-provider names and `OPENAI_*` model/connection settings remain deprecated
-aliases for one release; migrate providers and model settings together.
+endpoint examples, container networking, and configuration validation. Keep
+credentials exclusively in inference. Use canonical capability-specific
+provider, model, endpoint, and credential settings.
 
 ## Observed Semantic Behavior
 

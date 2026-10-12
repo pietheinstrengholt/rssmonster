@@ -62,17 +62,17 @@ describe('settings controller', () => {
     }
   });
 
-  it('accepts legacy tone thresholds, emits both names, and isolates users', async () => {
+  it('requires and returns canonical Tone thresholds and isolates users', async () => {
     const user = await createUser();
     const other = await createUser();
     const auth = authHeaderFor(user);
-    for (const [input, expected] of [[{ minSentimentScore: 80 }, 80], [{ minSentimentScore: 80, minToneScore: 0 }, 0]]) {
-      const response = await request(app).post('/api/setting').set('Authorization', auth).send({ minAdvertisementScore: 0, minQualityScore: 0, ...input });
-      expect(response.status).toBe(200);
-      expect((await Setting.findOne({ where: { userId: user.id } })).minToneScore).toBe(expected);
-      expect((await request(app).get('/api/setting').set('Authorization', auth)).body)
-        .toMatchObject({ minToneScore: expected, minSentimentScore: expected });
-    }
+    expect((await request(app).post('/api/setting').set('Authorization', auth)
+      .send({ minAdvertisementScore: 0, minQualityScore: 0, minSentimentScore: 80 })).status).toBe(400);
+    expect((await request(app).post('/api/setting').set('Authorization', auth)
+      .send({ minAdvertisementScore: 0, minQualityScore: 0, minToneScore: 80 })).status).toBe(200);
+    const restored = await request(app).get('/api/setting').set('Authorization', auth);
+    expect(restored.body.minToneScore).toBe(80);
+    expect(restored.body).not.toHaveProperty('minSentimentScore');
     expect((await request(app).get('/api/setting').set('Authorization', authHeaderFor(other))).body.minToneScore).toBe(0);
   });
 
@@ -90,16 +90,13 @@ describe('settings controller', () => {
     expect((await Setting.findOne({ where: { userId: other.id } })).viewMode).toBe('summarized');
   });
 
-  it.each([['full', 'expanded'], ['minimal', 'headlines']])('accepts legacy %s and persists %s', async (legacy, canonical) => {
+  it.each(['full', 'minimal'])('rejects obsolete view mode %s without changing settings', async viewMode => {
     const user = await createUser();
     const auth = authHeaderFor(user);
-    const saved = await request(app).patch('/api/setting/view-mode').set('Authorization', auth).send({ viewMode: legacy });
-    expect(saved.status).toBe(200);
-    expect(saved.body.viewMode).toBe(canonical);
-    expect((await Setting.findOne({ where: { userId: user.id } })).viewMode).toBe(canonical);
-    // Simulate a persisted preference from before the database migration.
-    await Setting.sequelize.getQueryInterface().bulkUpdate('user_settings', { viewMode: legacy }, { userId: user.id });
-    expect((await request(app).get('/api/setting').set('Authorization', auth)).body.viewMode).toBe(canonical);
+    await Setting.create({ userId: user.id, viewMode: 'reader' });
+    const response = await request(app).patch('/api/setting/view-mode').set('Authorization', auth).send({ viewMode });
+    expect(response.status).toBe(400);
+    expect((await Setting.findOne({ where: { userId: user.id } })).viewMode).toBe('reader');
   });
 
   it('rejects invalid and unauthenticated article view changes', async () => {

@@ -123,7 +123,7 @@ const requestGeneration = async (prompt, context = {}) => {
     });
   }
 
-  if (!client) throw new Error('OpenAI API key not configured');
+  if (!client) throw new Error('GENERATION_API_KEY is required');
   return createStructuredCompletion(client, {
     model: generationConfig.articleModel,
     messages: [

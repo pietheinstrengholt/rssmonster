@@ -5,38 +5,31 @@ more factual language; it does not mean more positive news. The scoring behavior
 component weights, bucket values, defaults, analysis status exemptions and
 threshold comparisons are unchanged.
 
-| Previous contract | Canonical contract | Location |
-| --- | --- | --- |
-| `sentimentScore` | `toneScore` | Article source, model, API and inference result |
-| `minSentimentScore` | `minToneScore` | Settings, article-list query and matching mark-read body |
-| `articles.sentimentScore` | `articles.toneScore` | Database column |
-| `user_settings.minSentimentScore` | `user_settings.minToneScore` | Persisted threshold |
-| `setMinSentimentScore`, `getSentimentClass` | `setMinToneScore`, `getToneClass` | Client store and presentation helper |
-| `--sentiment-score-*`, sentiment component classes | `--tone-score-*`, tone component classes | Theme and component styles |
+| Canonical contract | Location |
+| --- | --- |
+| `toneScore` | Article source, model, API and inference result |
+| `minToneScore` | Settings, article-list query and matching mark-read body |
+| `articles.toneScore` | Database column |
+| `user_settings.minToneScore` | Persisted threshold |
+| `setMinToneScore`, `getToneClass` | Client store and presentation helper |
+| Tone component classes and tokens | Theme and component styles |
 
-## Compatibility
+## Canonical contracts only
 
-The server accepts the old minimum property on `/api/setting`, `/api/articles`
-and `/api/articles/markasread`. JSON responses include the old score and threshold
-properties alongside the canonical ones. When both input names are present, the
-canonical property wins, including zero. Clients normalize old responses and
-restored settings to canonical properties.
+Runtime requests, responses, inference results and restored selections use only
+`toneScore` and `minToneScore`. Duplicate response aliases and model-output aliases
+are removed. The server requires canonical inference scores; deploy matching
+client, server and inference versions together. Signed pagination cursors must
+restart after this release because threshold fingerprints use canonical names.
 
-Inference prompts and providers use `toneScore`. The inference HTTP response also
-includes `sentimentScore`, and the server accepts either inference result. Thus
-inference and server may upgrade in either order. Legacy model JSON is accepted
-without changing score bucketing. Internal state uses only the canonical name. Signed pagination cursors retain their
-legacy wire key so an in-progress list can continue across the server upgrade.
+There is no separate Tone search operator. Existing `quality` expressions,
+sorting, saved folders and generated feeds retain their behavior. Overall quality
+still weights Writing quality at 50%, Tone at 25%, and Ad-free content at 25%.
 
-There is no separate sentiment or Tone search operator. Existing `quality`
-expressions, sorting, saved folders and generated feeds retain their behavior.
-Overall quality still weights Writing quality at 50%, Tone at 25%, and Ad-free
-content at 25%.
-
-IndexedDB version 4 converts stored article DTOs to `toneScore`. Existing account
-profiles, active generations and pending action receipt IDs, sequences and retry
-state survive the upgrade. The version-2 saved/opened-original migration remains
-supported. No article reanalysis, semantic rebuild or data backfill is needed.
+IndexedDB version 4 converts existing cached Article records once. Profiles,
+generations and action receipt IDs, sequences and retry state survive. This
+historical conversion is separate from runtime API/state handling. No article
+reanalysis or semantic rebuild is required.
 
 ## Upgrade and rollback
 
@@ -45,8 +38,8 @@ supported. No article reanalysis, semantic rebuild or data backfill is needed.
 2. Deploy the matching server and client release, then run the normal migrations
    from `server/` with `npm run db` against the intended deployment database.
 3. Restart the new server and workers. Reload browser clients; close old tabs if
-   they block the IndexedDB version change. The new server continues to accept
-   legacy clients through the aliases above.
+   they block the IndexedDB version change. All clients and inference instances
+   must use the canonical contracts.
 
 The new client and server belong to the same release: an old server does not
 understand the new minimum property sent by the client. Database migration
@@ -62,6 +55,5 @@ runner only applies pending migrations, and Sequelize CLI does not discover
 ESM-aware migration runner to execute this migration's `down` and remove its
 `SequelizeMeta` entry, or restore the pre-upgrade backup, before restoring the
 old server/client release. Other migrations have their own rollback requirements.
-Browser database version 4 stays canonical, so an older client that only reads
-`sentimentScore` needs a fresh offline download after rollback. Retain pending
-actions until they have synchronized; do not clear browser storage to downgrade.
+Browser database version 4 stays canonical; older clients need a fresh offline
+download after rollback. Retain pending actions until they have synchronized; do not clear browser storage to downgrade.

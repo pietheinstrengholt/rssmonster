@@ -25,6 +25,7 @@ export const verifyPackagedRuntime = async (
     '/inference/src/index.js',
     '/server/src/workers/aiWorker.js',
     '/node_modules/feedsmith/dist/node_modules/trousse/dist/is.mjs',
+    '/server/migrations/lib/articleStateMigration.mjs',
     ...(await readdir(migrationsDirectory))
       .filter(name => /^\d.*\.(?:mjs|js)$/.test(name))
       .map(name => `/server/migrations/${name}`)

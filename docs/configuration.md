@@ -440,8 +440,8 @@ The connection and body limits apply to their individual HTTP phases, while
 `FEED_TIMEOUT_MS` remains the hard deadline for all acquisition, parsing, and
 persistence work for one feed. Increasing response or timeout limits can
 accommodate unusual feeds, but also increases the resources a slow or oversized
-response may consume. Prefer the phase-specific settings over the legacy
-`FEED_HTTP_TIMEOUT_MS` fallback when upgrading an existing manual installation.
+response may consume. Configure the connection and response-body deadlines
+independently using the phase-specific settings.
 
 ### Parser Safety Limits
 
@@ -698,7 +698,7 @@ Email and browser notifications are independent optional features:
 Neither feature is enabled merely by installing the web app. Pass the appropriate
 variables to each responsible process and recreate containers after changes.
 
-See [inference authentication]({% link inference.md %}#optional-shared-secret-authentication) for key generation, HTTPS, protected endpoints, and the legacy `INFERENCE_URL` fallback.
+See [inference authentication]({% link inference.md %}#optional-shared-secret-authentication) for key generation, HTTPS, protected endpoints and canonical connection settings.
 
 Inference connections can also be saved by an administrator in Settings → AI / Inference
 on MySQL, SQLite, or Desktop. A nonempty environment URL always takes precedence and
@@ -822,7 +822,7 @@ subscribe again. No keys or subscriptions are generated automatically.
 
 Administrators can open **Settings → Server settings → Crawl options** and enable
 **Override environment default** to manage the scheduling, request, parser, and
-entry-limit fields as one group. All 18 fields are validated as bounded integers;
+entry-limit fields as one group. All 19 fields are validated as bounded integers;
 parallel mode permits only 0/1, and origin spacing permits zero. Restoring defaults
 removes only the `crawlConfiguration` row from `server_settings`.
 
@@ -844,5 +844,5 @@ so a requested 120-second lease with a 300-second deadline becomes 600 seconds.
 `CRAWL_RUN_MAX_RUNNING_MINUTES` controls how long a run can go without a heartbeat
 before existing recovery logic considers it abandoned; it does not expire healthy
 long-running work. Without this setting, `CRAWL_RUN_STALE_AFTER_MS` still applies.
-`FEED_HTTP_TIMEOUT_MS` supplies a fallback only when the separate
-`FEED_CONNECT_TIMEOUT_MS` or `FEED_BODY_TIMEOUT_MS` environment value is unset.
+`FEED_CONNECT_TIMEOUT_MS` and `FEED_BODY_TIMEOUT_MS` configure the connection
+and body download independently, in environment configuration and saved settings.

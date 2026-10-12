@@ -1,4 +1,3 @@
-import { canonicalArticleViewMode } from '../../utils/articleStateContract.js';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { searchArticles } from '../articleSearch/articleSearch.service.js';
@@ -31,7 +30,7 @@ const matchingSearchOptions = (userId, query, grouping) => ({
   minQualityScore: toScoreThreshold(query.minQualityScore),
   sort: query.sort || 'desc',
   tag: query.tag === undefined ? null : query.tag,
-  viewMode: query.viewMode === undefined ? 'expanded' : canonicalArticleViewMode(query.viewMode),
+  viewMode: query.viewMode === undefined ? 'expanded' : query.viewMode,
   grouping,
   publishedAfter: query.publishedAfter,
   publishedBefore: query.publishedBefore,

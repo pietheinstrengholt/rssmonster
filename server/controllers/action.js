@@ -2,7 +2,6 @@
 import db from '../models/index.js';
 import { previewAction as previewActionSample } from '../services/actions/previewAction.js';
 import { compileActionRegex } from '../utils/actionRegex.js';
-import { canonicalArticleStatus } from '../utils/articleStateContract.js';
 const { Action } = db;
 
 const getActions = async (req, res, next) => {
@@ -34,7 +33,8 @@ const createAction = async (req, res, next) => {
       ['name', 'actionType', 'regularExpression', 'tagValue'].some(field =>
         action[field] != null && typeof action[field] !== 'string'
       ) ||
-      ['name', 'actionType', 'tagValue'].some(field => action[field]?.length > 255)
+      ['name', 'actionType', 'tagValue'].some(field => action[field]?.length > 255) ||
+      (action.actionType && !['discard', 'saved', 'read', 'openedOriginal', 'advertisement', 'badquality', 'tag'].includes(action.actionType))
     )) {
       return res.status(400).json({ error: 'actions must be an array of valid action objects' });
     }
@@ -44,7 +44,7 @@ const createAction = async (req, res, next) => {
       .map(a => ({
         userId,
         name: a.name || '',
-        actionType: canonicalArticleStatus(a.actionType || ''),
+        actionType: a.actionType || '',
         regularExpression: a.regularExpression || '',
         tagValue: a.tagValue || null
       }));

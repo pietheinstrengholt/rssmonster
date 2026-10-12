@@ -156,11 +156,11 @@
 
               <span class="briefing-preferences-option-content">
                 <span class="briefing-preferences-option-title">
-                  Show only interest-matched articles
+                  Show only articles with learned preferences
                 </span>
 
                 <span class="briefing-preferences-option-description">
-                  Limit the briefing to articles matched to your interests.
+                  Include articles with positive or negative learned preferences. Articles with neutral or no learned preference are excluded.
                 </span>
               </span>
 

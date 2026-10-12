@@ -15,8 +15,15 @@ describe('Qwen generation routing', () => {
   beforeEach(() => {
     vi.resetModules();
     mocked.generate.mockReset();
-    vi.stubEnv('GENERATION_PROVIDER', 'qwen');
-    vi.stubEnv('OPENAI_API_KEY', '');
+    vi.stubEnv('GENERATION_PROVIDER', 'local');
+    vi.stubEnv('EMBEDDING_API_KEY', '');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', '');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', '');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', '');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
   });
 
   afterEach(() => {

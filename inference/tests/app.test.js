@@ -154,8 +154,8 @@ describe('inference app', () => {
       generationProvider,
       articleScoringProvider,
       environment: {
-        GENERATION_PROVIDER: 'qwen',
-        ARTICLE_SCORING_PROVIDER: 'modernbert'
+        GENERATION_PROVIDER: 'local',
+        CLASSIFICATION_PROVIDER: 'local'
       }
     });
 
@@ -211,7 +211,7 @@ describe('inference app', () => {
     const app = createApp({
       provider,
       environment: {
-        EMBEDDING_PROVIDER: 'qwen',
+        EMBEDDING_PROVIDER: 'local',
         EMBEDDING_QUEUE_MAX_PENDING: '1'
       }
     });

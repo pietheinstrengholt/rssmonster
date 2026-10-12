@@ -39,7 +39,7 @@ describe('query validation fundamentals', () => {
 describe('query validation supported expressions', () => {
   it.each([
     'saved:true',
-    'star:false',
+    'saved:false',
     'unread:true',
     'read:false',
     'openedOriginal:true',

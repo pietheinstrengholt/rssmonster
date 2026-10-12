@@ -9,17 +9,15 @@ import {
 } from '../../services/articleSearch/articleQueryParser.service.js';
 
 describe('articleQueryParser.service', () => {
-  it('accepts canonical and legacy save/opened filters with the same last-token precedence', () => {
-    for (const saved of ['saved', 'favorite', 'star']) {
-      for (const opened of ['openedOriginal', 'clicked']) {
-        expect(validateArticleExpression(`${saved}:true ${opened}:false`).filters).toMatchObject({ saved: true, openedOriginal: false });
-      }
+  it('accepts canonical boolean filters and rejects obsolete persisted operators', () => {
+    expect(validateArticleExpression('saved:true openedOriginal:false').filters).toMatchObject({ saved: true, openedOriginal: false });
+    for (const expression of ['favorite:true', 'star:true', 'clicked:false']) {
+      expect(() => validateArticleExpression(expression)).toThrow(ArticleExpressionValidationError);
     }
-    expect(validateArticleExpression('favorite:true saved:false openedOriginal:true clicked:false').filters)
-      .toMatchObject({ saved: false, openedOriginal: false });
-    expect(normalizeSmartFolderExpression('title:"favorite:true clicked:false" favorite:true clicked:false'))
+    expect(normalizeSmartFolderExpression('title:"favorite:true clicked:false" saved:true openedOriginal:false'))
       .toBe('title:"favorite:true clicked:false" saved:true openedOriginal:false sort:desc grouping:none');
   });
+
   it('keeps quoted tag labels separate from full-text phrases', () => {
     const parsed = parseArticleQuery({ search: 'tag:"read later" "AI agents"' });
     expect(parsed.filters.tag).toBe('read later');

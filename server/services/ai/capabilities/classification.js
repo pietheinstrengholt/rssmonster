@@ -1,12 +1,11 @@
 import provider from '../providers/inference.js';
 import { AIValidationError, isRecord } from '../errors.js';
-import { canonicalArticleState } from '../../../utils/articleStateContract.js';
 
 export const isClassificationScore = value => typeof value === 'number' &&
   Number.isFinite(value) && value >= 0 && value <= 100;
 
 export const validateArticleClassification = result => {
-  result = canonicalArticleState(result);
+
   if (!isRecord(result) ||
     !Array.isArray(result.contentSummaryBullets) || !result.contentSummaryBullets.every(value => typeof value === 'string') ||
     !Array.isArray(result.tags) || !result.tags.every(value => typeof value === 'string') ||

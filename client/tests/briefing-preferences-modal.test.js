@@ -95,6 +95,9 @@ describe('BriefingPreferencesModal dismissal', () => {
     expect(wrapper.find('[name="markAsReadOnScroll"]').exists()).toBe(false);
     expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(false);
     expect(wrapper.get('[name="showOnlyInterestMatchedArticles"]').element.checked).toBe(true);
+    expect(wrapper.text()).toContain('Show only articles with learned preferences');
+    expect(wrapper.text()).toContain('positive or negative learned preferences');
+    expect(wrapper.text()).toContain('neutral or no learned preference are excluded');
     expect(wrapper.get('[name="showOnlyDevelopingEventArticles"]').element.checked).toBe(false);
     expect(wrapper.get('[name="selectionPeriod"][value="24h"]').element.checked).toBe(true);
     expect(wrapper.get('[name="minDistinctSources"]').element.value).toBe('4');

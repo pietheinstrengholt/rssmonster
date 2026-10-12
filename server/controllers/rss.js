@@ -32,7 +32,7 @@ const loadRssArticles = async ({ userId, itemIds }) => {
 const generateRss = async (req, res, next) => {
   try {
     const { feedId, categoryId, limit = 50, unread } = req.query;
-    const saved = req.query.saved ?? req.query.starred;
+    const saved = req.query.saved;
     const userId = req.userData?.userId;
 
     if (!userId) {

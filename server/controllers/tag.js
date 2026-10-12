@@ -6,7 +6,6 @@ import {
 } from '../services/dailyBriefing/dailyBriefing.service.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { normalizeTagName } from '../services/crawl/persistence/tags.js';
-import { canonicalArticleStatus } from '../utils/articleStateContract.js';
 
 const { Article, BriefingPreference, Tag } = db;
 const TOP_TAG_STATUSES = new Set([
@@ -138,7 +137,7 @@ const getTags = async (req, res) => {
       return res.status(200).json({ tags: tags.slice(0, limit), hasMore: tags.length > limit });
     }
 
-    const status = canonicalArticleStatus(String(req.query?.status || 'unread').toLowerCase());
+    const status = String(req.query?.status || 'unread');
     if (!TOP_TAG_STATUSES.has(status)) {
       return res.status(400).json({ error: 'Unsupported tag status' });
     }

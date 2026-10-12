@@ -129,7 +129,6 @@
           :title="filter.sidebarLabel || filter.label"
           :description="filter.description"
           :count="getStatusCount(filter.value)"
-          :count-label="filter.countLabel"
           :selected="selectionStore.currentSelection.status === filter.value && selectionStore.currentSelection.smartFolderId === null"
           row-class="sidebar-status-item"
           @select="loadType(filter.value)"

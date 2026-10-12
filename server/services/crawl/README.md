@@ -804,8 +804,8 @@ because its start time is old while its heartbeat remains fresh. Without it,
 `CRAWL_RUN_STALE_AFTER_MS` retains its existing meaning. The explicit recovery CLI
 uses the same saved settings. Changing the threshold does not itself run recovery.
 
-`FEED_HTTP_TIMEOUT_MS` is a fallback for omitted `FEED_CONNECT_TIMEOUT_MS` and
-`FEED_BODY_TIMEOUT_MS`. Explicit phase-specific environment values still win.
+`FEED_CONNECT_TIMEOUT_MS` and `FEED_BODY_TIMEOUT_MS` independently configure
+connection and response-body deadlines, including saved crawl settings.
 Feed leases remain at least twice the overall per-feed deadline, and SQLite still
 forces sequential processing. Shared origin permits retain their existing active
 requests and queue; each queued request carries its crawl's concurrency and spacing

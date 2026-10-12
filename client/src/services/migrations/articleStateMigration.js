@@ -1,4 +1,4 @@
-// Normalize old API responses and persisted browser state once at their boundaries.
+// Convert cached records only inside an IndexedDB version upgrade.
 const aliases = Object.freeze({
   sentimentScore: 'toneScore', minSentimentScore: 'minToneScore',
   favoriteInd: 'savedInd', favoritedAt: 'savedAt', clickedAmount: 'openedOriginalCount', lastClickedAt: 'lastOpenedOriginalAt',

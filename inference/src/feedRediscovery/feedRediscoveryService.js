@@ -32,7 +32,7 @@ export async function rediscoverRssUrl({
   );
   // Rejects processing when client is unavailable.
   if (generationConfig.provider === 'openai-compatible' && !client) {
-    throw new Error('OpenAI API key not configured');
+    throw new Error('GENERATION_API_KEY is required');
   }
 
   // Derives the prompt required while performing rediscover rss url.

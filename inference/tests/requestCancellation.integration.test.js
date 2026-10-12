@@ -82,7 +82,7 @@ describe('inference HTTP cancellation and overload', () => {
     const app = createApp({
       provider,
       environment: {
-        EMBEDDING_PROVIDER: 'qwen',
+        EMBEDDING_PROVIDER: 'local',
         EMBEDDING_QUEUE_MAX_PENDING: '1'
       }
     });

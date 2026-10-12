@@ -239,9 +239,8 @@ connection, startup, and contract failure states.
 ### Precedence and administration
 
 1. A nonempty `INFERENCE_BASE_URL` makes the connection environment-managed.
-2. Legacy `INFERENCE_URL` remains a fallback with the same environment precedence.
-3. Otherwise, the deployment's saved Settings connection is used.
-4. Without either, no inference endpoint is configured. There is no implicit localhost connection.
+2. Otherwise, the deployment's saved Settings connection is used.
+3. Without either, no inference endpoint is configured. There is no implicit localhost connection.
 
 An environment key alone never creates an endpoint or replaces a database key.
 Environment values are never copied into the database. When an environment URL
@@ -328,7 +327,7 @@ INFERENCE_BASE_URL=http://127.0.0.1:3001
 # INFERENCE_BASE_URL=https://inference.example.internal
 ```
 
-`INFERENCE_BASE_URL` takes precedence over the legacy `INFERENCE_URL` fallback.
+`INFERENCE_BASE_URL` is the only environment endpoint setting.
 The local default remains `http://127.0.0.1:3001`.
 
 Authentication is opt-in. Generate a secret with `openssl rand -hex 32`, then set
@@ -423,7 +422,7 @@ No Responses API support is required. No Ollama, LM Studio, vLLM, or LocalAI
 specific provider code is needed; endpoint support for the requested API,
 model, and parameters is required.
 
-Explicit `openai-compatible` selection requires a base URL and non-empty API
+`openai-compatible` requires a base URL and non-empty API
 key at startup. Use a placeholder such as `ollama` for a server that ignores
 authentication. Local capabilities need neither. Invalid providers, endpoints,
 model identifiers, and embedding dimensions fail startup. Endpoints must be
@@ -449,8 +448,8 @@ CLASSIFICATION_PROVIDER=local
 CLASSIFICATION_MODEL=onnx-community/ModernBERT-base-nli-ONNX
 ```
 
-Leave `ASSISTANT_PROVIDER`, `ASSISTANT_MODEL`, `ASSISTANT_BASE_URL`, and assistant
-and legacy global credentials unset to leave the optional assistant unavailable.
+Leave `ASSISTANT_PROVIDER`, `ASSISTANT_MODEL`, `ASSISTANT_BASE_URL`, and `ASSISTANT_API_KEY`
+unset to leave the optional assistant unavailable.
 Keep `INFERENCE_ASSISTANT_ENABLED=false` in the server. Local assistant execution
 inside inference is not implemented; to keep chat local too, configure its
 compatible endpoint on your own host and select a tool-capable model.
@@ -516,9 +515,10 @@ Optional remote overrides are `GENERATION_ARTICLE_MODEL` (bullets, tags, labels)
 They use the generation endpoint and credentials. Local generation uses its one
 loaded `GENERATION_MODEL`; workload model overrides apply only to remote calls.
 
-For canonical remote configuration without a model, the default is
-`gpt-4o-mini` across workloads. Legacy generation retains its previous defaults:
-`gpt-4o-mini` for article/label work and `gpt-4.1-mini` for folder/feed work.
+With `GENERATION_PROVIDER=openai-compatible` and no model setting, the default
+is `gpt-4o-mini` across workloads. If the provider setting is omitted, remote
+generation defaults to `gpt-4o-mini` for article/label work and `gpt-4.1-mini` for
+folder/feed work. Set the provider and model explicitly for a consistent deployment.
 Set `OPENAI_OMIT_TEMPERATURE=true` if your generation or classification endpoint
 rejects explicit temperature values; this existing shared compatibility switch
 is preserved. Assistant reasoning remains an optional server-side
@@ -567,43 +567,18 @@ this reasoning-control change does not switch token parameters or increase limit
 
 ### D. Legacy configuration migration
 
-Aliases remain available for one release, with a startup deprecation warning
-that names settings without printing values:
-
-| Legacy setting | Replacement |
-| --- | --- |
-| `EMBEDDING_PROVIDER=qwen` | `EMBEDDING_PROVIDER=local` |
-| `GENERATION_PROVIDER=qwen` | `GENERATION_PROVIDER=local` |
-| `ARTICLE_SCORING_PROVIDER=modernbert` | `CLASSIFICATION_PROVIDER=local` |
-| `ARTICLE_SCORING_PROVIDER=openai` | `CLASSIFICATION_PROVIDER=openai-compatible` |
-| Other `*_PROVIDER=openai` | `*_PROVIDER=openai-compatible` |
-| `OPENAI_BASE_URL`, `OPENAI_API_KEY` | Separate `*_BASE_URL`, `*_API_KEY` for each remote capability |
-| `OPENAI_EMBEDDING_MODEL`, `OPENAI_EMBEDDING_DIMENSIONS` | `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS` |
-| `MODERNBERT_MODEL` | `CLASSIFICATION_MODEL` |
-| `OPENAI_MODEL_CRAWL` | `GENERATION_MODEL` (or `GENERATION_ARTICLE_MODEL`) and `CLASSIFICATION_MODEL` |
-| `OPENAI_MODEL_SMART_FOLDERS` | `GENERATION_SMART_FOLDER_MODEL` |
-| `OPENAI_MODEL_FEED_REDISCOVERY` | `GENERATION_FEED_REDISCOVERY_MODEL` |
-
-Set `CLASSIFICATION_PROVIDER` to override `ARTICLE_SCORING_PROVIDER`. Non-empty
-capability endpoints and keys take precedence over legacy global fallbacks.
-Canonical model settings take precedence over legacy aliases; explicit
-`GENERATION_MODEL` also takes precedence over legacy workload aliases. Canonical
-workload overrides take precedence over `GENERATION_MODEL`.
-
-For safety, legacy `EMBEDDING_PROVIDER=openai` (including an omitted provider) reads only
-`OPENAI_EMBEDDING_MODEL` and `OPENAI_EMBEDDING_DIMENSIONS`, ignoring possibly stale
-local `EMBEDDING_MODEL`/`EMBEDDING_DIMENSIONS`. Likewise, legacy
-`GENERATION_PROVIDER=openai` (including an omitted provider) ignores the formerly local-only `GENERATION_MODEL`.
-Change the provider and model/dimension settings together when migrating.
-Legacy `openai` selection (also the historical default when a provider is
-omitted) retains the SDK's default OpenAI URL if `OPENAI_BASE_URL` is absent.
-For canonical selection, explicitly set `*_BASE_URL=https://api.openai.com/v1`.
-
-Missing credentials for a required remote capability now fail startup with the
-capability's setting name and legacy alias. An unconfigured optional assistant
-is the sole exception. Model, dtype, batch, cache, queue, and lifecycle settings
-otherwise retain their behavior. Do not remove the old configuration until all
-remote capabilities have their own endpoint and credentials.
+Only capability-specific configuration is accepted. Provider values are `local`
+or `openai-compatible`; the optional assistant supports only `openai-compatible`.
+Each remote capability needs its own `*_BASE_URL` and `*_API_KEY`. Set
+`*_BASE_URL=https://api.openai.com/v1` when using OpenAI directly. Configure
+`EMBEDDING_MODEL`/`EMBEDDING_DIMENSIONS`, `GENERATION_MODEL` and
+`CLASSIFICATION_MODEL` independently. Canonical generation workload overrides
+are `GENERATION_ARTICLE_MODEL`, `GENERATION_SMART_FOLDER_MODEL` and
+`GENERATION_FEED_REDISCOVERY_MODEL`, taking precedence over `GENERATION_MODEL`.
+Retired global connection/model settings and alternate provider names are not
+interpreted. Required missing credentials fail startup with the capability setting
+name. An unconfigured optional assistant remains unavailable. Model, dtype,
+batch, cache, queue and lifecycle behavior otherwise remain unchanged.
 
 ## OpenAI-compatible gateways and Ollama
 
@@ -619,8 +594,7 @@ to an address reachable from inference. The example names `ollama` and
 these services.
 
 The MySQL Compose file forwards capability provider, endpoint, key, model, and
-embedding dimension settings from the root `.env` to **inference only**. It also
-forwards legacy aliases during migration. Defaults remain local embeddings,
+embedding dimension settings from the root `.env` to **inference only**. Defaults remain local embeddings,
 generation, and classification, with no assistant credentials. Model and
 dimension defaults are resolved by inference according to the selected provider.
 For manual installation, put these settings in `inference/.env` instead.

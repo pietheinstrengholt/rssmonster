@@ -157,7 +157,7 @@ describe('MCP controller', () => {
 
     await mcpController.postMcp(req, res);
 
-    expect(mocked.handlers.size).toBe(22);
+    expect(mocked.handlers.size).toBe(19);
     expect(mocked.handlers.has('categories')).toBe(true);
     expect(mocked.handlers.has('search_articles')).toBe(true);
     expect(mocked.handlers.has('search_articles_by_keyword')).toBe(true);
@@ -219,7 +219,12 @@ describe('MCP controller', () => {
     expect(articleIds.safeParse(['7']).success).toBe(false);
     expect(articleIds.safeParse([0]).success).toBe(false);
 
+    for (const name of ['favorite_articles', 'search_clicked_articles', 'tags_clicked_articles']) {
+      expect(mocked.handlers.has(name)).toBe(false);
+    }
     const canonicalSearch = mocked.schemas.get('search_articles');
+    expect(canonicalSearch).not.toHaveProperty('favorite');
+    expect(canonicalSearch).not.toHaveProperty('clicked');
     for (const field of ['feedIds', 'categoryIds']) {
       expect(canonicalSearch[field].safeParse([2, 3]).success).toBe(true);
       expect(canonicalSearch[field].safeParse(['2']).success).toBe(false);
@@ -823,7 +828,6 @@ describe('MCP controller', () => {
     expect(toolData(searched).totalMatches).toBe(1);
     expect(toolData(openedOriginalTags)).toEqual({
       totalOpenedOriginalArticles: 1,
-      totalClickedArticles: 1,
       topTags: [{ name: 'security', count: 2 }]
     });
   });
@@ -841,7 +845,6 @@ describe('MCP controller', () => {
     expect(toolData(tagged).totalArticles).toBe(0);
     expect(toolData(openedOriginalTags)).toEqual({
       totalOpenedOriginalArticles: 0,
-      totalClickedArticles: 0,
       topTags: []
     });
   });

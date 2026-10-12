@@ -60,7 +60,7 @@ describe('OpenAI embedding provider', () => {
     }));
     const createClient = vi.fn(() => ({ embeddings: { create } }));
     const provider = createOpenAIEmbeddingProvider({
-      environment: { OPENAI_API_KEY: 'test-key' },
+      environment: { EMBEDDING_API_KEY: 'test-key', EMBEDDING_BASE_URL: 'https://api.openai.com/v1', GENERATION_API_KEY: 'test-key', GENERATION_BASE_URL: 'https://api.openai.com/v1', CLASSIFICATION_API_KEY: 'test-key', CLASSIFICATION_BASE_URL: 'https://api.openai.com/v1', ASSISTANT_API_KEY: 'test-key', ASSISTANT_BASE_URL: 'https://api.openai.com/v1' },
       dependencies: { createClient, logger: { log: vi.fn() } }
     });
 
@@ -90,18 +90,18 @@ describe('OpenAI embedding provider', () => {
 
   it('creates the default OpenAI client', async () => {
     const provider = createOpenAIEmbeddingProvider({
-      environment: { OPENAI_API_KEY: 'default-key' }
+      environment: { EMBEDDING_API_KEY: 'default-key', EMBEDDING_BASE_URL: 'https://api.openai.com/v1', GENERATION_API_KEY: 'default-key', GENERATION_BASE_URL: 'https://api.openai.com/v1', CLASSIFICATION_API_KEY: 'default-key', CLASSIFICATION_BASE_URL: 'https://api.openai.com/v1', ASSISTANT_API_KEY: 'default-key', ASSISTANT_BASE_URL: 'https://api.openai.com/v1' }
     });
 
     await expect(provider.embed(['text'])).resolves.toEqual([[1]]);
-    expect(OpenAIMock).toHaveBeenCalledWith({ apiKey: 'default-key' });
+    expect(OpenAIMock).toHaveBeenCalledWith({ apiKey: 'default-key', baseURL: 'https://api.openai.com/v1' });
   });
 
   it('passes the configured base URL to the OpenAI client', async () => {
     const provider = createOpenAIEmbeddingProvider({
       environment: {
-        OPENAI_API_KEY: 'default-key',
-        OPENAI_BASE_URL: 'https://litellm.example/v1'
+        EMBEDDING_API_KEY: 'default-key',  GENERATION_API_KEY: 'default-key',  CLASSIFICATION_API_KEY: 'default-key',  ASSISTANT_API_KEY: 'default-key',
+        EMBEDDING_BASE_URL: 'https://litellm.example/v1', GENERATION_BASE_URL: 'https://litellm.example/v1', CLASSIFICATION_BASE_URL: 'https://litellm.example/v1', ASSISTANT_BASE_URL: 'https://litellm.example/v1'
       }
     });
 

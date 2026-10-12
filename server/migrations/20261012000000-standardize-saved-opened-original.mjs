@@ -1,4 +1,4 @@
-import { canonicalArticleExpression, canonicalArticleState } from '../utils/articleStateContract.js';
+import { canonicalArticleExpression, canonicalArticleState } from './lib/articleStateMigration.mjs';
 
 const columns = {
   articles: { favoriteInd: 'savedInd', favoritedAt: 'savedAt', clickedAmount: 'openedOriginalCount', lastClickedAt: 'lastOpenedOriginalAt' },

@@ -6,6 +6,6 @@ Inspect opens the existing contextual `InterestInspector` beside the list on wid
 
 Each Island row offers Mute or Unmute without changing its Active/Archived lifecycle or reloading the overview. Muted Islands remain visible with a badge and keep their evidence and normal maintenance, but no longer participate in future Island-based interest scoring. Unmuting restores scoring participation for subsequent calculations. Neither toggle rescans or rescores previously scored Articles.
 
-When a recommended article attributes its promotion to an Island, its “Why recommended” explanation links the Island name to Settings → Islands. The page opens on Active and inspects that Island. Explanations without an Island ID keep the name as plain text.
+When a recommended article attributes its promotion to an Island, its “Why this article was ranked” explanation links the Island name to Settings → Islands. The page opens on Active and inspects that Island. Explanations without an Island ID keep the name as plain text.
 
 The standalone `/interests` page and its sidebar and mobile menu entries have been removed. `SettingsIslands.vue` owns the list state, `InterestInspector.vue` owns detail state, and `api/interests.js` owns the API calls. The old Settings Island overview API remains available for other consumers but is no longer used by this page.

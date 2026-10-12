@@ -1,4 +1,4 @@
-import { canonicalArticleState, canonicalArticleActionKind } from './articleStateContract.js';
+import { canonicalArticleState, canonicalArticleActionKind } from './migrations/articleStateMigration.js';
 
 export const OFFLINE_DATABASE_NAME = 'rssmonster-offline';
 export const OFFLINE_DATABASE_VERSION = 4;

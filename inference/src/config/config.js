@@ -32,32 +32,22 @@ export const getConfig = (env = process.env) => ({
   port: parsePort(env.INFERENCE_PORT)
 });
 
-const getProviderSetting = (capability, env) => env[`${capability}_PROVIDER`] ||
-  (capability === 'CLASSIFICATION' ? env.ARTICLE_SCORING_PROVIDER : '') || 'openai';
+const getProviderSetting = (capability, env) => env[`${capability}_PROVIDER`] || 'openai-compatible';
 
 const getProvider = (capability, env) => {
-  const value = getProviderSetting(capability, env);
-  const aliases = capability === 'ASSISTANT'
-    ? { openai: 'openai-compatible' }
-    : { openai: 'openai-compatible', [capability === 'CLASSIFICATION' ? 'modernbert' : 'qwen']: 'local' };
-  const provider = aliases[value] || value;
+  const provider = getProviderSetting(capability, env);
   const supported = capability === 'ASSISTANT' ? ['openai-compatible'] : ['local', 'openai-compatible'];
-  if (!supported.includes(provider)) {
-    throw new Error(`${capability}_PROVIDER must be ${supported.join(' or ')}`);
-  }
+  if (!supported.includes(provider)) throw new Error(`${capability}_PROVIDER must be ${supported.join(' or ')}`);
   return provider;
 };
 
-// Legacy credentials are fallback aliases only; no capability borrows another capability's settings.
-export const getCompatibleApiKey = (capability, env = process.env) =>
-  env[`${capability}_API_KEY`] || env.OPENAI_API_KEY;
+export const getCompatibleApiKey = (capability, env = process.env) => env[`${capability}_API_KEY`];
 
 export const getCompatibleClientOptions = (capability, env = process.env) => {
   const apiKey = getCompatibleApiKey(capability, env);
-  const baseURL = env[`${capability}_BASE_URL`] || env.OPENAI_BASE_URL;
-  const explicitCompatible = getProviderSetting(capability, env) === 'openai-compatible';
-  if (!apiKey?.trim()) throw new Error(`${capability}_API_KEY is required (legacy alias: OPENAI_API_KEY)`);
-  if (!baseURL?.trim() && explicitCompatible) {
+  const baseURL = env[`${capability}_BASE_URL`];
+  if (!apiKey?.trim()) throw new Error(`${capability}_API_KEY is required`);
+  if (!baseURL?.trim()) {
     throw new Error(`${capability}_BASE_URL is required for openai-compatible`);
   }
   if (baseURL) {
@@ -97,12 +87,8 @@ export const getEmbeddingConfig = (env = process.env) => {
   }
 
   if (provider === 'openai-compatible') {
-    // Legacy openai ignored local model settings, which may still be present in older .env files.
-    const legacy = getProviderSetting('EMBEDDING', env) === 'openai';
-    const modelId = (legacy ? env.OPENAI_EMBEDDING_MODEL : env.EMBEDDING_MODEL || env.OPENAI_EMBEDDING_MODEL) ||
-      DEFAULT_OPENAI_EMBEDDING_MODEL;
-    const dimensions = Number((legacy ? env.OPENAI_EMBEDDING_DIMENSIONS :
-      env.EMBEDDING_DIMENSIONS || env.OPENAI_EMBEDDING_DIMENSIONS) || DEFAULT_OPENAI_EMBEDDING_DIMENSIONS);
+    const modelId = env.EMBEDDING_MODEL || DEFAULT_OPENAI_EMBEDDING_MODEL;
+    const dimensions = Number(env.EMBEDDING_DIMENSIONS || DEFAULT_OPENAI_EMBEDDING_DIMENSIONS);
     if (!Number.isSafeInteger(dimensions) || dimensions <= 0) {
       throw new Error('EMBEDDING_DIMENSIONS must be a positive integer');
     }
@@ -132,9 +118,8 @@ export const getEmbeddingConfig = (env = process.env) => {
 export const getGenerationConfig = (env = process.env) => {
   const provider = getProvider('GENERATION', env);
   const reasoningEffort = provider === 'openai-compatible' ? getReasoningEffort('GENERATION', env) : undefined;
-  const model = getProviderSetting('GENERATION', env) === 'openai' ? undefined : env.GENERATION_MODEL;
-  const remoteDefault = env.GENERATION_PROVIDER === 'openai-compatible'
-    ? env.OPENAI_MODEL_CRAWL || DEFAULT_OPENAI_CRAWL_MODEL : undefined;
+  const model = env.GENERATION_MODEL;
+  const remoteDefault = env.GENERATION_PROVIDER === 'openai-compatible' ? DEFAULT_OPENAI_CRAWL_MODEL : undefined;
   const queueMaxPending = Number(
     env.GENERATION_QUEUE_MAX_PENDING ?? DEFAULT_GENERATION_QUEUE_MAX_PENDING
   );
@@ -147,17 +132,14 @@ export const getGenerationConfig = (env = process.env) => {
     queueMaxPending,
     modelId: provider === 'local'
       ? env.GENERATION_MODEL || DEFAULT_GENERATION_MODEL
-      : model || env.OPENAI_MODEL_CRAWL || DEFAULT_OPENAI_CRAWL_MODEL,
+      : model || DEFAULT_OPENAI_CRAWL_MODEL,
     ...(reasoningEffort ? { reasoningEffort } : {}),
     dtype: provider === 'local'
       ? env.GENERATION_DTYPE || DEFAULT_GENERATION_DTYPE
       : undefined,
-    articleModel: env.GENERATION_ARTICLE_MODEL || model ||
-      env.OPENAI_MODEL_CRAWL || DEFAULT_OPENAI_CRAWL_MODEL,
-    smartFolderModel: env.GENERATION_SMART_FOLDER_MODEL || model ||
-      env.OPENAI_MODEL_SMART_FOLDERS || remoteDefault || DEFAULT_OPENAI_SMART_FOLDER_MODEL,
-    feedRediscoveryModel: env.GENERATION_FEED_REDISCOVERY_MODEL || model || env.OPENAI_MODEL_FEED_REDISCOVERY ||
-      remoteDefault || DEFAULT_OPENAI_FEED_REDISCOVERY_MODEL
+    articleModel: env.GENERATION_ARTICLE_MODEL || model || DEFAULT_OPENAI_CRAWL_MODEL,
+    smartFolderModel: env.GENERATION_SMART_FOLDER_MODEL || model || remoteDefault || DEFAULT_OPENAI_SMART_FOLDER_MODEL,
+    feedRediscoveryModel: env.GENERATION_FEED_REDISCOVERY_MODEL || model || remoteDefault || DEFAULT_OPENAI_FEED_REDISCOVERY_MODEL
   };
 };
 
@@ -183,8 +165,8 @@ export const getArticleScoringConfig = (env = process.env) => {
     provider,
     queueMaxPending,
     modelId: provider === 'local'
-      ? env.CLASSIFICATION_MODEL || env.MODERNBERT_MODEL || DEFAULT_MODERNBERT_MODEL
-      : env.CLASSIFICATION_MODEL || env.OPENAI_MODEL_CRAWL || DEFAULT_OPENAI_CRAWL_MODEL,
+      ? env.CLASSIFICATION_MODEL || DEFAULT_MODERNBERT_MODEL
+      : env.CLASSIFICATION_MODEL || DEFAULT_OPENAI_CRAWL_MODEL,
     ...(reasoningEffort ? { reasoningEffort } : {}),
     dtype: provider === 'local'
       ? env.MODERNBERT_DTYPE || DEFAULT_MODERNBERT_DTYPE
@@ -217,20 +199,6 @@ export const validateProviderConfiguration = (env = process.env, logger = consol
       getCompatibleClientOptions(capability, env);
     }
     validateModelIdentifiers(capability, config);
-  }
-  const legacyKeys = ['OPENAI_API_KEY', 'OPENAI_BASE_URL', 'OPENAI_EMBEDDING_MODEL',
-    'OPENAI_EMBEDDING_DIMENSIONS', 'OPENAI_MODEL_CRAWL', 'OPENAI_MODEL_SMART_FOLDERS',
-    'OPENAI_MODEL_FEED_REDISCOVERY', 'ARTICLE_SCORING_PROVIDER', 'MODERNBERT_MODEL'];
-  const deprecated = legacyKeys.filter(key => env[key]);
-  for (const capability of Object.keys(configs)) {
-    if (['openai', 'qwen', 'modernbert'].includes(env[`${capability}_PROVIDER`])) {
-      deprecated.push(`${capability}_PROVIDER`);
-    }
-  }
-  if (deprecated.length) {
-    logger.warn?.(`[INFERENCE] Deprecated configuration: ${deprecated.join(', ')}. ` +
-      'Migrate to capability PROVIDER=local|openai-compatible and capability BASE_URL/API_KEY/MODEL settings; ' +
-      'aliases are retained for one release.');
   }
   for (const [capability, config] of Object.entries(configs)) {
     const optionalAssistant = capability === 'ASSISTANT' && !getCompatibleApiKey(capability, env);

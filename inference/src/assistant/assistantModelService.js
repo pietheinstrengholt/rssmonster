@@ -15,7 +15,7 @@ export const createAssistantModelService = ({
   const getProvider = () => {
     if (provider) return provider;
     const apiKey = getCompatibleApiKey('ASSISTANT', environment);
-    if (!apiKey) throw new Error('ASSISTANT_API_KEY is required (legacy alias: OPENAI_API_KEY)');
+    if (!apiKey) throw new Error('ASSISTANT_API_KEY is required');
     provider = createProvider(apiKey, environment);
     return provider;
   };

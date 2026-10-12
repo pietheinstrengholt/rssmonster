@@ -26,7 +26,7 @@ The default briefing:
 
 The selection period is persisted as either `24h` or `7d`; `7d` is the default. The Daily Briefing preference record is one-to-one with its owning user. A user must never have multiple briefing preference rows.
 
-The saved eligibility preferences feed the article search, briefing count, context statistics, and story summary. The Briefing-specific developing-events preference is presentation-only: it selects developing coverage for the morning summary without changing article-search results. Their navigation scope is not identical: the sidebar count and structured introduction describe the user's global briefing across subscriptions, while the visible article list can also be narrowed by an active category, feed, or tag. Navigation counts are visibly labeled **global** and include a scope explanation. The briefing respects the user's global article score thresholds and normal article safety and filtering rules.
+The saved eligibility preferences feed the article search, briefing count, context statistics, and story summary. The Briefing-specific developing-events preference is presentation-only: it selects developing coverage for the morning summary without changing article-search results. Their navigation scope is not identical: the sidebar count and structured introduction describe the user's global briefing across subscriptions, while the visible article list can also be narrowed by an active category, feed, or tag. Sidebar hover text explains Daily Briefing and that its count covers matching articles across subscriptions for the configured period and preferences, rather than stories in the summary. The sidebar count has no visible **global** label; mobile navigation retains that label and the scope explanation. The briefing respects the user's global article score thresholds and normal article safety and filtering rules.
 
 ## Briefing introduction
 
@@ -79,7 +79,7 @@ The available article-selection controls are:
 - **Only unread articles** excludes articles already marked as read.
 - **Mark as read while scrolling** automatically marks briefing articles as read after they pass the viewport. It is available only when the unread-only filter is enabled.
 - **Include developing coverage in the summary** selects new coverage for events in the morning summary without changing the article list.
-- **Show only interest-matched articles** restricts eligibility to nonzero stored interest, including negative interest.
+- **Show only articles with learned preferences** restricts eligibility to nonzero stored interest, including positive and negative preferences. Neutral or absent preferences are excluded. The persisted `showOnlyInterestMatchedArticles` setting is unchanged.
   This is the existing eligibility contract, separate from signed Recommended ranking.
 - **Show only developing stories** restricts eligibility to unread articles selected as an event's developing article when that differs from its representative.
 

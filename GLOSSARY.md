@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Interest match | Briefing's “Show only interest-matched articles” includes nonzero negative interest according to its documented eligibility contract. “Matches your interests” can sound like a positive recommendation, while the interest inspector distinguishes positive, neutral, and negative preference. | [Briefing preferences](client/src/components/briefing/README.md#article-selection), [interest presentation](client/src/services/interestPresentation.js), [article metadata](client/src/components/articles/ArticleMeta.vue) |
 | High-trust priority | Unread and Briefing expose similar **Prioritize high-trust coverage** wording, but the documented ranking effects differ. Briefing priority changes structured-summary ordering; Unread has a legacy chronological trust override. Neither is the article-only overall-quality value. | [Unread preferences](client/src/components/dialogs/UnreadConfigurationModal.vue), [Briefing coverage quality](client/src/components/briefing/README.md#coverage-quality), [scoring modes](docs/scoring.md#chronological) |
 | Source / official feed / independence | Source counts refer to feeds, Original source is publisher-declared attribution, and Official Sources are configured domain mappings. The article signal calls an official-source article **Official Feed**. These meanings should not be conflated with verified provenance or independent reporting. | [Story sources](client/src/components/articles/ArticleStorySourcesPopover.vue), [article signals](client/src/components/articles/helpers/articleSignals.js), [article attribution](client/src/components/articles/README.md#experience-model), [Official Sources](client/src/components/settings/README.md#official-sources) |
 | Refresh / crawl | “Refresh” can reload database-backed article results, crawl subscribed feeds, prepare offline downloads, or reload an insight snapshot. Pull-to-refresh explicitly does not crawl feeds. | [Shell refresh behavior](client/src/components/shell/README.md#layout-and-scroll-ownership), [feed refresh stream](client/src/services/feedRefreshStream.js), [offline reading](client/src/services/offlineReading.js) |
@@ -17,6 +16,14 @@ not necessarily indicate a functional defect.
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Learned preferences:** **Show only articles with learned preferences** includes
+positive and negative nonzero stored interest, excluding neutral or absent
+preferences. Article badges distinguish **Positive learned preference** and
+**Negative learned preference** using `interestScore`, independently of the overall
+recommendation score. Existing attributed ranking signals open under **Why this
+article was ranked**. Eligibility, scoring, expressions and the persisted
+`showOnlyInterestMatchedArticles` contract are unchanged.
 
 **AI provider and defaults:** Scores help describes the configured inference
 service, which supports local models or compatible remote providers; OpenAI is
@@ -31,8 +38,7 @@ Provider configuration, values, status handling and contracts are unchanged.
 higher scores indicating calmer, more factual language rather than positive news.
 `toneScore` and `minToneScore` are canonical throughout source code, APIs,
 inference, database columns, persisted settings, and cached articles.
-Legacy `sentimentScore` and `minSentimentScore` remain accepted boundary aliases;
-responses expose both names during migration. Scoring, thresholds, formulas, and
+Only canonical names are accepted at runtime and returned in responses. Scoring, thresholds, formulas, and
 search expressions are unchanged. See [the migration guide](docs/tone-score-migration.md).
 
 **Quality precision:** Overall quality badges, accessible labels, breakdown
@@ -58,8 +64,11 @@ presets and custom windows retain `firstSeen` expressions. Unread date and age
 controls continue to constrain publication time. Existing saved folders are unchanged.
 
 **Briefing scope:** the introduction is labeled **Global briefing across your
-subscriptions**, and navigation counts are labeled **global**. Category, feed,
-or tag filters hide the global introduction and show **Filtered briefing articles**
+subscriptions**. Sidebar hover text explains Daily Briefing and its count of
+matching articles across subscriptions for the configured period and preferences,
+rather than stories in the summary. The sidebar count has no visible **global**
+label; mobile navigation retains it. Category, feed, or tag filters hide the
+global introduction and show **Filtered briefing articles**
 with a count-scope explanation, including for empty results. Existing collection
 filters and global summary/count contracts are preserved.
 
@@ -88,14 +97,13 @@ AI-generated **Summary bullets** remain a separate presentation.
 Reading modes use **Reader** (`reader`), **Expanded** (`expanded`),
 **Summarized** (`summarized`), **Summary bullets** (`summaryBullets`), and
 **Headlines** (`headlines`) across UI, source, APIs, and persisted settings.
-Legacy `full` and `minimal` inputs normalize to `expanded` and `headlines`.
+API requests and persisted settings use only these canonical values.
 See [the migration guide](docs/reading-mode-migration.md).
 
 **Saved and Opened originals:** canonical UI, source, API, database and persisted
-expression names are now `saved` and `openedOriginal`. Legacy names remain only
-at compatibility boundaries and in historical migrations/fixtures. See the
-[saved/opened-original migration guide](docs/saved-opened-original-migration.md)
-for field mappings, aliases and upgrade requirements.
+expression names are `saved` and `openedOriginal`. Runtime compatibility aliases
+have been removed; historical data conversions remain in migrations/fixtures. See
+[Bookmarks](docs/bookmarks.md) and [Search](docs/search.md) for usage and expressions.
 
 ## Scope and usage
 
@@ -255,8 +263,8 @@ exposure. The client does not define the learned deep-read threshold.
 **Saved** is the bookmark flag (`savedInd`, status/query `saved`); **unsaved**
 clears it. **Opened originals** uses `openedOriginalCount` and status/query
 `openedOriginal`, which can also be explicitly marked or cleared. The clocks are
-`savedAt` and `lastOpenedOriginalAt`. Legacy `favorite`, `star` and `clicked`
-expressions remain accepted aliases. An Action can mark
+`savedAt` and `lastOpenedOriginalAt`. Expressions use `saved:true` and
+`openedOriginal:true`. An Action can mark
 an original opened without navigating there, so the state is not proof of an
 actual browser visit. Neither state implies read completion.
 
@@ -446,8 +454,8 @@ Evidence: [Event presentation](client/src/components/articles/ArticleMeta.vue),
 **Ad-free content** (`advertisementScore`) are separate 0–100 components, with
 higher values better. Higher Tone means more neutral, balanced language, not a
 more positive subject. Higher advertisement score means less promotion.
-`sentimentScore` and `minSentimentScore` are legacy aliases for `toneScore` and
-`minToneScore`.
+The minimum Tone threshold is `minToneScore`. Runtime inputs and responses use
+only canonical score properties.
 **Score thresholds** restrict eligibility; 0 disables the corresponding Settings
 gate. Query `quality:>=0.75` means overall quality of at least 75/100.
 

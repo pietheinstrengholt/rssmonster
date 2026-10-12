@@ -27,6 +27,17 @@ describe('action replacement persistence', () => {
     await User.destroy({ where: { id: userIds.splice(0) } });
   });
 
+  it.each(['favorite', 'star', 'clicked'])('rejects retired Action type %s without replacing saved rules', async actionType => {
+    const owner = await createUser(`action-canonical-${actionType}`);
+    const original = await Action.create({ userId: owner.id, name: 'Saved rule', actionType: 'saved', regularExpression: 'topic' });
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+    const next = vi.fn();
+    await actionController.createAction({ userData: { userId: owner.id }, body: { actions: [{ name: 'Retired', actionType }] } }, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect((await Action.findAll({ where: { userId: owner.id } })).map(action => action.id)).toEqual([original.id]);
+  });
+
   it('preserves submitted rule priority in the editor and crawler after saving again', async () => {
     const owner = await createUser('action-order-owner');
     const other = await createUser('action-order-other');

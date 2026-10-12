@@ -297,10 +297,9 @@ describe('articleSearch.service', () => {
       expect(result.itemIds.length).toBe(1);
     });
 
-    it('keeps legacy star status as a saved alias', async () => {
+    it('does not map a retired status to saved', async () => {
       const result = await searchArticles({ userId: user.id, status: 'star' });
-      expect(result.itemIds).toContain(articles.saved.id);
-      expect(result.itemIds.length).toBe(1);
+      expect(result.itemIds).not.toEqual([articles.saved.id]);
     });
 
     // Verifies Hot status composes with both category and feed source scopes.
@@ -503,9 +502,9 @@ describe('articleSearch.service', () => {
       });
     });
 
-    it('keeps legacy star:true as a saved alias', async () => {
+    it('treats a retired operator as literal interactive search text', async () => {
       const result = await searchArticles({ userId: user.id, search: 'star:true' });
-      expect(result.itemIds).toContain(articles.saved.id);
+      expect(result.itemIds).toEqual([]);
     });
 
     it('filters by unread:true', async () => {

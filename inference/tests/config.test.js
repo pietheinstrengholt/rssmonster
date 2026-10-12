@@ -24,14 +24,14 @@ describe('inference config', () => {
       .toThrow('INFERENCE_PORT must be an integer between 1 and 65535');
   });
 
-  it('keeps the OpenAI client options unchanged without a base URL', () => {
-    expect(getCompatibleClientOptions('EMBEDDING', { OPENAI_API_KEY: 'test-key' })).toEqual({ apiKey: 'test-key' });
+  it('uses canonical endpoint and key settings', () => {
+    expect(getCompatibleClientOptions('EMBEDDING', { EMBEDDING_API_KEY: 'test-key', EMBEDDING_BASE_URL: 'https://api.openai.com/v1', GENERATION_API_KEY: 'test-key', GENERATION_BASE_URL: 'https://api.openai.com/v1', CLASSIFICATION_API_KEY: 'test-key', CLASSIFICATION_BASE_URL: 'https://api.openai.com/v1', ASSISTANT_API_KEY: 'test-key', ASSISTANT_BASE_URL: 'https://api.openai.com/v1' })).toEqual({ apiKey: 'test-key', baseURL: 'https://api.openai.com/v1' });
   });
 
   it('adds the configured OpenAI base URL to client options', () => {
     expect(getCompatibleClientOptions('EMBEDDING', {
-      OPENAI_API_KEY: 'test-key',
-      OPENAI_BASE_URL: 'https://litellm.example/v1'
+      EMBEDDING_API_KEY: 'test-key',  GENERATION_API_KEY: 'test-key',  CLASSIFICATION_API_KEY: 'test-key',  ASSISTANT_API_KEY: 'test-key',
+      EMBEDDING_BASE_URL: 'https://litellm.example/v1', GENERATION_BASE_URL: 'https://litellm.example/v1', CLASSIFICATION_BASE_URL: 'https://litellm.example/v1', ASSISTANT_BASE_URL: 'https://litellm.example/v1'
     })).toEqual({
       apiKey: 'test-key',
       baseURL: 'https://litellm.example/v1'
@@ -60,8 +60,8 @@ describe('generation config', () => {
 
   it('keeps generation selection independent from the embedding provider', () => {
     const environment = {
-      EMBEDDING_PROVIDER: 'qwen',
-      GENERATION_PROVIDER: 'openai'
+      EMBEDDING_PROVIDER: 'local',
+      GENERATION_PROVIDER: 'openai-compatible'
     };
     expect(getEmbeddingConfig(environment).provider).toBe('local');
     expect(getGenerationConfig(environment).provider).toBe('openai-compatible');
@@ -69,10 +69,10 @@ describe('generation config', () => {
 
   it('reads capability model overrides', () => {
     expect(getGenerationConfig({
-      GENERATION_PROVIDER: 'openai',
-      OPENAI_MODEL_CRAWL: 'article-model',
-      OPENAI_MODEL_SMART_FOLDERS: 'folder-model',
-      OPENAI_MODEL_FEED_REDISCOVERY: 'feed-model'
+      GENERATION_PROVIDER: 'openai-compatible',
+      GENERATION_ARTICLE_MODEL: 'article-model',
+      GENERATION_SMART_FOLDER_MODEL: 'folder-model',
+      GENERATION_FEED_REDISCOVERY_MODEL: 'feed-model'
     })).toMatchObject({
       articleModel: 'article-model',
       smartFolderModel: 'folder-model',
@@ -87,7 +87,7 @@ describe('generation config', () => {
 
   it('configures Qwen generation', () => {
     expect(getGenerationConfig({
-      GENERATION_PROVIDER: 'qwen',
+      GENERATION_PROVIDER: 'local',
       GENERATION_QUEUE_MAX_PENDING: '7'
     })).toMatchObject({
       provider: 'local',
@@ -111,7 +111,7 @@ describe('assistant config', () => {
     expect(getAssistantConfig({})).toEqual({ provider: 'openai-compatible', modelId: 'gpt-4o-mini' });
     expect(getAssistantConfig({ ASSISTANT_MODEL: 'assistant-model' }).modelId)
       .toBe('assistant-model');
-    expect(() => getAssistantConfig({ ASSISTANT_PROVIDER: 'qwen' }))
+    expect(() => getAssistantConfig({ ASSISTANT_PROVIDER: 'local' }))
       .toThrow('ASSISTANT_PROVIDER must be openai-compatible');
   });
 });
@@ -127,7 +127,7 @@ describe('article scoring config', () => {
   });
 
   it('configures the cached ModernBERT scoring model', () => {
-    expect(getArticleScoringConfig({ ARTICLE_SCORING_PROVIDER: 'modernbert' })).toEqual({
+    expect(getArticleScoringConfig({ CLASSIFICATION_PROVIDER: 'local' })).toEqual({
       provider: 'local',
       queueMaxPending: 4,
       modelId: 'onnx-community/ModernBERT-base-nli-ONNX',
@@ -137,12 +137,12 @@ describe('article scoring config', () => {
 
   it('reads ModernBERT overrides and rejects unsupported providers', () => {
     expect(getArticleScoringConfig({
-      ARTICLE_SCORING_PROVIDER: 'modernbert',
-      MODERNBERT_MODEL: 'local/test-model',
+      CLASSIFICATION_PROVIDER: 'local',
+      CLASSIFICATION_MODEL: 'local/test-model',
       MODERNBERT_DTYPE: 'fp32',
       MODERNBERT_QUEUE_MAX_PENDING: '7'
     })).toMatchObject({ modelId: 'local/test-model', dtype: 'fp32', queueMaxPending: 7 });
-    expect(() => getArticleScoringConfig({ ARTICLE_SCORING_PROVIDER: 'other' }))
+    expect(() => getArticleScoringConfig({ CLASSIFICATION_PROVIDER: 'other' }))
       .toThrow('CLASSIFICATION_PROVIDER must be local or openai-compatible');
   });
 
@@ -167,7 +167,7 @@ describe('embedding config', () => {
   });
 
   it('uses the Qwen3 embedding defaults', () => {
-    expect(getEmbeddingConfig({ EMBEDDING_PROVIDER: 'qwen' })).toEqual({
+    expect(getEmbeddingConfig({ EMBEDDING_PROVIDER: 'local' })).toEqual({
       provider: 'local',
       modelId: 'onnx-community/Qwen3-Embedding-0.6B-ONNX',
       dimensions: 1024,
@@ -178,7 +178,7 @@ describe('embedding config', () => {
 
   it('reads the model from the environment', () => {
     expect(getEmbeddingConfig({
-      EMBEDDING_PROVIDER: 'qwen',
+      EMBEDDING_PROVIDER: 'local',
       EMBEDDING_MODEL: 'test/model',
       EMBEDDING_QUEUE_MAX_PENDING: '7'
     })).toEqual({
@@ -191,7 +191,7 @@ describe('embedding config', () => {
   });
 
   it('rejects dimension reduction', () => {
-    expect(() => getEmbeddingConfig({ EMBEDDING_PROVIDER: 'qwen', EMBEDDING_DIMENSIONS: '256' }))
+    expect(() => getEmbeddingConfig({ EMBEDDING_PROVIDER: 'local', EMBEDDING_DIMENSIONS: '256' }))
       .toThrow('EMBEDDING_DIMENSIONS must be 1024; dimension reduction is not supported');
   });
 

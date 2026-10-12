@@ -4,7 +4,7 @@ import {
   parseSemanticModelRebuildArgs,
   rebuildSemanticForEmbeddingModel
 } from '../../scripts/rebuildSemanticForEmbeddingModel.js';
-import { buildEngagedVectorTargetWhere } from '../../scripts/backfillEngagedArticleVectors.js';
+import { buildEngagedVectorTargetWhere, parseArgs } from '../../scripts/backfillEngagedArticleVectors.js';
 
 describe('semantic model rebuild script', () => {
   it('requires explicit confirmation outside dry-run mode', () => {
@@ -135,5 +135,12 @@ describe('semantic model rebuild script', () => {
       'events:2',
       'islands:2'
     ]);
+  });
+});
+
+describe('engaged vector maintenance arguments', () => {
+  it('accepts the canonical scope and rejects its retired alias', () => {
+    expect(parseArgs(['node', 'script', '--saved-and-opened-originals-only']).includeFeedbackSignals).toBe(false);
+    expect(() => parseArgs(['node', 'script', '--starred-and-clicked-only'])).toThrow('Unsupported option');
   });
 });

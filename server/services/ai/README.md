@@ -115,7 +115,7 @@ inference circuit, embedding, agent, domain, and job tests remain regression che
 
 ## Optional inference authentication
 
-The server transport uses `INFERENCE_BASE_URL` (`INFERENCE_URL` remains a fallback)
+The server transport uses `INFERENCE_BASE_URL`
 and sends `X-Inference-API-Key` when `INFERENCE_API_KEY` is nonempty. Configure the
 exact same opaque shared secret on server/workers and inference. With no inference
 key, authentication is disabled. `/health` remains public; `/ready` and all API

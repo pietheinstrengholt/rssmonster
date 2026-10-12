@@ -1,4 +1,3 @@
-import { canonicalArticleViewMode } from '../utils/articleStateContract.js';
 import { DataTypes } from 'sequelize';
 
 export default (sequelize) => {
@@ -76,8 +75,7 @@ export default (sequelize) => {
       viewMode: {
         type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: 'expanded',
-        set(value) { this.setDataValue('viewMode', canonicalArticleViewMode(value)); }
+        defaultValue: 'expanded'
       },
       // Stores article grouping as none or event.
       grouping: {

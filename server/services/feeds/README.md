@@ -460,5 +460,5 @@ adapters read the immutable crawl settings scope from `config/crawlSettings.js`.
 Parser workers receive the allowlisted overrides explicitly. Direct uses outside a
 crawl scope continue to resolve environment defaults. No parser or HTTP operation
 performs a database lookup. The origin coordinator retains one shared queue across
-snapshots, with limits captured on each acquisition. `FEED_HTTP_TIMEOUT_MS` is an
-optional fallback for phase-specific connect/body settings, which take precedence.
+snapshots, with limits captured on each acquisition. Connection and body deadlines
+use `FEED_CONNECT_TIMEOUT_MS` and `FEED_BODY_TIMEOUT_MS` independently.

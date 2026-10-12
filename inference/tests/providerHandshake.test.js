@@ -98,20 +98,12 @@ describe.each([
 
 
 describe('optional assistant handshake', () => {
-  it('uses legacy assistant credentials and the default assistant model', async () => {
-    const fetch = vi.fn().mockResolvedValue(Response.json({ data: [{ id: 'gpt-4o-mini' }] }));
+  it('does not configure the assistant through obsolete global credentials', async () => {
+    const fetch = vi.fn();
     vi.stubGlobal('fetch', fetch);
     const logger = { log: vi.fn(), warn: vi.fn() };
-    await checkAssistantHandshake({
-      environment: {
-        INFERENCE_DEBUG: 'true', OPENAI_API_KEY: 'legacy-key',
-        OPENAI_BASE_URL: 'http://legacy.example/v1'
-      }, logger
-    });
-    const [url, options] = fetch.mock.calls[0];
-    expect(String(url)).toBe('http://legacy.example/v1/models');
-    expect(new Headers(options.headers).get('authorization')).toBe('Bearer legacy-key');
-    expect(logger.log).toHaveBeenCalledWith(expect.stringContaining('Assistant handshake succeeded'));
+    await checkAssistantHandshake({ environment: { OPENAI_API_KEY: 'retired', OPENAI_BASE_URL: 'http://retired.example/v1' }, logger });
+    expect(fetch).not.toHaveBeenCalled();
     expect(logger.warn).not.toHaveBeenCalled();
   });
 

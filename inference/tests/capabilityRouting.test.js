@@ -29,8 +29,18 @@ beforeEach(() => {
   mocks.assistants.length = 0;
   mocks.localGenerate.mockReset().mockResolvedValue('{}');
   mocks.localScore.mockReset();
-  vi.stubEnv('OPENAI_API_KEY', '');
-  vi.stubEnv('OPENAI_BASE_URL', '');
+  vi.stubEnv('EMBEDDING_API_KEY', '');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', '');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', '');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', '');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
+  vi.stubEnv('EMBEDDING_BASE_URL', '');
+vi.stubEnv('GENERATION_BASE_URL', '');
+vi.stubEnv('CLASSIFICATION_BASE_URL', '');
+vi.stubEnv('ASSISTANT_BASE_URL', '');
   for (const capability of ['EMBEDDING', 'GENERATION', 'CLASSIFICATION', 'ASSISTANT']) {
     vi.stubEnv(`${capability}_PROVIDER`, 'openai-compatible');
     vi.stubEnv(`${capability}_BASE_URL`, `http://${capability.toLowerCase()}.example/v1`);

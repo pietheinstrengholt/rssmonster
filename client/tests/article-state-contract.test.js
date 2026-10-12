@@ -1,38 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalArticleState, canonicalArticleExpression } from '../src/services/articleStateContract.js';
 import { validateSearchQuery } from '../src/services/queryValidation.js';
 import { parseSmartFolderQuery, buildSmartFolderQuery } from '../src/components/settings/smartFolders/smartFolderQuery.js';
 import { smartFolderRulePreview } from '../src/services/currentViewSmartFolder.js';
 
-describe('saved and opened-original compatibility', () => {
-  it('normalizes legacy snapshots and settings without overriding canonical state', () => {
-    expect(canonicalArticleState({ status: 'favorite', favoriteInd: 1, savedInd: 0, clickedAmount: 4, favoritedAt: '2026-09-01',
-      favoriteCount: 5, actions: [{ kind: 'set-favorite', actionId: 'stable-id', value: true }] }))
-      .toEqual({ status: 'saved', savedInd: 0, openedOriginalCount: 4, savedAt: '2026-09-01', savedCount: 5,
-        actions: [{ kind: 'set-saved', actionId: 'stable-id', value: true }] });
+describe('canonical article search contracts', () => {
+  it.each(['saved:true openedOriginal:true', 'OPENEDORIGINAL:false', 'saved:false'])('accepts %s', query => {
+    expect(validateSearchQuery(query).valid).toBe(true);
   });
-  it('keeps quoted phrases while canonicalizing aliases and validates either vocabulary', () => {
-    const old = 'title:"favorite:true clicked:false" favorite:true star:false clicked:true';
-    expect(canonicalArticleExpression(old)).toBe('title:"favorite:true clicked:false" saved:true saved:false openedOriginal:true');
-    for (const query of [old, 'saved:true openedOriginal:true', 'OPENEDORIGINAL:false', 'clicked:false star:true']) expect(validateSearchQuery(query).valid).toBe(true);
+  it.each(['favorite:true', 'star:false', 'clicked:true'])('rejects obsolete operator %s', query => {
+    expect(validateSearchQuery(query).valid).toBe(false);
   });
-  it('reads legacy folders and writes canonical expressions with consistent chips', () => {
-    const draft = parseSmartFolderQuery('favorite:true clicked:true');
+  it('preserves quoted text and writes canonical expressions and preview chips', () => {
+    const query = 'title:"favorite:true clicked:false" saved:true openedOriginal:true';
+    const draft = parseSmartFolderQuery(query);
     expect(draft.status).toMatchObject({ saved: true, openedOriginal: true });
-    const query = buildSmartFolderQuery(draft);
-    expect(query).toContain('saved:true openedOriginal:true');
-    expect(query).not.toMatch(/favorite:|clicked:|star:/);
+    const written = buildSmartFolderQuery(draft);
+    expect(written).toContain('saved:true openedOriginal:true');
+    expect(written).toContain('title:"favorite:true clicked:false"');
     expect(smartFolderRulePreview('saved:true openedOriginal:true').map(rule => rule.label)).toEqual(['Saved', 'Opened originals']);
   });
-});
-
-it('normalizes reading modes in restored browser settings and nested snapshots', () => {
-  expect(canonicalArticleState({ viewMode: 'full', settings: { viewMode: 'minimal' }, content: 'full minimal' }))
-    .toEqual({ viewMode: 'expanded', settings: { viewMode: 'headlines' }, content: 'full minimal' });
-});
-
-it('normalizes legacy tone scores and thresholds in nested persisted state with canonical precedence', () => {
-  expect(canonicalArticleState({ sentimentScore: 80, toneScore: 0, settings: { minSentimentScore: 25 },
-    articles: [{ sentimentScore: 70 }, { sentimentScore: 80, toneScore: null }], expression: 'quality:>=0.75' }))
-    .toEqual({ toneScore: 0, settings: { minToneScore: 25 }, articles: [{ toneScore: 70 }, { toneScore: null }], expression: 'quality:>=0.75' });
 });

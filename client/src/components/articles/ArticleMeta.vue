@@ -22,12 +22,13 @@
     <ArticleReaderBadge v-if="showRecommendationExplanation">
       <ArticleRecommendationExplanation
         :recommendation="recommendation"
+        :interest-score="interestScore"
         :trigger-label="recommendationTriggerLabel"
         @inspect-interest="$emit('inspect-interest', $event)"
       />
     </ArticleReaderBadge>
     <ArticleReaderBadge v-else-if="hasInterestScore">
-      <span class="recommended-badge">Matches your interests</span>
+      <span class="recommended-badge">{{ recommendationTriggerLabel }}</span>
     </ArticleReaderBadge>
     <ArticleReaderBadge v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none' && event.sourceCount >= 2">
       <ArticleStorySourcesPopover
@@ -65,7 +66,7 @@ export default {
     authors: { type: Array, default: null },
     originalSource: { type: Object, default: null },
     hideProvenance: { type: Boolean, default: false },
-    articleId: { type: [Number, String], default: null }, publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, isRecommendationView: { type: Boolean, default: false }, recommendation: { type: Object, default: null }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, toneScore: { type: Number, default: undefined }, aiAnalysisStatus: { type: String, default: '' }, neutralScore: { type: Number, required: true }
+    articleId: { type: [Number, String], default: null }, publishedAt: { type: [String, Date], default: '' }, feed: { type: Object, default: () => ({}) }, author: { type: String, default: '' }, event: { type: Object, default: null }, eventArticleCountTotal: { type: Number, default: 0 }, duplicateCount: { type: Number, default: 0 }, grouping: { type: String, default: '' }, isEventArticle: { type: Boolean, default: false }, eventExpanded: { type: Boolean, default: false }, duplicatesExpanded: { type: Boolean, default: false }, hasInterestScore: { type: Boolean, default: false }, interestScore: { type: [Number, String], default: 0 }, isRecommendationView: { type: Boolean, default: false }, recommendation: { type: Object, default: null }, isMobilePortrait: { type: Boolean, default: false }, advertisementScore: { type: Number, default: undefined }, toneScore: { type: Number, default: undefined }, aiAnalysisStatus: { type: String, default: '' }, neutralScore: { type: Number, required: true }
   },
   computed: {
     originalSourceUrl() {
@@ -89,9 +90,11 @@ export default {
         : [];
       return this.hasInterestScore && reasons.length > 0;
     },
-    // Selects the badge label that matches the current collection context.
+    // Uses personal-interest polarity, independently of the overall recommendation score.
     recommendationTriggerLabel() {
-      return this.isRecommendationView ? 'Why recommended' : 'Matches your interests';
+      const score = Number(this.interestScore);
+      return Number.isFinite(score) && score !== 0
+        ? `${score < 0 ? 'Negative' : 'Positive'} learned preference` : 'Learned preference';
     },
     // Returns the author or feed name displayed as the article source.
     sourceLabel() {

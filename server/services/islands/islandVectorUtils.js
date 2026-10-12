@@ -34,9 +34,9 @@ const configuredHalfLife = (name, fallback) => {
 };
 // True half-lives for durable Article evidence, keyed by the signal's interaction clock.
 export const SIGNAL_HALF_LIFE_DAYS = Object.freeze({
-  lastOpenedOriginalAt: configuredHalfLife('ISLAND_OPENED_ORIGINAL_HALF_LIFE_DAYS', configuredHalfLife('ISLAND_CLICK_HALF_LIFE_DAYS', 30)),
+  lastOpenedOriginalAt: configuredHalfLife('ISLAND_OPENED_ORIGINAL_HALF_LIFE_DAYS', 30),
   lastMeaningfulReadAt: configuredHalfLife('ISLAND_DEEP_READ_HALF_LIFE_DAYS', 90),
-  savedAt: configuredHalfLife('ISLAND_SAVED_HALF_LIFE_DAYS', configuredHalfLife('ISLAND_FAVORITE_HALF_LIFE_DAYS', 365)),
+  savedAt: configuredHalfLife('ISLAND_SAVED_HALF_LIFE_DAYS', 365),
   positiveFeedbackAt: configuredHalfLife('ISLAND_POSITIVE_FEEDBACK_HALF_LIFE_DAYS', 730),
   negativeFeedbackAt: configuredHalfLife('ISLAND_NEGATIVE_FEEDBACK_HALF_LIFE_DAYS', 365)
 });

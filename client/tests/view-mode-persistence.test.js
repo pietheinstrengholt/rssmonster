@@ -90,14 +90,14 @@ it('allows another save after a failed request', async () => {
   expect(api.patch).toHaveBeenLastCalledWith('/setting/view-mode', { viewMode: 'expanded' });
 });
 
-it.each([['full', 'expanded'], ['minimal', 'headlines']])('restores and saves legacy %s as %s', async (legacy, canonical) => {
-  api.get.mockResolvedValue({ data: { viewMode: legacy } });
+it.each(['expanded', 'headlines'])('restores and saves canonical mode %s', async canonical => {
+  api.get.mockResolvedValue({ data: { viewMode: canonical } });
   api.patch.mockResolvedValue({});
   const selection = useSelectionStore();
   await selection.fetchSettings();
   expect(selection.currentSelection.viewMode).toBe(canonical);
   selection.setCurrentSelection({ viewMode: 'reader' });
-  await selection.setViewMode(legacy);
+  await selection.setViewMode(canonical);
   expect(selection.currentSelection.viewMode).toBe(canonical);
   expect(api.patch).toHaveBeenLastCalledWith('/setting/view-mode', { viewMode: canonical });
 });

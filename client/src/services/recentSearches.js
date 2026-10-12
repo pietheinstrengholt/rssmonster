@@ -1,10 +1,9 @@
-import { canonicalArticleExpression } from './articleStateContract.js';
 const STORAGE_KEY = 'rssmonster.recentSearches';
 const MAX_SEARCHES = 10;
 
 function normalizeSearches(queries) {
   if (!Array.isArray(queries)) return [];
-  return [...new Set(queries.filter(query => typeof query === 'string').map(query => canonicalArticleExpression(query.trim())).filter(Boolean))].slice(0, MAX_SEARCHES);
+  return [...new Set(queries.filter(query => typeof query === 'string').map(query => query.trim()).filter(Boolean))].slice(0, MAX_SEARCHES);
 }
 
 export function getRecentSearches() {

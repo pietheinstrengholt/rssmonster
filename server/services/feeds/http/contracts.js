@@ -29,14 +29,14 @@ const resolvePositiveTimeoutMs = (value, fallback) => {
 // Resolves the connection phase timeout used by the guarded HTTP connector.
 export const resolveFeedConnectTimeoutMs = (environment = getCrawlEnvironment()) =>
   resolvePositiveTimeoutMs(
-    environment.FEED_CONNECT_TIMEOUT_MS ?? environment.FEED_HTTP_TIMEOUT_MS,
+    environment.FEED_CONNECT_TIMEOUT_MS,
     DEFAULT_FEED_CONNECT_TIMEOUT_MS
   );
 
 // Resolves the absolute response-body download timeout after headers arrive.
 export const resolveFeedBodyTimeoutMs = (environment = getCrawlEnvironment()) =>
   resolvePositiveTimeoutMs(
-    environment.FEED_BODY_TIMEOUT_MS ?? environment.FEED_HTTP_TIMEOUT_MS,
+    environment.FEED_BODY_TIMEOUT_MS,
     DEFAULT_FEED_BODY_TIMEOUT_MS
   );
 

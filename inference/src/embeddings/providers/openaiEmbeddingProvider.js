@@ -10,7 +10,7 @@ export const createOpenAIEmbeddingProvider = ({
   environment = process.env,
   dependencies = defaultDependencies
 } = {}) => {
-  const config = getEmbeddingConfig({ ...environment, EMBEDDING_PROVIDER: environment.EMBEDDING_PROVIDER || 'openai' });
+  const config = getEmbeddingConfig({ ...environment, EMBEDDING_PROVIDER: environment.EMBEDDING_PROVIDER || 'openai-compatible' });
   const metadata = Object.freeze({
     provider: 'openai',
     modelId: config.modelId,
@@ -21,7 +21,7 @@ export const createOpenAIEmbeddingProvider = ({
   const initialize = async () => {
     if (client) return;
     const apiKey = getCompatibleApiKey('EMBEDDING', environment);
-    if (!apiKey) throw new Error('EMBEDDING_API_KEY is required (legacy alias: OPENAI_API_KEY)');
+    if (!apiKey) throw new Error('EMBEDDING_API_KEY is required');
     client = dependencies.createClient(apiKey, environment);
     dependencies.logger.log(`[INFERENCE] Initialized OpenAI embedding provider ${config.modelId}`);
   };

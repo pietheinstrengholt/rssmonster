@@ -38,7 +38,8 @@ describe('archiving settings and cleanup', () => {
     const response = await request(app).get('/api/setting/archiving').set('Authorization', auth(owner.user));
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject(defaults);
-    expect(response.body).toMatchObject({ neverDeleteFavorites: true, neverDeleteClicked: false });
+    expect(response.body).not.toHaveProperty('neverDeleteFavorites');
+    expect(response.body).not.toHaveProperty('neverDeleteClicked');
     const values = { neverDeleteUnread: false, neverDeleteOpenedOriginals: true, maximumAgeValue: 2, maximumAgeUnit: 'months', maximumArticlesPerFeed: 1000000, maximumArticlesTotal: 1000000000 };
     expect((await save(owner, values)).body).toMatchObject({ ...defaults, ...values });
     expect(await remaining(owner)).toEqual([item.id]);
@@ -49,7 +50,8 @@ describe('archiving settings and cleanup', () => {
   it.each([
     { neverDeleteUnread: 'false' }, { maximumAgeValue: 0 }, { maximumAgeValue: 1.5 },
     { maximumAgeUnit: 'hours' }, { maximumArticlesPerFeed: 1000001 },
-    { maximumArticlesTotal: 1000000001 }, { maximumArticlesTotal: -1 }, { userId: 1 }
+    { maximumArticlesTotal: 1000000001 }, { maximumArticlesTotal: -1 }, { userId: 1 },
+    { neverDeleteFavorites: true }, { neverDeleteClicked: true }
   ])('rejects invalid settings %j without saving', async invalid => {
     const owner = await graph();
     expect((await save(owner, invalid)).status).toBe(400);

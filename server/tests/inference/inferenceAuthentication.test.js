@@ -12,12 +12,12 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('inference transport authentication', () => {
-  it('prefers the canonical URL while preserving the legacy fallback and local default', () => {
+  it('uses only the canonical URL and otherwise the local default', () => {
     vi.stubEnv('INFERENCE_BASE_URL', '');
     vi.stubEnv('INFERENCE_URL', '');
     expect(getInferenceRequestConfig().baseUrl).toBe('http://127.0.0.1:3001');
     vi.stubEnv('INFERENCE_URL', 'http://legacy');
-    expect(getInferenceRequestConfig().baseUrl).toBe('http://legacy');
+    expect(getInferenceRequestConfig().baseUrl).toBe('http://127.0.0.1:3001');
     vi.stubEnv('INFERENCE_BASE_URL', 'http://canonical');
     expect(getInferenceRequestConfig().baseUrl).toBe('http://canonical');
     expect(getInferenceRequestConfig({ baseUrl: 'http://injected' }).baseUrl).toBe('http://injected');

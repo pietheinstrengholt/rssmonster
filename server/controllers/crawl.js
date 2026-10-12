@@ -82,10 +82,10 @@ import { compileItemFilter } from '../services/crawl/filtering/itemFilter.js';
 
 const databaseRuntimeCapabilities = getSequelizeRuntimeCapabilities(db.sequelize);
 
-// Resolves the renamed crawl batch limit while temporarily honoring legacy deployments.
+// Resolves the canonical crawl batch limit.
 export const resolveFeedMaxCount = (environment = getCrawlEnvironment()) => {
   const configured = Number.parseInt(
-    environment.FEED_MAX_COUNT ?? environment.MAX_FEEDCOUNT ?? '',
+    environment.FEED_MAX_COUNT ?? '',
     10
   );
   return Number.isInteger(configured) && configured > 0 ? configured : 100;

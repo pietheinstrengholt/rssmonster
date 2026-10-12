@@ -1,4 +1,4 @@
-import { canonicalArticleState, canonicalArticleStatus, canonicalArticleViewMode } from '../utils/articleStateContract.js';
+import { ARTICLE_VIEW_MODES } from '../utils/articleStateContract.js';
 import { getInferenceEnvironment } from '../services/inference/runtimeConfiguration.js';
 import { isActiveIsland, islandExpiresAt } from '../services/islands/islandDeadline.js';
 import { loadSidebarSettings } from '../services/sidebarSettings.js';
@@ -318,9 +318,9 @@ export const getSettings = async (req, res, _next) => {
       if (startupViewMode === 'last-used') {
         categoryId = settings.categoryId;
         feedId = settings.feedId;
-        status = canonicalArticleStatus(settings.status);
+        status = settings.status;
         sort = settings.sort;
-        viewMode = canonicalArticleViewMode(settings.viewMode) || 'expanded';
+        viewMode = settings.viewMode || 'expanded';
         grouping = settings.grouping || 'none';
       }
     }
@@ -370,7 +370,7 @@ export const setSettings = async (req, res, _next) => {
       minOverallQualityScore,
       includeDevelopingEvents,
       prioritizeHighTrust
-    } = canonicalArticleState(req.body);
+    } = req.body;
 
     // Validate score values (0-100)
     const validateScore = (score, name) => {
@@ -473,13 +473,13 @@ export const setIncludeDevelopingEvents = async (req, res, _next) => {
 export const setViewMode = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
-    const viewMode = canonicalArticleViewMode(req.body.viewMode);
+    const viewMode = req.body.viewMode;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    if (!['reader', 'expanded', 'summarized', 'summaryBullets', 'headlines'].includes(viewMode)) {
+    if (!ARTICLE_VIEW_MODES.includes(viewMode)) {
       return res.status(400).json({ error: 'Unsupported article view mode' });
     }
 

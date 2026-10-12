@@ -18,7 +18,14 @@ describe('getSmartFolderRecommendations', () => {
     vi.resetModules();
     completionsCreate.mockReset();
     OpenAIMock.mockClear();
-    vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    vi.stubEnv('EMBEDDING_API_KEY', 'test-key');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', 'test-key');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', 'test-key');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', 'test-key');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
@@ -51,7 +58,7 @@ describe('getSmartFolderRecommendations', () => {
     const result = await getSmartFolderRecommendations({ insights });
 
     expect(result).toEqual(recommendations);
-    expect(OpenAIMock).toHaveBeenCalledWith({ apiKey: 'test-key' });
+    expect(OpenAIMock).toHaveBeenCalledWith({ apiKey: 'test-key', baseURL: 'https://api.openai.com/v1' });
     expect(completionsCreate).toHaveBeenCalledWith(expect.objectContaining({
       model: 'gpt-4.1-mini',
       temperature: 0.2,
@@ -70,7 +77,10 @@ describe('getSmartFolderRecommendations', () => {
   });
 
   it('passes the configured base URL to the OpenAI client', async () => {
-    vi.stubEnv('OPENAI_BASE_URL', 'https://litellm.example/v1');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('GENERATION_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('ASSISTANT_BASE_URL', 'https://litellm.example/v1');
     completionsCreate.mockResolvedValue({ choices: [] });
     const { getSmartFolderRecommendations } = await import(
       '../src/smartFolderRecommendations/smartFolderRecommendationService.js'
@@ -169,14 +179,21 @@ describe('getSmartFolderRecommendations', () => {
 
   // Verifies that configuration errors are raised before attempting a provider request.
   it('rejects when the OpenAI API key is not configured', async () => {
-    vi.stubEnv('OPENAI_API_KEY', '');
+    vi.stubEnv('EMBEDDING_API_KEY', '');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', '');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', '');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', '');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
 
     const { getSmartFolderRecommendations } = await import(
       '../src/smartFolderRecommendations/smartFolderRecommendationService.js'
     );
 
     await expect(getSmartFolderRecommendations({ insights: {} })).rejects.toThrow(
-      'OpenAI API key not configured'
+      'GENERATION_API_KEY is required'
     );
     expect(OpenAIMock).not.toHaveBeenCalled();
     expect(completionsCreate).not.toHaveBeenCalled();

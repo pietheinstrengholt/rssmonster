@@ -114,7 +114,7 @@ adds FeedTrust for ranking and is separate from this filter.
 The three component score meanings are:
 
 - **Advertisement** measures absence of promotion: low values indicate promotion/spam; high values indicate less promotional content.
-- **Tone** (`toneScore`) uses higher values for calm, factual, emotionally neutral and balanced language, and lower values for emotionally charged or alarmist language. It does not measure whether the subject is positive or negative. The minimum threshold is `minToneScore`; legacy `sentimentScore` and `minSentimentScore` remain compatibility aliases.
+- **Tone** (`toneScore`) uses higher values for calm, factual, emotionally neutral and balanced language, and lower values for emotionally charged or alarmist language. It does not measure whether the subject is positive or negative. The minimum threshold is `minToneScore`; runtime inputs and responses use only canonical score properties.
 - **Writing quality** (`qualityScore`) uses higher values for stronger writing and informational quality and lower values for shallow or clickbait-oriented content.
 
 Reset to Defaults changes the local controls to their default values. It does not persist until Save Changes is selected. Saving updates the current selection state, reloads visible content and overview data, and returns the Settings content to Welcome.

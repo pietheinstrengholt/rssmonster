@@ -14,7 +14,8 @@ export const CRAWL_FIELDS = Object.freeze([
   { key: 'FEED_RESPONSE_MAX_BYTES', label: 'Maximum feed response', group: 'Requests', defaultValue: 10485760, unit: 'bytes', help: 'Maximum streamed and decoded response size.' },
   { key: 'FEED_ORIGIN_MAX_CONCURRENCY', label: 'Requests per origin', group: 'Requests', defaultValue: 2, help: 'Maximum concurrent requests to one publisher origin.' },
   { key: 'FEED_ORIGIN_MIN_SPACING_MS', label: 'Request spacing per origin', group: 'Requests', defaultValue: 250, min: 0, unit: 'ms', help: 'Minimum time between request starts to one publisher origin.' },
-  { key: 'FEED_HTTP_TIMEOUT_MS', label: 'HTTP timeout fallback', group: 'Requests', defaultValue: 10000, unit: 'ms', help: 'Fallback when FEED_CONNECT_TIMEOUT_MS or FEED_BODY_TIMEOUT_MS is unset. Explicit phase-specific environment values still apply.' },
+  { key: 'FEED_CONNECT_TIMEOUT_MS', label: 'Connection timeout', group: 'Requests', defaultValue: 10000, unit: 'ms', help: 'Maximum time to establish the feed connection.' },
+  { key: 'FEED_BODY_TIMEOUT_MS', label: 'Response body timeout', group: 'Requests', defaultValue: 30000, unit: 'ms', help: 'Maximum time to download the response body after headers arrive.' },
   { key: 'FEED_PARSER_TIMEOUT_MS', label: 'Parser time limit', group: 'Parser', defaultValue: 2000, unit: 'ms', help: 'Maximum runtime of an isolated feed parser.' },
   { key: 'FEED_PARSER_MEMORY_MB', label: 'Parser memory limit', group: 'Parser', defaultValue: 64, unit: 'MiB', help: 'Maximum old-generation heap for each parser worker.' },
   { key: 'FEED_MAX_ENTRIES', label: 'Maximum entries per feed', group: 'Parser', defaultValue: 1000, suggestedValue: 2000, help: 'Reject feeds exceeding this entry count before article processing.' },
@@ -39,7 +40,6 @@ export const getCrawlSettings = async () => {
   const overrides = await readOverrides();
   const fields = CRAWL_FIELDS.map(field => {
     let raw = process.env[field.key];
-    if (field.key === 'FEED_MAX_COUNT') raw ??= process.env.MAX_FEEDCOUNT;
     if (field.key === 'CRAWL_RUN_MAX_RUNNING_MINUTES' && !raw) {
       const heartbeatMs = Number.parseInt(process.env.CRAWL_RUN_HEARTBEAT_INTERVAL_MS, 10) || 30000;
       const staleMs = Number.parseInt(process.env.CRAWL_RUN_STALE_AFTER_MS, 10) || 120000;

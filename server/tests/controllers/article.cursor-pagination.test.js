@@ -69,21 +69,21 @@ describe('article cursor pagination', () => {
     await sequelize.authenticate();
   }, 50_000);
 
-  it('retains signed pagination query identity across Tone contract names', () => {
+  it('uses canonical Tone threshold names in pagination identity', () => {
     expect(fingerprintArticleSearch({ userId: 1, minToneScore: 80, sort: 'desc' }))
-      .toBe(fingerprintArticleSearch({ userId: 1, minSentimentScore: 80, sort: 'desc' }));
+      .not.toBe(fingerprintArticleSearch({ userId: 1, minSentimentScore: 80, sort: 'desc' }));
     expect(fingerprintArticleSearch({ userId: 1, minToneScore: 0, minSentimentScore: 80 }))
-      .toBe(fingerprintArticleSearch({ userId: 1, minSentimentScore: 0 }));
+      .not.toBe(fingerprintArticleSearch({ userId: 1, minSentimentScore: 0 }));
     expect(fingerprintArticleSearch({ userId: 1, minToneScore: 80 }))
       .not.toBe(fingerprintArticleSearch({ userId: 1, minToneScore: 0 }));
   });
 
-  it('hydrates the same Headlines page for canonical and legacy modes', async () => {
+  it('hydrates canonical modes with their existing page sizes', async () => {
     const { user, feed } = await createUserFeed('reading-mode');
     for (let index = 0; index < 51; index++) {
       await createArticle(user, feed, `Headline ${index}`, new Date('2026-10-01T12:00:00Z'));
     }
-    for (const [viewMode, pageSize] of [['headlines', 50], ['minimal', 50], ['expanded', 20], ['full', 20]]) {
+    for (const [viewMode, pageSize] of [['headlines', 50], ['expanded', 20]]) {
       const response = await request(app).get('/api/articles')
         .query({ status: 'unread', viewMode, includeFirstPage: true, persistSettings: false })
         .set('Authorization', authHeaderFor(user));

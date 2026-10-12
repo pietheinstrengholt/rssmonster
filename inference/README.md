@@ -80,14 +80,11 @@ retain their existing domain behavior. Existing HTTP error envelopes and job ret
 policies remain in place; no larger-budget or reasoning-setting retry is added.
 
 See [the inference configuration guide](../docs/inference.md#capability-configuration)
-for fully local, mixed Ollama/LM Studio/OpenAI, fully external, and migration
-examples. Old provider names and global OpenAI settings remain deprecated
-aliases for one release. Explicit compatible providers require endpoints and
-keys at startup. Legacy `openai` keeps its historical model settings and default
-OpenAI URL. Startup validates configuration before loading any selected models;
+for fully local, mixed Ollama/LM Studio/OpenAI, and fully external examples.
+Only canonical capability-specific settings are supported. Compatible providers
+require their own endpoints and keys at startup. Startup validates configuration before loading any selected models;
 external endpoints are not probed during normal startup. Development diagnostics
-perform the generation and assistant handshakes described below. Leave assistant settings and legacy global
-credentials unset for local inference without chat.
+perform the generation and assistant handshakes described below. Leave assistant settings unset for local inference without chat.
 
 ## Island display labels
 
@@ -206,8 +203,7 @@ content, and vectors are not logged. Set `INFERENCE_DEBUG=true` explicitly to
 enable the same diagnostics with another start command.
 
 Configured assistants receive an independent `Assistant handshake` using
-`ASSISTANT_BASE_URL`, `ASSISTANT_API_KEY`, and `ASSISTANT_MODEL` (including the
-existing legacy fallbacks). It uses the same five-second model-list check and
+`ASSISTANT_BASE_URL`, `ASSISTANT_API_KEY`, and `ASSISTANT_MODEL`. It uses the same five-second model-list check and
 does not block startup. Unconfigured assistants are skipped. Success confirms
 model availability, not assistant generation, tool calling, or streaming.
 
@@ -259,7 +255,7 @@ the schema, configured/available semantics, examples, and compatibility rules.
 
 ## Optional inference authentication
 
-The server transport uses `INFERENCE_BASE_URL` (`INFERENCE_URL` remains a fallback)
+The server transport uses `INFERENCE_BASE_URL`
 and sends `X-Inference-API-Key` when `INFERENCE_API_KEY` is nonempty. Configure the
 exact same opaque shared secret on server/workers and inference. With no inference
 key, authentication is disabled. `/health` remains public; `/ready` and all API

@@ -11,7 +11,7 @@ export const ARTICLE_STATUS_OPTIONS = createOptions([
     iconClass: 'icon-briefing',
     countKey: 'briefingCount',
     countLabel: 'global',
-    description: 'The briefing count is global across your subscriptions. Category, feed, and tag filters narrow the article list.',
+    description: 'Daily briefing highlights recent coverage selected by your Briefing preferences. The count shows matching articles across all your subscriptions for the configured period, not the number of stories in the summary. Category, feed, and tag filters can narrow the article list without changing this count.',
     requiresAI: true
   },
   { value: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread', countKey: 'unreadCount' },

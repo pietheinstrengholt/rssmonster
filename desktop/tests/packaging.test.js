@@ -19,7 +19,7 @@ test('Windows produces separate installer and portable artifacts', () => {
   assert.equal(configuration.portable.artifactName, '${productName}-Portable-${version}-${arch}.${ext}');
 });
 
-for (const omitted of [null, 'parser', 'migration', 'inference', 'storage', 'crawler', 'tray']) {
+for (const omitted of [null, 'parser', 'migration', 'migration-helper', 'inference', 'storage', 'crawler', 'tray']) {
   test(`packaged runtime ${omitted ? `rejects missing ${omitted}` : 'contains parser and ESM migrations'}`, async () => {
     const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-package-regression-'));
     try {
@@ -37,6 +37,7 @@ for (const omitted of [null, 'parser', 'migration', 'inference', 'storage', 'cra
       if (omitted !== 'inference') files.push('inference/src/index.js');
       if (omitted !== 'parser') files.push('node_modules/feedsmith/dist/node_modules/trousse/dist/is.mjs');
       if (omitted !== 'migration') files.push('server/migrations/20260911000000-settings.mjs');
+      if (omitted !== 'migration-helper') files.push('server/migrations/lib/articleStateMigration.mjs');
       for (const file of files) {
         await mkdir(path.dirname(path.join(source, file)), { recursive: true });
         await writeFile(path.join(source, file), 'export {};');

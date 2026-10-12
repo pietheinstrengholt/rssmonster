@@ -8,7 +8,6 @@ import { Op, fn, col, literal } from 'sequelize';
 import { startUserCrawl } from "./crawl.js";
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { buildArticleKeywordWhereClause } from '../services/articleSearch/articleTextSearch.service.js';
-import { withLegacyArticleState } from '../utils/articleStateContract.js';
 
 const ARTICLE_METADATA_ATTRIBUTES = [
   'id',
@@ -126,7 +125,7 @@ function makeResult({ structured, error = false, pagination, text }) {
       }
     : {
         ok: true,
-        data: JSON.parse(JSON.stringify(structured ?? {}, (_key, value) => withLegacyArticleState(value))),
+        data: JSON.parse(JSON.stringify(structured ?? {})),
         ...(pagination ? { pagination } : {})
       };
   return {
@@ -241,7 +240,7 @@ function compactArticle(article, detail, fallbackFeedName = null) {
     feedName,
     publishedAt: article.publishedAt,
     status: article.status,
-    ...withLegacyArticleState({ savedInd: article.savedInd })
+    savedInd: article.savedInd
   };
 
   if (detail === 'summary') {
@@ -321,12 +320,6 @@ Tag and engagement discovery:
 - search_tag_by_keyword: find partial tag-name matches and counts.
 - tags_opened_original_articles: return the 10 most frequent tags among openedOriginal articles.
 
-Legacy aliases (prefer the canonical tools and fields above):
-- favorite_articles: alias of saved_articles.
-- search_clicked_articles: alias of search_opened_original_articles.
-- tags_clicked_articles: alias of tags_opened_original_articles.
-The search_articles fields favorite and clicked remain aliases of saved and openedOriginal.
-
 Utilities and actions:
 - current_time: return the server's current ISO-8601 time; use it to resolve relative date language.
 - crawl: start a refresh of active feeds. Call it only for an explicit refresh/crawl request; initiation is not completion.
@@ -346,15 +339,6 @@ Retrieval rules:
 
 // Registers the RSSMonster domain tools on either an MCP server or an in-process collector.
 export const registerRssMonsterTools = (server, userId) => {
-    const registrar = server;
-    const legacyTools = { saved_articles: 'favorite_articles', search_opened_original_articles: 'search_clicked_articles', tags_opened_original_articles: 'tags_clicked_articles' };
-    server = {
-      tool(name, ...definition) {
-        registrar.tool(name, ...definition);
-        if (legacyTools[name]) registrar.tool(legacyTools[name], ...definition);
-      }
-    };
-
     // Tool: 1. categories
     server.tool(
       "categories",
@@ -470,12 +454,10 @@ export const registerRssMonsterTools = (server, userId) => {
         status: ARTICLE_STATUS_FIELD,
         saved: z.boolean().optional()
           .describe('When provided, include only saved or non-saved articles.'),
-        favorite: z.boolean().optional().describe('Legacy alias for saved.'),
         hot: z.boolean().optional()
           .describe('When provided, include only hot or non-hot articles.'),
         openedOriginal: z.boolean().optional()
           .describe('When true, require at least one click; when false, require zero clicks.'),
-        clicked: z.boolean().optional().describe('Legacy alias for openedOriginal.'),
         ...ARTICLE_DATE_RANGE_FIELDS,
         sort: z.enum(['published_desc', 'published_asc'])
           .default('published_desc')
@@ -489,10 +471,8 @@ export const registerRssMonsterTools = (server, userId) => {
         tags,
         status,
         saved,
-        favorite,
         hot,
         openedOriginal,
-        clicked,
         from,
         to,
         dateBasis,
@@ -502,8 +482,6 @@ export const registerRssMonsterTools = (server, userId) => {
         detail
       }) => {
         console.log('[MCP Tool Called] search_articles');
-        saved ??= favorite;
-        openedOriginal ??= clicked;
         try {
           const page = articlePageOptions({ cursor, detail, limit });
           const whereClause = {
@@ -1382,7 +1360,7 @@ export const registerRssMonsterTools = (server, userId) => {
       }
     );
 
-    return registrar;
+    return server;
 };
 
 export const createRssMonsterMcpServer = userId => registerRssMonsterTools(

@@ -238,9 +238,9 @@ Maintenance routes can be expensive and should not be polled unnecessarily.
 ### Settings, actions, and administration
 
 `PATCH /api/setting/view-mode` accepts `{ "viewMode": "expanded" }` with canonical
-values `reader`, `expanded`, `summarized`, `summaryBullets`, and `headlines`. Legacy
-`full` and `minimal` remain accepted aliases. The response and persisted setting use
-the canonical value; `GET /api/setting` also normalizes older saved values.
+values `reader`, `expanded`, `summarized`, `summaryBullets`, and `headlines`.
+Unsupported values return HTTP 400. Responses and persisted settings use the
+canonical value; historical stored values are converted by the database migration.
 See [Reading-mode migration]({% link reading-mode-migration.md %}) for upgrade details.
 
 | Method | Endpoint | Purpose |

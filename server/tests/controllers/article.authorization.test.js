@@ -85,6 +85,15 @@ describe('article ownership authorization', () => {
     await sequelize.authenticate();
   }, 50_000);
 
+  it.each([{ status: 'star' }, { status: 'clicked' }, { viewMode: 'full' }, { viewMode: 'minimal' }])(
+    'rejects retired list contracts %j before persisting selection', async query => {
+      const owner = await createUser(uniqueName('canonical-contract-owner'));
+      const response = await request(app).get('/api/articles').set('Authorization', authHeaderFor(owner)).query(query);
+      expect(response.status).toBe(400);
+      expect(await db.Setting.count({ where: { userId: owner.id } })).toBe(0);
+    }
+  );
+
   it('returns sanitized display HTML under the contentHtml API field', async () => {
     const owner = await createUser(uniqueName('article-owner'));
     const { article } = await createArticleFor(owner);
@@ -108,7 +117,7 @@ describe('article ownership authorization', () => {
     expect(res.body.article).not.toHaveProperty('contentStrippedHash');
   });
 
-  it('accepts legacy Tone thresholds for listing and matching read actions with canonical precedence', async () => {
+  it('uses canonical Tone thresholds for listing and matching read actions', async () => {
     const owner = await createUser(uniqueName('tone-owner'));
     const foreign = await createUser(uniqueName('tone-foreign'));
     const { article, feed } = await createArticleFor(owner);
@@ -116,18 +125,18 @@ describe('article ownership authorization', () => {
     await article.update({ toneScore: 40 });
     await foreignArticle.update({ toneScore: 90 });
     const auth = authHeaderFor(owner);
-    for (const query of [{ minSentimentScore: 50 }, { minToneScore: 50 }]) {
+    for (const query of [{ minToneScore: 50 }]) {
       const response = await request(app).get('/api/articles').set('Authorization', auth)
         .query({ ...query, feedId: feed.id, status: '%', persistSettings: false });
       expect(response.status).toBe(200);
       expect(response.body.itemIds).toEqual([]);
     }
     const response = await request(app).get('/api/articles').set('Authorization', auth)
-      .query({ minSentimentScore: 50, minToneScore: 0, feedId: feed.id, status: '%', persistSettings: false, includeFirstPage: true });
+      .query({ minToneScore: 0, feedId: feed.id, status: '%', persistSettings: false, includeFirstPage: true });
     expect(response.status).toBe(200);
     expect(response.body.firstPage.map(item => item.id)).toEqual([article.id]);
-    expect(response.body.firstPage[0]).toMatchObject({ toneScore: 40, sentimentScore: 40 });
-    for (const [thresholds, expected] of [[{ minSentimentScore: 50 }, 'unread'], [{ minSentimentScore: 50, minToneScore: 0 }, 'read']]) {
+    expect(response.body.firstPage[0]).toMatchObject({ toneScore: 40 });
+    for (const [thresholds, expected] of [[{ minToneScore: 50 }, 'unread'], [{ minToneScore: 0 }, 'read']]) {
       const marked = await request(app).post('/api/articles/markasread').set('Authorization', auth)
         .send({ ...thresholds, scope: 'matching', feedId: feed.id });
       expect(marked.status).toBe(200);
@@ -1417,8 +1426,8 @@ describe('article ownership authorization', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.articles).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: article.id, openedOriginalCount: 1, clickedAmount: 1 }),
-      expect.objectContaining({ id: secondArticle.id, openedOriginalCount: 5, clickedAmount: 5 })
+      expect.objectContaining({ id: article.id, openedOriginalCount: 1 }),
+      expect.objectContaining({ id: secondArticle.id, openedOriginalCount: 5 })
     ]));
     expect(response.body.articles).toHaveLength(2);
     expect([article.openedOriginalCount, secondArticle.openedOriginalCount]).toEqual([1, 5]);

@@ -106,7 +106,7 @@ The latter downloads `onnx-community/ModernBERT-base-nli-ONNX` into the shared
 inference model cache during service startup when it is not already cached.
 Every remote capability has independent `*_BASE_URL`, `*_API_KEY`, and `*_MODEL` settings.
 See [Inference]({% link inference.md %}#capability-configuration) for mixed endpoints,
-workload model overrides, and legacy migration.
+workload model overrides, and canonical capability settings.
 Start the service from the `inference` directory:
 
 ```bash

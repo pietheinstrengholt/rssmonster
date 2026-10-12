@@ -1,5 +1,4 @@
 import { tokenizeSmartFolderExpression } from '../../../services/smartFolderPresentation.js';
-import { canonicalArticleExpression } from '../../../services/articleStateContract.js';
 import { normalizeTagName } from '../../../utils/tags.js';
 
 // Creates the complete default configuration used by the Smart Folder editor.
@@ -55,7 +54,7 @@ export function tokenizeSmartFolderQuery(query) {
 export function smartFolderQueryRequiresUnread(query) {
     let unread = false;
 
-    tokenizeSmartFolderQuery(canonicalArticleExpression(query)).forEach(token => {
+    tokenizeSmartFolderQuery(query).forEach(token => {
         const match = token.replace(/[.,;]+$/, '').match(/^unread:(true|false)$/i);
         if (match) unread = match[1].toLowerCase() === 'true';
     });
@@ -128,7 +127,7 @@ export function parseSmartFolderQuery(query, initialConfig = createEmptySmartFol
     const config = initialConfig;
     const freeText = [];
 
-    tokenizeSmartFolderQuery(canonicalArticleExpression(query)).forEach(token => {
+    tokenizeSmartFolderQuery(query).forEach(token => {
         const cleaned = token.replace(/[.,;]+$/, '');
         const lower = cleaned.toLowerCase();
 
@@ -138,7 +137,7 @@ export function parseSmartFolderQuery(query, initialConfig = createEmptySmartFol
         } else if (lower === 'read:true') {
             config.status.read = true;
             config.status.unread = false;
-        } else if (lower === 'saved:true' || lower === 'star:true') config.status.saved = true;
+        } else if (lower === 'saved:true') config.status.saved = true;
         else if (lower === 'openedoriginal:true') config.status.openedOriginal = true;
         else if (lower === 'hot:true') config.status.hot = true;
         else if (['@today', '@yesterday', '@lastweek'].includes(lower)) config.date.preset = lower;
@@ -165,7 +164,7 @@ export function parseSmartFolderQuery(query, initialConfig = createEmptySmartFol
     return config;
 }
 
-// Generates the persisted query using the editor's established token order and aliases.
+// Generates the persisted query using the editor's established token order and canonical operators.
 export function buildSmartFolderQuery(config) {
     const parts = [];
 

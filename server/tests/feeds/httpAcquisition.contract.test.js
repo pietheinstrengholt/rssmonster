@@ -119,6 +119,11 @@ describe('feed HTTP acquisition contract', () => {
     });
   });
 
+  it('ignores the retired shared HTTP timeout', () => {
+    expect(resolveFeedConnectTimeoutMs({ FEED_HTTP_TIMEOUT_MS: '1234' })).toBe(10000);
+    expect(resolveFeedBodyTimeoutMs({ FEED_HTTP_TIMEOUT_MS: '1234' })).toBe(30000);
+  });
+
   it('uses valid configured feed phase timeouts', () => {
     expect(resolveFeedConnectTimeoutMs({ FEED_CONNECT_TIMEOUT_MS: '12000' }))
       .toBe(12000);

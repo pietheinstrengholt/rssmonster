@@ -1,4 +1,4 @@
-import { canonicalArticleState, canonicalArticleViewMode } from '../utils/articleStateContract.js';
+import { ARTICLE_STATUSES, ARTICLE_VIEW_MODES } from '../utils/articleStateContract.js';
 import htmlToVisibleText from '../services/crawl/content/htmlToVisibleText.js';
 import { updateArticleBehavior } from '../services/articles/updateArticleBehavior.js';
 import db from '../models/index.js';
@@ -302,6 +302,13 @@ export const getDailyBriefing = async (req, res, _next) => {
 
 export const getArticles = async (req, res) => {
   try {
+    if (req.query.status !== undefined && !ARTICLE_STATUSES.includes(req.query.status)) {
+      return res.status(400).json({ error: 'Unsupported article status' });
+    }
+    if (req.query.viewMode !== undefined && !ARTICLE_VIEW_MODES.includes(req.query.viewMode)) {
+      return res.status(400).json({ error: 'Unsupported article view mode' });
+    }
+
     const userId = req.userData.userId;
     const search = String(req.query.search || '');
     if (search.length > MAX_ARTICLE_SEARCH_LENGTH) {
@@ -355,12 +362,12 @@ export const getArticles = async (req, res) => {
       feedId: req.query.feedId,
       status: newerThanArticleId === null ? req.query.status : 'unread',
       minAdvertisementScore: req.query.minAdvertisementScore,
-      minToneScore: canonicalArticleState(req.query).minToneScore,
+      minToneScore: req.query.minToneScore,
       minOverallQualityScore: req.query.minOverallQualityScore,
       minQualityScore: req.query.minQualityScore,
       sort: req.query.sort,
       tag: req.query.tag,
-      viewMode: canonicalArticleViewMode(req.query.viewMode),
+      viewMode: req.query.viewMode,
       grouping: req.query.grouping || 'none',
       includeDevelopingEvents: req.query.includeDevelopingEvents === 'true',
       persistSettings: newerThanArticleId === null && req.query.persistSettings !== 'false',
@@ -406,7 +413,7 @@ export const getArticles = async (req, res) => {
     }
 
     if (req.query.includeFirstPage === 'true' && result.itemIds.length > 0) {
-      const pageSize = canonicalArticleViewMode(req.query.viewMode) === 'headlines' ? 50 : 20;
+      const pageSize = req.query.viewMode === 'headlines' ? 50 : 20;
       const firstPageIds = result.itemIds.slice(0, pageSize);
       result.firstPage = await loadArticleDetails(userId, firstPageIds, personalization);
       if (result.diagnostics) result.diagnostics.delivery = {
@@ -737,7 +744,11 @@ const getStorySourceArticles = async (req, res, _next) => {
 const markAsRead = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
-    const body = canonicalArticleState(req.body || {});
+    const body = req.body || {};
+    if (body.viewMode !== undefined && !ARTICLE_VIEW_MODES.includes(body.viewMode)) {
+      return res.status(400).json({ error: 'Unsupported article view mode' });
+    }
+
     const statusGrouping = normalizeGrouping(body.grouping);
     const articleIds = Array.isArray(body.articleIds)
       ? body.articleIds
@@ -776,7 +787,7 @@ const markAsRead = async (req, res, _next) => {
           minQualityScore: body.minQualityScore,
           sort: body.sort,
           tag: body.tag,
-          viewMode: canonicalArticleViewMode(body.viewMode),
+          viewMode: body.viewMode,
           publishedAfter: parsePublicationBound(body.publishedAfter, 'publishedAfter'),
           publishedBefore: parsePublicationBound(body.publishedBefore, 'publishedBefore')
         }

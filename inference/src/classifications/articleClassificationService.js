@@ -12,7 +12,6 @@ import qwenGenerationProvider from '../generation/providers/qwenGenerationProvid
 import { getSafeErrorDetails, logInferenceDebug } from '../debug.js';
 import { getInferenceRequestId } from '../middleware/requestLifecycle.js';
 import { isInferenceQueueControlError } from '../queue/inferenceWorkQueue.js';
-import { canonicalToneScore } from './toneScoreContract.js';
 
 const normalizeTagName = tag => String(tag || '').trim().toLowerCase();
 const TAG_HIERARCHY_SEPARATOR = /\s*(?:\/|>|→|›|\|)\s*/u;
@@ -440,8 +439,8 @@ export async function scoreArticle({
   });
   const scores = {
     advertisementScore: bucketScore(parsed.advertisementScore),
-    toneScore: bucketScore(canonicalToneScore(parsed).toneScore),
-    qualityScore: bucketScore(parsed.qualityScore ?? parsed.writingScore)
+    toneScore: bucketScore(parsed.toneScore),
+    qualityScore: bucketScore(parsed.qualityScore)
   };
   logInferenceDebug(
     'completed article-scoring provider=openai-compatible ' +

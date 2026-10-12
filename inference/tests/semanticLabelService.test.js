@@ -26,8 +26,15 @@ describe('generateSemanticLabels', () => {
     mocked.createCompletion.mockReset();
     mocked.qwenGenerate.mockReset();
     mocked.OpenAIMock.mockClear();
-    vi.stubEnv('GENERATION_PROVIDER', 'qwen');
-    vi.stubEnv('OPENAI_API_KEY', '');
+    vi.stubEnv('GENERATION_PROVIDER', 'local');
+    vi.stubEnv('EMBEDDING_API_KEY', '');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', '');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', '');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', '');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
   });
 
   afterEach(() => {
@@ -105,8 +112,15 @@ describe('generateSemanticLabels', () => {
   });
 
   it('applies the same prompt and prompt-echo rejection to compatible providers', async () => {
-    vi.stubEnv('GENERATION_PROVIDER', 'openai');
-    vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    vi.stubEnv('GENERATION_PROVIDER', 'openai-compatible');
+    vi.stubEnv('EMBEDDING_API_KEY', 'test-key');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', 'test-key');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', 'test-key');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', 'test-key');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
     mocked.createCompletion.mockResolvedValue({
       choices: [{ message: { content: '{"island":"durable user interest"}' } }]
     });
@@ -157,9 +171,19 @@ describe('generateSemanticLabels', () => {
   });
 
   it('uses the configured OpenAI generation provider when selected', async () => {
-    vi.stubEnv('GENERATION_PROVIDER', 'openai');
-    vi.stubEnv('OPENAI_API_KEY', 'test-key');
-    vi.stubEnv('OPENAI_BASE_URL', 'https://litellm.example/v1');
+    vi.stubEnv('GENERATION_PROVIDER', 'openai-compatible');
+    vi.stubEnv('EMBEDDING_API_KEY', 'test-key');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', 'test-key');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', 'test-key');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', 'test-key');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('GENERATION_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://litellm.example/v1');
+vi.stubEnv('ASSISTANT_BASE_URL', 'https://litellm.example/v1');
     mocked.createCompletion.mockResolvedValue({
       choices: [{ message: { content: '{"island":"Local AI"}' } }]
     });
@@ -184,8 +208,15 @@ describe('generateSemanticLabels', () => {
   });
 
   it('omits temperature when configured for a compatible gateway', async () => {
-    vi.stubEnv('GENERATION_PROVIDER', 'openai');
-    vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    vi.stubEnv('GENERATION_PROVIDER', 'openai-compatible');
+    vi.stubEnv('EMBEDDING_API_KEY', 'test-key');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', 'test-key');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', 'test-key');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', 'test-key');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
     vi.stubEnv('OPENAI_OMIT_TEMPERATURE', 'true');
     mocked.createCompletion.mockResolvedValue({
       choices: [{ message: { content: '{"island":"Local AI"}' } }]
@@ -201,7 +232,7 @@ describe('generateSemanticLabels', () => {
   });
 
   it('requires an API key for the OpenAI provider', async () => {
-    vi.stubEnv('GENERATION_PROVIDER', 'openai');
+    vi.stubEnv('GENERATION_PROVIDER', 'openai-compatible');
     const { generateSemanticLabels } = await import(
       '../src/semanticLabels/semanticLabelService.js'
     );
@@ -209,12 +240,19 @@ describe('generateSemanticLabels', () => {
     await expect(generateSemanticLabels({
       context: 'Evidence',
       island: true
-    })).rejects.toThrow('OpenAI API key not configured');
+    })).rejects.toThrow('GENERATION_API_KEY is required');
   });
 
   it('treats a missing OpenAI response choice as empty output', async () => {
-    vi.stubEnv('GENERATION_PROVIDER', 'openai');
-    vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    vi.stubEnv('GENERATION_PROVIDER', 'openai-compatible');
+    vi.stubEnv('EMBEDDING_API_KEY', 'test-key');
+    vi.stubEnv('EMBEDDING_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('GENERATION_API_KEY', 'test-key');
+    vi.stubEnv('GENERATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('CLASSIFICATION_API_KEY', 'test-key');
+    vi.stubEnv('CLASSIFICATION_BASE_URL', 'https://api.openai.com/v1');
+vi.stubEnv('ASSISTANT_API_KEY', 'test-key');
+    vi.stubEnv('ASSISTANT_BASE_URL', 'https://api.openai.com/v1');
     mocked.createCompletion.mockResolvedValue({ choices: [] });
     const { generateSemanticLabels } = await import(
       '../src/semanticLabels/semanticLabelService.js'

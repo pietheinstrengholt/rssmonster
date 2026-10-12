@@ -273,7 +273,7 @@ polarity, evidence strength, supporting behavior, last activity, and lifecycle.
 Evidence strength is preference magnitude, not confidence in a recommendation.
 
 Select **Inspect** to see an Island's evidence breakdown and example articles.
-If an article's **Why recommended** explanation says it matches one of your
+If an article's **Why this article was ranked** explanation says it matches one of your
 interests, select the interest name to open **Settings → Islands** with that
 Island selected and inspected.
 

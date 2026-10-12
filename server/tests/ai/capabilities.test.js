@@ -53,16 +53,15 @@ describe('classification capability', () => {
     await expect(ai.classification.classifyArticle(input, requestOptions)).resolves.toEqual(analysis());
     expect(inference.classifyArticle).toHaveBeenCalledWith(input, requestOptions);
   });
-  it('accepts legacy inference scores, while canonical values take precedence', async () => {
+  it('requires canonical inference scores without mapping obsolete properties', async () => {
     const { ai, inference } = setup();
     const { toneScore, ...rest } = analysis();
     inference.classifyArticle.mockResolvedValue({ ...rest, sentimentScore: toneScore });
-    await expect(ai.classification.classifyArticle({ text: 'Article' })).resolves.toEqual(analysis());
-    inference.classifyArticle.mockResolvedValue({ ...rest, sentimentScore: 90, toneScore: 0 });
-    await expect(ai.classification.classifyArticle({ text: 'Article' })).resolves.toEqual({ ...rest, toneScore: 0 });
-    inference.classifyArticle.mockResolvedValue({ ...rest, sentimentScore: 90, toneScore: null });
     await expect(ai.classification.classifyArticle({ text: 'Article' })).rejects.toMatchObject({ code: 'AI_INVALID_RESPONSE' });
+    inference.classifyArticle.mockResolvedValue({ ...rest, toneScore: 0 });
+    await expect(ai.classification.classifyArticle({ text: 'Article' })).resolves.toEqual({ ...rest, toneScore: 0 });
   });
+
   it.each([null, [], {}, { text: 42 }])('rejects malformed classification requests %j', async input => {
     const { ai, inference } = setup();
     await expect(ai.classification.classifyArticle(input)).rejects.toMatchObject({ code: 'AI_INVALID_REQUEST' });

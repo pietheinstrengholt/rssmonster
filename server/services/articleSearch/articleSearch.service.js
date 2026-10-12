@@ -1,7 +1,6 @@
 // Coordinates article search across query parsing, settings thresholds, tag/feed lookups, and sorting.
 // The service returns article ids while keeping database filtering and in-memory ranking behind helper modules.
 import db from '../../models/index.js';
-import { canonicalArticleStatus } from '../../utils/articleStateContract.js';
 // Provides the shared dependencies used by this service.
 const { Article, BriefingPreference, Setting } = db;
 import { Op } from 'sequelize';
@@ -136,7 +135,7 @@ export const searchArticles = async ({
     includeDiagnostics = false,
     personalization = null // Optional request-owned evidence shared with article delivery
 }) => {
-    status = canonicalArticleStatus(status);
+
     // Rejects processing when user id is unavailable.
     if (!userId) {
         throw new Error("Missing userId");

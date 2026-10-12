@@ -34,13 +34,13 @@ describe('crawl settings API and runtime', () => {
     await admin.update({ role: 'user' });
     try { expect((await endpoint(method)).status).toBe(403); } finally { await admin.update({ role: 'admin' }); }
   });
-  it('stores all 18 fields together and restores current environment values', async () => {
+  it('stores all 19 canonical fields together and restores current environment values', async () => {
     vi.stubEnv('FEED_MAX_COUNT', '17');
     expect((await endpoint('get')).body.fields.find(field => field.key === 'FEED_MAX_COUNT').value).toBe(17);
     const input = values({ FEED_MAX_COUNT: 31, CRAWL_WORKER_INTERVAL_MS: 2500 });
     const saved = await endpoint('put').send({ overridden: true, values: input });
     expect(saved.status).toBe(200);
-    expect(saved.body.fields).toHaveLength(18);
+    expect(saved.body.fields).toHaveLength(19);
     expect(saved.body.effectiveLeaseMs).toBe(600000);
     expect((await db.ServerSetting.findByPk('crawlConfiguration')).value).toEqual(input);
     expect(await getCrawlWorkerInterval()).toBe(2500);
@@ -66,7 +66,7 @@ describe('crawl settings API and runtime', () => {
     const original = process.env.FEED_MAX_ENTRIES;
     vi.stubEnv('FEED_CONNECT_TIMEOUT_MS', undefined);
     vi.stubEnv('FEED_BODY_TIMEOUT_MS', undefined);
-    await saveCrawlSettings({ overridden: true, values: values({ FEED_MAX_ENTRIES: 1, FEED_RESPONSE_MAX_BYTES: 2048, FEED_HTTP_TIMEOUT_MS: 1234 }) });
+    await saveCrawlSettings({ overridden: true, values: values({ FEED_MAX_ENTRIES: 1, FEED_RESPONSE_MAX_BYTES: 2048, FEED_CONNECT_TIMEOUT_MS: 1234, FEED_BODY_TIMEOUT_MS: 1234 }) });
     await withCrawlSettings(async () => {
       expect(getFeedInputLimits().entries).toBe(1);
       expect(getFeedResponseMaxBytes()).toBe(2048);
@@ -80,17 +80,17 @@ describe('crawl settings API and runtime', () => {
     await withCrawlSettings(() => { expect(getFeedInputLimits().entries).toBe(3); });
     expect(process.env.FEED_MAX_ENTRIES).toBe(original);
   });
-  it('keeps a fresh heartbeat live and preserves SQLite safety and explicit HTTP phase timeouts', async () => {
+  it('keeps a fresh heartbeat live and preserves SQLite safety and saved HTTP phase timeouts', async () => {
     vi.stubEnv('FEED_CONNECT_TIMEOUT_MS', '111'); vi.stubEnv('FEED_BODY_TIMEOUT_MS', '222');
-    await saveCrawlSettings({ overridden: true, values: values({ CRAWL_PARALLELPROCESSFLAG: 1 }) });
+    await saveCrawlSettings({ overridden: true, values: values({ CRAWL_PARALLELPROCESSFLAG: 1, FEED_CONNECT_TIMEOUT_MS: 123, FEED_BODY_TIMEOUT_MS: 234 }) });
     await withCrawlSettings(() => {
       expect(resolveCrawlRunStaleAfterMs()).toBe(3600000);
       const now = new Date();
       expect(isStaleCrawlRun({ startedAt: new Date(0), heartbeatAt: now }, now)).toBe(false);
       expect(isStaleCrawlRun({ heartbeatAt: new Date(now.getTime() - 3600001) }, now)).toBe(true);
       expect(resolveEffectiveCrawlConfiguration({ dialect: 'sqlite', environment: getCrawlEnvironment(), logger: { warn() {} } }).parallelProcessFlag).toBe(0);
-      expect(resolveFeedConnectTimeoutMs()).toBe(111);
-      expect(resolveFeedBodyTimeoutMs()).toBe(222);
+      expect(resolveFeedConnectTimeoutMs()).toBe(123);
+      expect(resolveFeedBodyTimeoutMs()).toBe(234);
     });
   });
 });
