@@ -177,10 +177,16 @@ control, independently of the selected sort (Newest, Oldest, Quality,
 Recommended, or Top Stories). RSSMonster displays one selected article for each
 Event instead of repeating every related article in the main list.
 
-Grouped articles show a **similar articles** count. Select that label to expand
-the other articles directly below the parent. A source badge can also show how
-many distinct feeds corroborate the Event. Select the label again to collapse
-the group.
+Grouped articles show a count labeled **other articles in this event**. Select
+that label to expand other members of the same Event directly below the parent;
+this is Event membership, not a general similarity search. Select the label again
+to collapse the group. Desktop and mobile grouping controls both use **Events**.
+
+The source badge opens **Same story, different sources**, which shows other
+articles in the same Event from different feeds. **Developing story** identifies
+the Event's developing article; its popover opens other coverage in that Event.
+These story labels describe specific Event coverage controls. Neither control
+changes Event membership or identifies deterministic duplicates.
 
 Ungrouped mode continues to show the articles individually. Changing the
 grouping changes presentation, not Event membership.

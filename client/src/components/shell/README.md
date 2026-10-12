@@ -89,7 +89,7 @@ Both toolbar variants control the same article-selection dimensions:
 
 - **Status** chooses Daily briefing, Unread, Saved, Hot, OpenedOriginal, or Read.
 - **Sort** chooses Oldest or Newest, with additional AI ordering when available.
-- **Grouping** chooses ungrouped articles or Event clusters when AI is available.
+- **Grouping** chooses ungrouped articles or **Events** when AI is available. Desktop and mobile both label Event grouping **Events**.
 - **Search** updates the shared article query.
 
 Selecting a different status changes the active collection. Selecting the already active status with no smart folder selected requests a full reload instead of performing a no-op. Selecting that same status while a smart folder is active exits the smart-folder context.

@@ -36,7 +36,7 @@
       />
     </ArticleReaderBadge>
     <ArticleReaderBadge v-if="!isEventArticle && event && eventArticleCountTotal > 1 && grouping !== 'none'">
-      <button type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} similar article${eventArticleCountTotal - 1 === 1 ? '' : 's'}`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</button>
+      <button type="button" class="similar-badge" :aria-label="`${eventExpanded ? 'Hide' : 'Show'} ${eventArticleCountTotal - 1} other article${eventArticleCountTotal - 1 === 1 ? '' : 's'} in this event`" :aria-expanded="eventExpanded ? 'true' : 'false'" @click.stop="$emit('view-event-articles', event.id)">+{{ eventArticleCountTotal - 1 }} other article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }} in this event</button>
     </ArticleReaderBadge>
     <ArticleReaderBadge v-if="duplicateCount > 0">
       <button type="button" class="duplicate-badge" :aria-label="`${duplicatesExpanded ? 'Hide' : 'Show'} ${duplicateCount} duplicate article${duplicateCount === 1 ? '' : 's'}`" :aria-expanded="duplicatesExpanded ? 'true' : 'false'" @click.stop="$emit('view-duplicate-articles')">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</button>

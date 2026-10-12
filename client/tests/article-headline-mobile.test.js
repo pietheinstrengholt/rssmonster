@@ -221,10 +221,10 @@ describe('mobile Headlines', () => {
     const tag = { id: 1, name, tagType: 'rule' };
     const wrapper = mountRow({ tags: [tag], eventId: 7, grouping: 'event', eventArticleCountTotal: 2, sourceCount: 2 });
     expect(wrapper.text()).toContain('2 sources');
-    expect(wrapper.text()).toContain('+1 similar article');
+    expect(wrapper.text()).toContain('+1 other article in this event');
     await wrapper.get('button[aria-label="Filter articles by tag OpenAI"]').trigger('click');
     expect(wrapper.emitted('select-tag')).toEqual([[tag]]);
-    await wrapper.get('button[aria-label="Show 1 similar article"]').trigger('click');
+    await wrapper.get('button[aria-label="Show 1 other article in this event"]').trigger('click');
     expect(wrapper.emitted('view-event-articles')).toEqual([[7]]);
   });
 

@@ -164,7 +164,7 @@ describe('toolbar Daily Briefing status', () => {
     const sortOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
       .find(option => option.text() === 'Quality & source trust');
     const groupingOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
-      .find(option => option.text() === 'Cluster per event');
+      .find(option => option.text() === 'Events');
 
     expect(sortOption).toBeDefined();
     expect(groupingOption).toBeDefined();

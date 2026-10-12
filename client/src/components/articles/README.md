@@ -182,6 +182,13 @@ Source-specific and media-specific icons take precedence where they explain the 
 Reader detail keeps the title focused on the article. The selected article exposes
 read/unread directly in the sticky toolbar and also in its article actions menu.
 
+Event expansion is labeled **other articles in this event**, with the number of
+other members. It fetches Event members and inserts them into the reading layout;
+it is not a general similarity search. The **Same story, different sources**
+source badge opens a popover of the same Event's coverage from other feeds. The
+**Developing story** icon opens other Event coverage from its developing article.
+These controls differ from expanding deterministic duplicates.
+
 ## Article actions
 
 The three-dot menu holds actions that should remain available without occupying the main reading surface. These include:

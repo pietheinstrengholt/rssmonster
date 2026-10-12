@@ -26,7 +26,7 @@ describe('article selection option configuration', () => {
       'Newest', 'Oldest', 'Top Stories', 'Recommended', 'Quality & source trust'
     ]);
     expect(ARTICLE_GROUPING_OPTIONS.map(option => option.mobileLabel)).toEqual([
-      'All articles', 'Cluster per event'
+      'All articles', 'Events'
     ]);
   });
 

@@ -303,12 +303,12 @@ describe('ArticleMeta', () => {
     });
 
     expect(wrapper.get('.source-badge').text()).toContain('3 sources');
-    expect(wrapper.get('.similar-badge').text()).toBe('+2 similar articles');
+    expect(wrapper.get('.similar-badge').text()).toBe('+2 other articles in this event');
     expect(wrapper.get('.duplicate-badge').text()).toBe('1 duplicate');
     expect(wrapper.get('.similar-badge').element.tagName).toBe('BUTTON');
     expect(wrapper.get('.similar-badge').attributes()).toMatchObject({
       type: 'button',
-      'aria-label': 'Show 2 similar articles',
+      'aria-label': 'Show 2 other articles in this event',
       'aria-expanded': 'false'
     });
     expect(wrapper.get('.duplicate-badge').element.tagName).toBe('BUTTON');
@@ -333,7 +333,7 @@ describe('ArticleMeta', () => {
     });
 
     expect(wrapper.get('.similar-badge').attributes()).toMatchObject({
-      'aria-label': 'Hide 2 similar articles',
+      'aria-label': 'Hide 2 other articles in this event',
       'aria-expanded': 'true'
     });
     expect(wrapper.get('.duplicate-badge').attributes()).toMatchObject({
@@ -370,7 +370,7 @@ describe('ArticleMeta', () => {
       grouping: 'event'
     });
 
-    expect(wrapper.get('.similar-badge').text()).toBe('+1 similar article');
+    expect(wrapper.get('.similar-badge').text()).toBe('+1 other article in this event');
     expect(wrapper.get('.duplicate-badge').text()).toBe('2 duplicates');
   });
 

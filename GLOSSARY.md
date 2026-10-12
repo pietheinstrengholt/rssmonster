@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Event / story / similar articles | Grouping is called **Events**, mobile calls it **Cluster per event**, and the Event-expansion control says **similar articles**. That control fetches Event members, rather than a general similarity search. **Developing story** and **Same story, different sources** add further story terminology. | [Selection options](client/src/config/articleSelectionOptions.js), [metadata](client/src/components/articles/ArticleMeta.vue), [Event expansion](client/src/components/articles/helpers/articleExpansion.js), [story sources](client/src/components/articles/ArticleStorySourcesPopover.vue) |
 | Developing events / developing stories | The ordinary `includeDevelopingEvents` setting, Briefing's developing-events summary preference, and `developing:true`/“Show only developing stories” have different scopes. Smart Folder preview chips label `developing:true` **Developing events**, obscuring the strict developing-story filter. | [Unread preferences](client/src/components/dialogs/UnreadConfigurationModal.vue), [Briefing contract](client/src/components/briefing/README.md), [query preview](client/src/services/currentViewSmartFolder.js) |
 | Daily Briefing's 24-hour period | **Last 24 hours** stores `24h`, but the selection builds `@today`. Briefing documentation records a calendar-day article/context window versus a rolling one-day overview count. | [Selection store](client/src/store/selection.js), [Briefing period documentation](client/src/components/briefing/README.md#selection-period) |
 | Briefing scope | The sidebar count and structured introduction describe the global briefing; the displayed list can retain category, feed, or tag scope. They need not describe the same visible collection. | [Briefing selection](client/src/components/briefing/README.md#daily-briefing-selection), [selection store](client/src/store/selection.js) |
@@ -26,6 +25,12 @@ not necessarily indicate a functional defect.
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Event grouping and coverage controls:** desktop and mobile grouping use
+**Events**; expansion uses **other articles in this event** and fetches Event
+members. **Developing story** opens coverage from a developing Event article;
+**Same story, different sources** opens that Event's coverage from other feeds.
+These controls are distinct from general similarity and deterministic duplicates.
 
 **Summarized description:** the UI and documentation describe the first 100 words
 of canonical `contentText`. The `summarized` mode and its behavior are unchanged;
@@ -317,7 +322,8 @@ An **Event** groups coverage of an occurrence; generated names explain its
 presentation rather than independently establishing identity. A
 **representative Article** is the server-selected Article representing that
 Event. **Event grouping** (`grouping:event`) changes which Event coverage is
-presented together; expanding **similar articles** fetches other Event members.
+presented together; expanding **other articles in this event** fetches other
+Event members.
 `grouping:none` presents the ungrouped collection. Neither grouping nor matching
 generated labels makes Articles deterministic duplicates.
 

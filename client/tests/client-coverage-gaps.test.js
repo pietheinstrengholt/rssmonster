@@ -194,7 +194,7 @@ describe('ArticleHeadlineRow interaction contract', () => {
     });
 
     expect(wrapper.get('.source-badge').text()).toContain('3 sources');
-    expect(wrapper.get('.similar-badge').text()).toContain('2 similar articles');
+    expect(wrapper.get('.similar-badge').text()).toContain('2 other articles in this event');
     expect(wrapper.get('.duplicate-badge').text()).toContain('1 duplicate');
     expect(wrapper.get('.tag-rule').text()).toBe('Machine-learning');
 
@@ -252,7 +252,7 @@ describe('ArticleHeadlineRow interaction contract', () => {
     });
 
     expect(wrapper.find('a.article-link').exists()).toBe(false);
-    expect(wrapper.get('.similar-badge').attributes('aria-label')).toBe('Hide 1 similar article');
+    expect(wrapper.get('.similar-badge').attributes('aria-label')).toBe('Hide 1 other article in this event');
     expect(wrapper.get('.duplicate-badge').attributes('aria-label')).toBe('Hide 2 duplicate articles');
     expect(wrapper.findComponent({ name: 'ArticleActionsMenu' }).props()).toMatchObject({ status: 'read' });
     expect(wrapper.get('.article-list-saved-button').attributes('aria-label')).toBe('Remove from saved');
