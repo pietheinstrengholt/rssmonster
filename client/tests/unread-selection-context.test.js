@@ -550,7 +550,7 @@ describe('UnreadConfigurationModal', () => {
       'Tune your unread selection'
     );
     expect(wrapper.findAll('.unread-preferences-option-title').map(node => node.text())).toEqual([
-      'Developing events',
+      'Include developing coverage',
       'Prioritize high-trust coverage',
       'Mark as read while scrolling',
       'Use default view on startup',

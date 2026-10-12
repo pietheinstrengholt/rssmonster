@@ -129,11 +129,11 @@
 
               <span class="briefing-preferences-option-content">
                 <span class="briefing-preferences-option-title">
-                  Developing events
+                  Include developing coverage in the summary
                 </span>
 
                 <span class="briefing-preferences-option-description">
-                  Use new coverage for events in the morning summary.
+                  Use new coverage for events in the morning summary without changing the article list.
                 </span>
               </span>
 

@@ -166,7 +166,7 @@ representative remains intact.
 
 This prevents an Event the user has already consumed from disappearing merely
 because its original representative is read. In **Tune your unread selection**,
-enable **Developing events** to include new coverage for Events you have
+enable **Include developing coverage** to include new coverage for Events you have
 already seen. This preference changes presentation only; RSSMonster maintains
 the developing pointer either way.
 
@@ -203,7 +203,7 @@ never changes an article from unread to read or copies reading state between
 members.
 
 If new coverage joins after the grouped Event was consumed, it can start a new
-developing wave and appear again when **Developing events** is enabled. See
+developing wave and appear again when **Include developing coverage** is enabled. See
 [Marking Articles Read]({% link marking-articles-read.md %}) for the other ways reading
 state can be updated.
 

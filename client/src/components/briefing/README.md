@@ -72,7 +72,7 @@ The available article-selection controls are:
 
 - **Only unread articles** excludes articles already marked as read.
 - **Mark as read while scrolling** automatically marks briefing articles as read after they pass the viewport. It is available only when the unread-only filter is enabled.
-- **Developing events** includes new coverage for events the user has already seen.
+- **Include developing coverage in the summary** selects new coverage for events in the morning summary without changing the article list.
 - **Show only interest-matched articles** restricts eligibility to nonzero stored interest, including negative interest.
   This is the existing eligibility contract, separate from signed Recommended ranking.
 - **Show only developing stories** restricts eligibility to unread articles selected as an event's developing article when that differs from its representative.
@@ -81,9 +81,9 @@ The two “show only” choices are mutually exclusive. Enabling one disables th
 
 The briefing scrolling preference is independent from the equivalent unread-selection setting. Disabling “Only unread articles” hides and clears the briefing preference, and the server rejects a saved enabled value without unread-only filtering.
 
-“Developing events” and “show only developing stories” have different meanings. The former selects continuing coverage for morning-summary events without changing the article list. The latter applies the exact `isDevelopingStory` conditions and forces event grouping with developing-event selection. Users can apply `developing:true` when they explicitly want the same developing-story condition in a normal search.
+“Include developing coverage in the summary” and “Show only developing stories” have different meanings. The former selects continuing coverage for morning-summary events without changing the article list. The latter applies the exact `isDevelopingStory` conditions and forces event grouping with developing-event selection. Users can apply `developing:true` when they explicitly want the same developing-story condition in a normal search.
 
-The developing-events preference is stored independently from the wider user setting and never updates the generic article selection.
+The summary preference is stored independently from the Unread setting **Include developing coverage** and never updates the generic article selection.
 
 ### Hot articles
 

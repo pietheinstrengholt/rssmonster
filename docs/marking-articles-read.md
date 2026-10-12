@@ -93,11 +93,11 @@ startup selection, and article-link behavior.
 3. Adjust the switches and select **Save changes** to persist your preferences.
    **Cancel** or closing the dialog discards unsaved changes.
 
-![Tune your unread selection dialog showing developing events, high-trust prioritization, scroll-based read marking, startup selection, and article-link behavior]({{ '/assets/unread-settings.png' | relative_url }})
+![Tune your unread selection dialog showing developing-coverage inclusion, high-trust prioritization, scroll-based read marking, startup selection, and article-link behavior]({{ '/assets/unread-settings.png' | relative_url }})
 
 | Setting | What it changes |
 | --- | --- |
-| Developing events | Includes new coverage for Events you have already seen. See [Events]({% link events.md %}#viewing-event-coverage) for grouped coverage and developing articles. |
+| Include developing coverage | Includes new coverage for Events you have already seen. See [Events]({% link events.md %}#viewing-event-coverage) for grouped coverage and developing articles. |
 | Prioritize high-trust coverage | Gives coverage from feeds with stronger FeedTrust more prominence in Unread. This can change Newest/Oldest ordering; leave it off for strictly chronological reading. See [Scoring]({% link scoring.md %}#chronological). |
 | Mark as read while scrolling | Marks unread articles as read after you scroll past them, including in Headlines mode. Reader mode instead marks the article you leave when you change selection, independently of this switch. |
 | Use default view on startup | Opens the default unread selection after refreshing or reopening RSSMonster. Turn it off to restore the last-used selection instead. |

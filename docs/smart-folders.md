@@ -73,6 +73,18 @@ of today's list: its results update as articles arrive or their state changes.
 
 ---
 
+## Developing-story filters
+
+The preview labels `developing:true` **Developing stories** and `developing:false`
+**Not Developing stories**. The true filter requires an unread article selected
+as its Event's developing article, distinct from the representative. The false
+filter excludes articles matching that predicate.
+
+This differs from **Include developing coverage** in Unread settings, which
+includes new coverage for Events you have already seen, and **Include developing
+coverage in the summary** in Briefing settings, which affects only the morning
+summary. Neither inclusion setting means **Show only developing stories**.
+
 ## Tips
 - Combine status with time to keep the list focused: `unread:true @today`.
 - Use `quality:>=0.7` to filter after fetch; it can shrink the result set even if the limit is higher.

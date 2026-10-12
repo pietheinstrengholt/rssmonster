@@ -37,7 +37,7 @@
 
             <span class="unread-preferences-option-content">
               <span class="unread-preferences-option-title">
-                Developing events
+                Include developing coverage
               </span>
               <span class="unread-preferences-option-description">
                 Include new coverage for events you have already seen.

@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Developing events / developing stories | The ordinary `includeDevelopingEvents` setting, Briefing's developing-events summary preference, and `developing:true`/“Show only developing stories” have different scopes. Smart Folder preview chips label `developing:true` **Developing events**, obscuring the strict developing-story filter. | [Unread preferences](client/src/components/dialogs/UnreadConfigurationModal.vue), [Briefing contract](client/src/components/briefing/README.md), [query preview](client/src/services/currentViewSmartFolder.js) |
 | Daily Briefing's 24-hour period | **Last 24 hours** stores `24h`, but the selection builds `@today`. Briefing documentation records a calendar-day article/context window versus a rolling one-day overview count. | [Selection store](client/src/store/selection.js), [Briefing period documentation](client/src/components/briefing/README.md#selection-period) |
 | Briefing scope | The sidebar count and structured introduction describe the global briefing; the displayed list can retain category, feed, or tag scope. They need not describe the same visible collection. | [Briefing selection](client/src/components/briefing/README.md#daily-briefing-selection), [selection store](client/src/store/selection.js) |
 | Publication date / first seen | Smart Folder **Date range → Last 7 days / Last 30 days** and **Relative range** generate `firstSeen` expressions. Unread age/date controls instead constrain publication time. “Last week” uses `@lastweek`, a different expression. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query builder](client/src/components/settings/smartFolders/smartFolderQuery.js), [date filters](client/src/services/articleDateRange.js), [query tests](client/tests/smart-folder-query.test.js) |
@@ -25,6 +24,13 @@ not necessarily indicate a functional defect.
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Developing coverage scopes:** **Include developing coverage** includes new
+coverage in the Unread view; **Include developing coverage in the summary**
+affects only the Briefing morning summary; **Show only developing stories**
+restricts article eligibility to the strict developing-story predicate. Smart
+Folder chips label `developing:true` **Developing stories** and `developing:false`
+**Not Developing stories**. Existing settings and expressions are unchanged.
 
 **Event grouping and coverage controls:** desktop and mobile grouping use
 **Events**; expansion uses **other articles in this event** and fetches Event

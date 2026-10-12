@@ -85,11 +85,11 @@ describe('current view draft', () => {
     expect(draft.name).toBe('AI · Unread');
   });
   it('preserves supported expressions and operators without turning unsupported filters into text', () => {
-    const draft = currentViewSmartFolder({ status: 'all', search: 'author:"Ada Lovelace" language:nl quality:<0.80 event:false firstSeen:7d limit:100 sort:asc unsupported:true "Dutch news"' });
-    expect(draft.query).toContain('author:"Ada Lovelace" language:nl quality:<0.80 event:false firstSeen:7d limit:100 sort:asc "Dutch news"');
+    const draft = currentViewSmartFolder({ status: 'all', search: 'author:"Ada Lovelace" language:nl quality:<0.80 event:false developing:true firstSeen:7d limit:100 sort:asc unsupported:true "Dutch news"' });
+    expect(draft.query).toContain('author:"Ada Lovelace" language:nl quality:<0.80 event:false developing:true firstSeen:7d limit:100 sort:asc "Dutch news"');
     expect(draft.query).not.toContain('unsupported');
     expect(draft.limitCount).toBe(100);
-    expect(smartFolderRulePreview(draft.query).map(rule => rule.label)).toEqual(['author: Ada Lovelace', 'language: nl', 'Quality < 80', 'Not Events', 'First seen within 7d', 'Oldest', 'Dutch news']);
+    expect(smartFolderRulePreview(draft.query).map(rule => rule.label)).toEqual(['author: Ada Lovelace', 'language: nl', 'Quality < 80', 'Not Events', 'Developing stories', 'First seen within 7d', 'Oldest', 'Dutch news']);
   });
   it('maps calendar controls only when the editor has an equivalent date rule', () => {
     expect(currentViewSmartFolder({ status: 'unread' }, { dateRange: 'today' }).query).toContain('@today');
