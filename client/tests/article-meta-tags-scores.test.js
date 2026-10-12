@@ -559,12 +559,12 @@ describe('ArticleTagsScores', () => {
     await flushPromises();
 
     const trigger = wrapper.get('.overall-score');
-    expect(trigger.text()).toBe('Overall quality: 63');
+    expect(trigger.text()).toBe('Overall quality: 62.5');
     expect(trigger.element.tagName).toBe('BUTTON');
     expect(trigger.classes()).toContain('score-medium');
     expect(trigger.attributes()).toMatchObject({
       'aria-expanded': 'false',
-      'aria-label': 'Overall quality 63 out of 100. Show quality breakdown'
+      'aria-label': 'Overall quality 62.5 out of 100. Show quality breakdown'
     });
     expect(wrapper.findAll('.quality-score, .sentiment-score, .ad-score')).toHaveLength(0);
 
@@ -595,11 +595,28 @@ describe('ArticleTagsScores', () => {
     expect(qualityIcons).toEqual(['pencil-square', 'chat-square-text-fill', 'megaphone']);
     expect(qualityIcons.every(icon => bootstrapIconNames.includes(icon))).toBe(true);
     expect(panel.textContent).toContain('Clarity, structure, and substance');
-    expect(panel.textContent).toContain('63/100 overall quality');
+    expect(panel.textContent).toContain('62.5/100 overall quality');
     wrapper.unmount();
   });
 
   // Verifies the average badge uses the existing score-severity thresholds.
+  it.each([
+    [0.7475, '74.75', 'score-medium'],
+    [0.7975, '79.75', 'score-medium'],
+    [0.5975, '59.75', 'score-poor'],
+    [0.8, '80', 'score-good'],
+    [0.6, '60', 'score-medium'],
+    [0.58, '58', 'score-poor']
+  ])('preserves fractional score %s and its severity', async (quality, label, severity) => {
+    const wrapper = mountArticleTagsScores({ advertisementScore: 100, sentimentScore: 70, qualityScore: 40, quality });
+    await flushPromises();
+    const badge = wrapper.get('.overall-score');
+    expect(badge.text()).toBe(`Overall quality: ${label}`);
+    expect(badge.attributes('aria-label')).toBe(`Overall quality ${label} out of 100. Show quality breakdown`);
+    expect(badge.classes()).toContain(severity);
+    wrapper.unmount();
+  });
+
   it('assigns severity from the overall quality score', async () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 90,
@@ -609,7 +626,7 @@ describe('ArticleTagsScores', () => {
     });
     await flushPromises();
 
-    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 73');
+    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 72.5');
     expect(wrapper.get('.overall-score').classes()).toContain('score-medium');
   });
 
@@ -657,7 +674,7 @@ describe('ArticleTagsScores', () => {
     await flushPromises();
 
     expect(wrapper.find('.analysis-state').exists()).toBe(false);
-    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 78');
+    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 77.5');
   });
 
   it('preserves skipped-feed score presentation', async () => {
@@ -670,7 +687,7 @@ describe('ArticleTagsScores', () => {
     });
     await flushPromises();
 
-    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 63');
+    expect(wrapper.get('.overall-score').text()).toBe('Overall quality: 62.5');
     expect(wrapper.find('.analysis-state').exists()).toBe(false);
   });
 

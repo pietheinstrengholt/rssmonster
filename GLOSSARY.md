@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Quality precision | The scoring guide says the badge preserves fractional points so 74.75 cannot appear to meet a threshold of 75. The current explanation component uses `Math.round(this.quality * 100)`, displaying 75 for that value. | [Scoring guide](docs/scoring.md#overall-quality), [quality explanation](client/src/components/articles/ArticleQualityExplanation.vue) |
 | Sentiment / Tone | Current controls describe `sentimentScore` as **Tone**, emotional neutrality and balance. Settings documentation still describes higher sentiment as more positive and lower sentiment as negative/alarmist. These are different descriptions of the assessment. | [Scores settings](client/src/components/settings/SettingsScores.vue), [quality explanation](client/src/components/articles/ArticleQualityExplanation.vue), [Settings documentation](client/src/components/settings/README.md#scores) |
 | AI provider and defaults | Scores help claims an OpenAI key is required and absent-key articles receive 70. AI / Inference exposes a configurable service with separate capabilities; the Settings README flags the OpenAI-only copy as outdated. The neutral component fallback is separate from pending/failed analysis presentation. | [Scores settings](client/src/components/settings/SettingsScores.vue), [Inference settings](client/src/components/settings/SettingsInference.vue), [Settings documentation](client/src/components/settings/README.md), [analysis presentation](client/src/services/articleAnalysisPresentation.js) |
 | Interest match | Briefing's “Show only interest-matched articles” includes nonzero negative interest according to its documented eligibility contract. “Matches your interests” can sound like a positive recommendation, while the interest inspector distinguishes positive, neutral, and negative preference. | [Briefing preferences](client/src/components/briefing/README.md#article-selection), [interest presentation](client/src/services/interestPresentation.js), [article metadata](client/src/components/articles/ArticleMeta.vue) |
@@ -21,12 +20,18 @@ not necessarily indicate a functional defect.
 
 ## Resolved contract migrations
 
+**Quality precision:** Overall quality badges, accessible labels, breakdown
+footers, and quality-filter preview chips preserve fractional points and trim
+trailing zeros. Badge colors use the unrounded score, including preview chips.
+For example, 74.75/100 remains 74.75 rather than appearing to meet a minimum of
+75. Filtering, ranking, and saved expressions are unchanged.
+
 **Quality terminology:** the article badge and article-only filters use
 **Overall quality**; the `qualityScore` component uses **Writing quality**;
 source-aware `sort:quality` uses **Quality & source trust**, including query
 preview chips. Controls and badges use 0–100, while `quality` expressions retain
 0–1 (`quality:>=0.75` means at least 75/100). Identifiers, scoring formulas, and
-expressions are unchanged. The separate quality-precision issue remains unresolved.
+expressions are unchanged.
 
 **Publication time and first seen:** Smart Folder time choices explicitly identify
 publication windows and first-seen windows. **Custom first-seen window** replaces

@@ -72,7 +72,7 @@ function ruleBadgeClass(rule) {
   if (rule.key === 'sort' && rule.value === 'recommended') return 'recommended-badge';
   if (['grouping', 'event', 'developing', 'eventcount'].includes(rule.key)) return 'source-badge';
   if (rule.key === 'quality') {
-    const score = Math.round(Number(rule.value.match(/[\d.]+$/)?.[0]) * 100);
+    const score = Number(rule.value.match(/[\d.]+$/)?.[0]) * 100;
     return score >= 80 ? 'score-good' : score >= 60 ? 'score-medium' : 'score-poor';
   }
   return 'tag';

@@ -88,6 +88,29 @@ describe('Reader save current view', () => {
   });
 });
 describe('current view draft', () => {
+  it.each([
+    ['quality:>=0.7975', 'Overall quality >= 79.75/100', 'score-medium'],
+    ['quality:>=0.5975', 'Overall quality >= 59.75/100', 'score-poor'],
+    ['quality:>=0.8', 'Overall quality >= 80/100', 'score-good']
+  ])('colors the %s preview using its unrounded threshold', async (query, label, severity) => {
+    selection.currentSelection.search = query;
+    render();
+    await open();
+    const chip = wrapper.findAll('span').find(item => item.text() === label);
+    expect(chip).toBeDefined();
+    expect(chip.classes()).toContain(severity);
+  });
+
+  it.each([
+    ['quality:>=0.7475', 'Overall quality >= 74.75/100'],
+    ['quality:<0.747490000', 'Overall quality < 74.749/100'],
+    ['quality:=.5800', 'Overall quality = 58/100'],
+    ['quality:<=0.0000001', 'Overall quality <= 0.00001/100']
+  ])('preserves the precision and operator of %s', (query, label) => {
+    expect(smartFolderRulePreview(query)[0]).toMatchObject({ label, value: query.split(':')[1] });
+    expect(currentViewSmartFolder({ status: 'all', search: query }).query).toContain(query);
+  });
+
   it('distinguishes the article-only quality filter from source-aware sorting', () => {
     const query = 'quality:>=0.75 sort:quality';
     expect(smartFolderRulePreview(query)).toMatchObject([

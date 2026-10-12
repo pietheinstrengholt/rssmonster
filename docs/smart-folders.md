@@ -37,7 +37,9 @@ Use the same tokens as the search bar: status (`unread:true`, `saved:true`), tag
 and 25% Ad-free content. **Writing quality** is just one component.
 The editor's slider uses 0–100, while the `quality` expression uses 0–1:
 75/100 becomes `quality:>=0.75`. Preview chips identify this article-only filter
-as **Overall quality** and show the threshold out of 100.
+as **Overall quality** and show the threshold out of 100, preserving fractional
+points: `quality:>=0.7475` appears as **Overall quality >= 74.75/100**. Trailing
+zeros are omitted; the stored expression and comparison operator are unchanged.
 
 **Quality & source trust** (`sort:quality`) combines 70% Overall quality and
 30% FeedTrust to rank results. Source trust affects this ordering, not the

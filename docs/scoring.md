@@ -36,7 +36,10 @@ have the same higher-is-better direction.
 
 The article badge, Settings → Scores → Overall quality, and Smart Folder Overall quality
 control show this score out of 100. The badge preserves fractional points so that
-an article shown as 74.75 does not appear to meet a minimum of 75. Smart Folder
+an article shown as 74.75 does not appear to meet a minimum of 75. Badges,
+accessible labels, breakdown footers, and quality-filter preview chips retain
+fractional points and omit unnecessary trailing zeros. Badge colors use the
+unrounded score, including near the 60 and 80 severity boundaries. Smart Folder
 expressions retain their normalized syntax: `quality:>=0.75` means at least 75/100.
 Settings stores the independent `minOverallQualityScore` threshold as an integer
 from 0 to 100, with 0 disabling that gate. Existing writing, tone, and ad-free

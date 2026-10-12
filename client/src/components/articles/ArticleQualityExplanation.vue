@@ -3,18 +3,19 @@
     root-class="article-quality-explanation"
     panel-class="quality-explanation-panel"
     list-class="quality-explanation-list"
-    :trigger-label="`Overall quality: ${overallScore}`"
+    :trigger-label="`Overall quality: ${overallScoreLabel}`"
     :trigger-class="['score', 'overall-score', scoreSeverityClass(overallScore)]"
-    :aria-label="`Overall quality ${overallScore} out of 100. Show quality breakdown`"
+    :aria-label="`Overall quality ${overallScoreLabel} out of 100. Show quality breakdown`"
     dialog-title="Overall quality"
     summary="Overall quality combines 50% writing quality, 25% tone, and 25% ad-free content. Overall quality filters use this same article-only score. Source trust contributes separately to Quality & source trust sorting."
     :items="qualityItems"
-    :footer-label="`${overallScore}/100 overall quality`"
+    :footer-label="`${overallScoreLabel}/100 overall quality`"
   />
 </template>
 
 <script>
 import ArticleExplanationPopover from './ArticleExplanationPopover.vue';
+import { formatQualityPercent } from '../../services/qualityPresentation.js';
 
 const scoreSeverityClass = score => {
   if (score >= 80) return 'score-good';
@@ -32,7 +33,10 @@ export default {
   },
   computed: {
     overallScore() {
-      return Math.round(this.quality * 100);
+      return this.quality * 100;
+    },
+    overallScoreLabel() {
+      return formatQualityPercent(this.quality);
     },
     qualityItems() {
       return [

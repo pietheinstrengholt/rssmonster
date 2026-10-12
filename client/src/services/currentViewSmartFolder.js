@@ -1,5 +1,6 @@
 import { buildSmartFolderQuery, createEmptySmartFolderConfig, tokenizeSmartFolderQuery, stripSmartFolderQuotes } from '../components/settings/smartFolders/smartFolderQuery.js';
 import { expressionPatterns, validateSmartFolderQuery } from './queryValidation.js';
+import { formatQualityPercent } from './qualityPresentation.js';
 
 // Use the editor's configuration defaults and its advanced expression vocabulary.
 // Navigation IDs and rolling publication-age controls have no equivalent saved rule.
@@ -41,7 +42,7 @@ export function smartFolderRulePreview(query) {
     else if (key === 'sort') label = sorts[value] || value;
     else if (key === 'quality' || key === 'freshness') {
       const score = value.match(/^(<=|>=|<|>|=)?([\d.]+)$/);
-      label = score ? `${key === 'quality' ? 'Overall quality' : 'Freshness'} ${score[1] || '='} ${Math.round(Number(score[2]) * 100)}${key === 'quality' ? '/100' : ''}` : token;
+      label = score ? `${key === 'quality' ? 'Overall quality' : 'Freshness'} ${score[1] || '='} ${key === 'quality' ? formatQualityPercent(score[2]) : Math.round(Number(score[2]) * 100)}${key === 'quality' ? '/100' : ''}` : token;
     } else if (key === 'firstseen') label = `Never seen or first seen within ${value}`;
     else if (key === 'date') label = { '@today': 'Published: last 24 hours', '@yesterday': 'Published: yesterday', '@lastweek': 'Published: last 7 days' }[token] || token;
     else if (!['tag', 'title', 'text'].includes(key)) label = `${key}: ${label}`;
