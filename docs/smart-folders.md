@@ -31,6 +31,29 @@ They update automatically as new articles arrive.
 
 Use the same tokens as the search bar: status (`unread:true`, `saved:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), hot items (`hot:true`), and sorts.
 
+## Publication time and first seen
+
+The editor's **Article timing → Time filter** separates two time bases:
+
+| Choice | Expression | Meaning |
+| --- | --- | --- |
+| Published: last 24 hours | `@today` | Published within the rolling last 24 hours. |
+| Published: yesterday | `@yesterday` | Published during yesterday's UTC calendar day. |
+| Published: last 7 days | `@lastweek` | Published within the rolling last seven days. |
+| First seen: last 7 days | `firstSeen:7d` | Never seen, or first shown on screen within the last seven days. |
+| First seen: last 30 days | `firstSeen:30d` | Never seen, or first shown on screen within the last 30 days. |
+
+**Custom first-seen window** accepts hours or days and uses the same exposure
+rule. First seen records when an article first appears on screen, not when it was
+published or whether it was read. Never-seen articles remain eligible regardless
+of publication date. For example, a month-old article never shown on screen can
+match `firstSeen:7d`, but it will not match `@lastweek`.
+
+The Unread view's date and age controls filter publication time. Its calendar
+ranges use local-day boundaries, whereas Smart Folder `@yesterday` uses UTC.
+These label clarifications preserve existing expressions and saved folders.
+Rule previews also identify publication windows and the never-seen inclusion.
+
 ## Save an existing search as a Smart Folder
 
 You can save an existing search expression directly from its results, without

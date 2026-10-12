@@ -62,12 +62,21 @@ Each folder has a name, result limit, and generated search query. A folder can b
 The editor supports:
 
 - Read, unread, saved, openedOriginal, and hot state filters
-- Fixed or relative date ranges
+- Publication-time presets and first-seen windows (including never-seen articles)
 - Tag, title, author, language, and free-text matching
 - Quality and freshness thresholds when AI is enabled
 - Event and cluster filters when AI is enabled
 - Top Stories, Recommended, Quality, and publication-date ordering where supported
 - Maximum result sizes of 50, 100, 250, or 500 articles
+
+In **Article timing**, **Time filter** distinguishes **Published: last 24 hours**
+(`@today`), **Published: yesterday** (`@yesterday`, a UTC calendar day), and
+**Published: last 7 days** (`@lastweek`) from **First seen: last 7 days / last 30 days**
+(`firstSeen:7d` / `firstSeen:30d`). **Custom first-seen window** uses hours or days.
+First-seen windows include never-seen articles plus those first shown on screen
+within the window, regardless of publication date. These are exposure windows,
+not publication-age limits; Unread date and age controls use publication time.
+Saved expressions and their existing behavior are unchanged.
 
 Mutually exclusive choices remain mutually exclusive. Read and unread cannot both be selected, and conflicting event options disable one another. The generated query is validated using the same search contract used elsewhere in the client. Invalid folders show an explanation and block persistence.
 

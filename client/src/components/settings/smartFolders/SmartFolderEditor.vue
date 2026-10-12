@@ -87,42 +87,52 @@
             <!-- Date -->
             <fieldset class="smart-folder-panel">
                 <legend>
-                    Date / Time
-                    <BootstrapIcon icon="info-circle-fill" title="Limit results to a fixed date range or a relative first-seen window." />
+                    Article timing
+                    <BootstrapIcon icon="info-circle-fill" title="Publication time and first-seen time are separate filters. First-seen windows also include never-seen articles." />
                 </legend>
 
                 <label class="smart-folder-field">
-                    <span>Date range</span>
+                    <span>Time filter</span>
                     <select v-model="draftConfig.date.preset" class="app-form-select" :disabled="draftConfig.date.useRelative">
                         <option value="">Any time</option>
-                        <option value="@today">Today</option>
-                        <option value="@yesterday">Yesterday</option>
-                        <option value="@lastweek">Last week</option>
-                        <option value="@last7days">Last 7 days</option>
-                        <option value="@last30days">Last 30 days</option>
+                        <optgroup label="Publication time">
+                            <option value="@today">Published: last 24 hours</option>
+                            <option value="@yesterday">Published: yesterday</option>
+                            <option value="@lastweek">Published: last 7 days</option>
+                        </optgroup>
+                        <optgroup label="First seen (includes never seen)">
+                            <option value="@last7days">First seen: last 7 days</option>
+                            <option value="@last30days">First seen: last 30 days</option>
+                        </optgroup>
                     </select>
                 </label>
 
                 <label class="smart-folder-check smart-folder-check--switch">
                     <input v-model="draftConfig.date.useRelative" class="app-form-check-input" type="checkbox" />
-                    Relative range
+                    Custom first-seen window
                 </label>
 
+                <p class="app-form-help">
+                    Publication filters use the article's publication date. First-seen windows
+                    include never-seen articles and articles first shown on screen within the
+                    chosen window, regardless of publication date.
+                </p>
+
+                <p v-if="draftConfig.date.useRelative" class="app-form-help">Never seen or first seen within the last:</p>
                 <div v-if="draftConfig.date.useRelative" class="smart-folder-inline-fields">
                     <input
                         v-model.number="draftConfig.date.relativeAmount"
                         type="number"
+                        aria-label="First-seen window length"
                         min="1"
                         max="365"
                         class="app-form-control"
                     />
 
-                    <select v-model="draftConfig.date.relativeUnit" class="app-form-select">
+                    <select v-model="draftConfig.date.relativeUnit" class="app-form-select" aria-label="First-seen window unit">
                         <option value="h">hours</option>
                         <option value="d">days</option>
                     </select>
-
-                    <span>ago</span>
                 </div>
             </fieldset>
 

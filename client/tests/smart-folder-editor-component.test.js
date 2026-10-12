@@ -26,6 +26,35 @@ beforeEach(() => {
 });
 
 describe('SmartFolderEditor', () => {
+  it.each([
+    ['@today', 'Published: last 24 hours', '@today'],
+    ['@yesterday', 'Published: yesterday', '@yesterday'],
+    ['@lastweek', 'Published: last 7 days', '@lastweek'],
+    ['@last7days', 'First seen: last 7 days', 'firstSeen:7d'],
+    ['@last30days', 'First seen: last 30 days', 'firstSeen:30d']
+  ])('labels %s by its time basis and keeps its expression', async (value, label, expression) => {
+    const wrapper = mountEditor({ smartFolder: { id: 1, name: 'Time window', query: '', limitCount: 50 } });
+    const select = wrapper.findAll('label').find(item => item.text().startsWith('Time filter')).get('select');
+    expect(select.findAll('option').find(option => option.element.value === value).text()).toBe(label);
+    expect(wrapper.text()).toContain('include never-seen articles');
+    await select.setValue(value);
+    await wrapper.get('form').trigger('submit');
+    expect(wrapper.emitted('save')[0][0].query).toBe(`${expression} sort:desc grouping:none limit:50`);
+    wrapper.unmount();
+  });
+
+  it('restores and edits the custom first-seen window without changing its meaning', async () => {
+    const wrapper = mountEditor({ smartFolder: { id: 1, name: 'Exposure', query: 'firstSeen:12h', limitCount: 50 } });
+    const toggle = wrapper.findAll('label').find(item => item.text() === 'Custom first-seen window').get('input');
+    expect(toggle.element.checked).toBe(true);
+    expect(wrapper.text()).toContain('Never seen or first seen within the last:');
+    await wrapper.get('[aria-label="First-seen window length"]').setValue('8');
+    await wrapper.get('[aria-label="First-seen window unit"]').setValue('d');
+    await wrapper.get('form').trigger('submit');
+    expect(wrapper.emitted('save')[0][0].query).toBe('firstSeen:8d sort:desc grouping:none limit:50');
+    wrapper.unmount();
+  });
+
   it('edits Overall quality out of 100 while preserving normalized saved expressions', async () => {
     const wrapper = mountEditor();
     const label = wrapper.findAll('label').find(item => item.text().includes('Minimum overall quality'));

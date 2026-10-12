@@ -38,6 +38,17 @@ const renderReader = async () => {
   });
   await flushPromises();
 };
+describe('Smart Folder time previews', () => {
+  it.each([
+    ['@today', 'Published: last 24 hours'],
+    ['@yesterday', 'Published: yesterday'],
+    ['@lastweek', 'Published: last 7 days'],
+    ['firstSeen:12h', 'Never seen or first seen within 12h']
+  ])('describes the time basis of %s', (expression, label) => {
+    expect(smartFolderRulePreview(expression)[0].label).toBe(label);
+  });
+});
+
 describe('Reader save current view', () => {
   it('offers saving a search in More actions and keeps the save popup', async () => {
     selection.setSelectedSearch('title:news');
@@ -89,7 +100,7 @@ describe('current view draft', () => {
     expect(draft.query).toContain('author:"Ada Lovelace" language:nl quality:<0.80 event:false developing:true firstSeen:7d limit:100 sort:asc "Dutch news"');
     expect(draft.query).not.toContain('unsupported');
     expect(draft.limitCount).toBe(100);
-    expect(smartFolderRulePreview(draft.query).map(rule => rule.label)).toEqual(['author: Ada Lovelace', 'language: nl', 'Quality < 80', 'Not Events', 'Developing stories', 'First seen within 7d', 'Oldest', 'Dutch news']);
+    expect(smartFolderRulePreview(draft.query).map(rule => rule.label)).toEqual(['author: Ada Lovelace', 'language: nl', 'Quality < 80', 'Not Events', 'Developing stories', 'Never seen or first seen within 7d', 'Oldest', 'Dutch news']);
   });
   it('maps calendar controls only when the editor has an equivalent date rule', () => {
     expect(currentViewSmartFolder({ status: 'unread' }, { dateRange: 'today' }).query).toContain('@today');

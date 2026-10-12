@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Publication date / first seen | Smart Folder **Date range → Last 7 days / Last 30 days** and **Relative range** generate `firstSeen` expressions. Unread age/date controls instead constrain publication time. “Last week” uses `@lastweek`, a different expression. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query builder](client/src/components/settings/smartFolders/smartFolderQuery.js), [date filters](client/src/services/articleDateRange.js), [query tests](client/tests/smart-folder-query.test.js) |
 | Quality | **Quality** can mean article-only overall quality, the `qualityScore` writing component, or source-aware `sort:quality`. Query preview chips abbreviate the source-aware sort to **Quality**, whereas the main menu says **Quality & source trust**. Inputs also use different scales. | [Quality explanation](client/src/components/articles/ArticleQualityExplanation.vue), [Scores settings](client/src/components/settings/SettingsScores.vue), [query preview](client/src/services/currentViewSmartFolder.js), [scoring contract](docs/scoring.md) |
 | Quality precision | The scoring guide says the badge preserves fractional points so 74.75 cannot appear to meet a threshold of 75. The current explanation component uses `Math.round(this.quality * 100)`, displaying 75 for that value. | [Scoring guide](docs/scoring.md#overall-quality), [quality explanation](client/src/components/articles/ArticleQualityExplanation.vue) |
 | Sentiment / Tone | Current controls describe `sentimentScore` as **Tone**, emotional neutrality and balance. Settings documentation still describes higher sentiment as more positive and lower sentiment as negative/alarmist. These are different descriptions of the assessment. | [Scores settings](client/src/components/settings/SettingsScores.vue), [quality explanation](client/src/components/articles/ArticleQualityExplanation.vue), [Settings documentation](client/src/components/settings/README.md#scores) |
@@ -22,6 +21,14 @@ not necessarily indicate a functional defect.
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Publication time and first seen:** Smart Folder time choices explicitly identify
+publication windows and first-seen windows. **Custom first-seen window** replaces
+**Relative range**. First-seen windows include never-seen Articles plus Articles
+first shown on screen within the selected window, regardless of publication date.
+Publication presets retain `@today`, `@yesterday`, and `@lastweek`; first-seen
+presets and custom windows retain `firstSeen` expressions. Unread date and age
+controls continue to constrain publication time. Existing saved folders are unchanged.
 
 **Briefing scope:** the introduction is labeled **Global briefing across your
 subscriptions**, and navigation counts are labeled **global**. Category, feed,
@@ -253,8 +260,10 @@ Publication time (`publishedAt`) drives chronological ordering and freshness.
 Unread calendar ranges use local-day boundaries; custom ranges include the
 chosen end day through an exclusive next-day boundary. An unread **age cutoff**
 is a rolling publication-age limit fixed when a collection starts.
-`firstSeen:7d` instead filters first-seen recency. Date and age selections reset
-the competing control in the selection store.
+`firstSeen:7d` includes Articles never shown on screen plus those first shown
+within the last seven days, regardless of publication date. Smart Folder time
+choices and rule previews distinguish that exposure window from publication time.
+Date and age selections reset the competing control in the selection store.
 
 Evidence: [Date ranges](client/src/services/articleDateRange.js),
 [age cutoffs](client/src/services/articleAgeCutoff.js),
