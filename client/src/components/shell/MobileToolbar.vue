@@ -71,13 +71,17 @@
         <!-- Read Mode Dropdown -->
         <AppDropdown id="readModeDropdown" :close-key="selectionCloseKey" class="mobile-toolbar-filter">
           <template #trigger="{ triggerProps }">
-            <button v-bind="triggerProps" class="mobile-filter-button" type="button">
-              {{ currentStatusLabel }} {{ getStatusCount() }}
+            <button v-bind="triggerProps" class="mobile-filter-button" :class="{ 'mobile-filter-button--scoped-count': currentStatusCountLabel }" type="button">
+              <template v-if="currentStatusCountLabel">
+                <span class="mobile-filter-status-label">{{ currentStatusLabel }}</span>
+                <span class="mobile-filter-count-scope">{{ currentStatusCountLabel }} {{ getStatusCount() }}</span>
+              </template>
+              <template v-else>{{ currentStatusLabel }} {{ getStatusCount() }}</template>
             </button>
           </template>
           <template #menu="{ menuProps }">
             <div v-bind="menuProps">
-        <button v-for="option in visibleStatusOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === option.value }" :title="option.description" :aria-description="option.description" role="menuitem" @click="statusOpenedOriginal(option.value)">{{ option.label }} {{ getStatusCount(option.value) }}</button>
+        <button v-for="option in visibleStatusOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentStatus === option.value }" :title="option.description" :aria-description="option.description" role="menuitem" @click="statusOpenedOriginal(option.value)">{{ option.label }} <span v-if="option.countLabel">({{ option.countLabel }})</span> {{ getStatusCount(option.value) }}</button>
         <hr class="app-dropdown__divider">
         <button v-for="option in visibleSortOptions" :key="option.value" type="button" class="app-dropdown__item" :class="{ 'app-dropdown__item--active': currentSelection.sort === option.value }" role="menuitem" :disabled="briefingPresentationControlsDisabled" :title="briefingPresentationControlsDisabled ? briefingPresentationDisabledTitle : null" @click="sortOpenedOriginal(option.value)">{{ option.label }}</button>
         <hr v-if="isAIEnabled" class="app-dropdown__divider">
@@ -311,6 +315,29 @@
   cursor: pointer;
 }
 
+.mobile-filter-button--scoped-count {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 20px 12px;
+  align-content: center;
+  column-gap: 6px;
+}
+
+.mobile-filter-status-label {
+  grid-column: 1;
+  grid-row: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-filter-count-scope {
+  grid-column: 1;
+  grid-row: 2;
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  line-height: 12px;
+}
+
 .mobile-filter-button:hover,
 .mobile-filter-button[aria-expanded='true'] {
   color: var(--text-primary);
@@ -335,6 +362,13 @@
   border-right: 0.3em solid var(--color-transparent);
   border-bottom: 0;
   border-left: 0.3em solid var(--color-transparent);
+}
+
+.mobile-filter-button--scoped-count::after {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  margin-left: 0;
 }
 
 @media (max-width: 360px) {
@@ -778,6 +812,10 @@ export default {
     briefingPresentationDisabledTitle() {
       if (this.currentSelection.smartFolderId != null) return 'Sorting and grouping are managed by this Smart Folder.';
       return 'Briefing sorting and grouping are managed in Briefing settings.';
+    },
+    // Exposes a scope label for navigation counts that remain global.
+    currentStatusCountLabel() {
+      return getArticleStatusOption(this.currentStatus)?.countLabel;
     },
     // This function returns the configured status label with a fallback for unknown values.
     currentStatusLabel() {

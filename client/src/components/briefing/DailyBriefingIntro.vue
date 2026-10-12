@@ -3,6 +3,8 @@
     class="daily-briefing-intro"
     :class="{ 'daily-briefing-intro--reader': readerMode }"
   >
+    <p class="briefing-scope-label">Global briefing across your subscriptions</p>
+
     <BriefingContextText
       :article-count="context?.articleCount ?? null"
       :source-count="context?.sourceCount ?? null"
@@ -160,6 +162,13 @@ export default {
   flex: 0 0 auto;
   padding: 0.875rem;
   background-color: var(--surface-card);
+}
+
+.briefing-scope-label {
+  margin: 0 0 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .daily-briefing-intro::after {

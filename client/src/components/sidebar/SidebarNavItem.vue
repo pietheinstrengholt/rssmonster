@@ -12,6 +12,7 @@
     </span>
     <span class="sidebar-item-title"><span class="sidebar-item-title-text">{{ title }}</span></span>
     <span v-if="count !== null && count !== undefined" class="sidebar-count-wrapper">
+      <span v-if="countLabel" class="sidebar-count-label">{{ countLabel }}</span>
       <span class="sidebar-count" :class="badgeClass"><span class="sidebar-count-value">{{ formattedCount }}</span></span>
     </span>
   </button>
@@ -23,6 +24,7 @@ import { formatCount } from './formatCount.js';
 export default {
   props: {
     description: { type: String, default: '' },
+    countLabel: { type: String, default: '' },
     icon: {
       type: String,
       required: true
@@ -142,6 +144,12 @@ export default {
   padding-left: var(--space-2);
   padding-right: var(--space-1);
   flex: 0 0 auto;
+}
+
+.sidebar-count-label {
+  margin-right: var(--space-1);
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
 }
 
 .sidebar-count {

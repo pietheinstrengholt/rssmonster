@@ -125,3 +125,7 @@ Counts fall into two intentionally different groups:
 Scrolling is never a count mutation. Navigation changes which live count dimension is displayed, but it does not itself create or remove articles. Large values are abbreviated with a compact `K` suffix to keep the column stable.
 
 Future changes should preserve the distinction between snapshot counts and live overview counts, and should update global, category, and feed values as one consistent hierarchy whenever a mutation affects article membership.
+
+The Daily briefing navigation count carries a **global** label: it covers the
+user's subscriptions and Briefing eligibility preferences. Category, feed, and
+tag filters can narrow the displayed article list without changing that count.

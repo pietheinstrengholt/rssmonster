@@ -9,7 +9,6 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Briefing scope | The sidebar count and structured introduction describe the global briefing; the displayed list can retain category, feed, or tag scope. They need not describe the same visible collection. | [Briefing selection](client/src/components/briefing/README.md#daily-briefing-selection), [selection store](client/src/store/selection.js) |
 | Publication date / first seen | Smart Folder **Date range → Last 7 days / Last 30 days** and **Relative range** generate `firstSeen` expressions. Unread age/date controls instead constrain publication time. “Last week” uses `@lastweek`, a different expression. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query builder](client/src/components/settings/smartFolders/smartFolderQuery.js), [date filters](client/src/services/articleDateRange.js), [query tests](client/tests/smart-folder-query.test.js) |
 | Quality | **Quality** can mean article-only overall quality, the `qualityScore` writing component, or source-aware `sort:quality`. Query preview chips abbreviate the source-aware sort to **Quality**, whereas the main menu says **Quality & source trust**. Inputs also use different scales. | [Quality explanation](client/src/components/articles/ArticleQualityExplanation.vue), [Scores settings](client/src/components/settings/SettingsScores.vue), [query preview](client/src/services/currentViewSmartFolder.js), [scoring contract](docs/scoring.md) |
 | Quality precision | The scoring guide says the badge preserves fractional points so 74.75 cannot appear to meet a threshold of 75. The current explanation component uses `Math.round(this.quality * 100)`, displaying 75 for that value. | [Scoring guide](docs/scoring.md#overall-quality), [quality explanation](client/src/components/articles/ArticleQualityExplanation.vue) |
@@ -23,6 +22,12 @@ not necessarily indicate a functional defect.
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Briefing scope:** the introduction is labeled **Global briefing across your
+subscriptions**, and navigation counts are labeled **global**. Category, feed,
+or tag filters hide the global introduction and show **Filtered briefing articles**
+with a count-scope explanation, including for empty results. Existing collection
+filters and global summary/count contracts are preserved.
 
 **Daily Briefing period:** **Last 24 hours** (`24h`) uses a rolling 24-hour
 publication-time window for article results, structured Briefing context, and

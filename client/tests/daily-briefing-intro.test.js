@@ -4,6 +4,7 @@ import { flushPromises, mount, shallowMount } from '@vue/test-utils';
 import ArticleListView from '../src/components/articles/ArticleListView.vue';
 import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
 import DailyBriefingIntro from '../src/components/briefing/DailyBriefingIntro.vue';
+import BriefingScopeNotice from '../src/components/briefing/BriefingScopeNotice.vue';
 import { fetchDailyBriefing } from '../src/api/articles';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
@@ -166,6 +167,7 @@ describe('DailyBriefingIntro', () => {
     expect(wrapper.get('.briefing-context').text()).not.toContain('7 events');
     expect(wrapper.get('.briefing-context').text()).not.toContain('new events');
     expect(wrapper.get('.briefing-context').text()).not.toContain('interest areas');
+    expect(wrapper.text()).toContain('Global briefing across your subscriptions');
     expect(wrapper.get('#briefing-morning-title').text()).toBe('The stories shaping your morning');
     expect(wrapper.findAll('.briefing-morning-summary-text p')).toHaveLength(2);
     expect(wrapper.get('.briefing-summary-headline').text()).toBe('EU AI Act enters into force');
@@ -182,6 +184,7 @@ describe('DailyBriefingIntro', () => {
 
     expect(wrapper.classes()).toContain('daily-briefing-intro--reader');
     expect(wrapper.find('.briefing-morning-summary-text').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Global briefing across your subscriptions');
     expect(wrapper.get('#briefing-morning-title').text()).toBe('The stories shaping your morning');
   });
 
@@ -244,6 +247,7 @@ describe('DailyBriefingIntro', () => {
     const wrapper = mountArticleList('briefing', selectionOverrides);
 
     expect(wrapper.findComponent(DailyBriefingIntro).exists()).toBe(false);
+    expect(wrapper.findComponent(BriefingScopeNotice).exists()).toBe(true);
   });
 
   it.each([false, true])('remains singular in the reader layout when loaded is %s', hasLoadedContent => {
@@ -251,15 +255,17 @@ describe('DailyBriefingIntro', () => {
 
     expect(wrapper.findAllComponents(DailyBriefingIntro)).toHaveLength(1);
     expect(wrapper.getComponent(DailyBriefingIntro).props('readerMode')).toBe(true);
+    expect(wrapper.findComponent(BriefingScopeNotice).exists()).toBe(false);
   });
 
-  it.each([
-    ['category', { categoryId: '12' }],
-    ['feed', { categoryId: '12', feedId: '34' }],
-    ['tag', { tag: 'security' }]
-  ])('is hidden in the reader layout for a briefing %s selection', (_label, selectionOverrides) => {
-    const wrapper = mountReaderLayout(true, selectionOverrides);
+  it.each([false, true].flatMap(hasLoadedContent => [
+    ['category', hasLoadedContent, { categoryId: '12' }],
+    ['feed', hasLoadedContent, { categoryId: '12', feedId: '34' }],
+    ['tag', hasLoadedContent, { tag: 'security' }]
+  ]))('shows filtered scope in Reader for %s when loaded is %s', (_label, hasLoadedContent, selectionOverrides) => {
+    const wrapper = mountReaderLayout(hasLoadedContent, selectionOverrides);
 
     expect(wrapper.findComponent(DailyBriefingIntro).exists()).toBe(false);
+    expect(wrapper.findComponent(BriefingScopeNotice).exists()).toBe(true);
   });
 });

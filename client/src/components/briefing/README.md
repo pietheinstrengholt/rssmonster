@@ -26,11 +26,17 @@ The default briefing:
 
 The selection period is persisted as either `24h` or `7d`; `7d` is the default. The Daily Briefing preference record is one-to-one with its owning user. A user must never have multiple briefing preference rows.
 
-The saved eligibility preferences feed the article search, briefing count, context statistics, and story summary. The Briefing-specific developing-events preference is presentation-only: it selects developing coverage for the morning summary without changing article-search results. Their navigation scope is not identical: the sidebar count and structured introduction describe the user's global briefing across subscriptions, while the visible article list can also be narrowed by an active category, feed, or tag. The briefing respects the user's global article score thresholds and normal article safety and filtering rules.
+The saved eligibility preferences feed the article search, briefing count, context statistics, and story summary. The Briefing-specific developing-events preference is presentation-only: it selects developing coverage for the morning summary without changing article-search results. Their navigation scope is not identical: the sidebar count and structured introduction describe the user's global briefing across subscriptions, while the visible article list can also be narrowed by an active category, feed, or tag. Navigation counts are visibly labeled **global** and include a scope explanation. The briefing respects the user's global article score thresholds and normal article safety and filtering rules.
 
 ## Briefing introduction
 
-The briefing introduction appears above articles in both the standard list and desktop reader layouts. It is also shown with the empty state when a briefing has no matching articles.
+The introduction is labeled **Global briefing across your subscriptions** and
+appears above articles in both the standard list and desktop Reader layouts for
+an unfiltered Briefing. It also appears with the loaded empty state when an
+unfiltered Briefing has no matching articles. An active category, feed, or tag
+filter hides the global introduction and shows **Filtered briefing articles**
+instead, explaining that the navigation count remains global. This notice also
+appears for filtered empty results. Filters do not change summary/count requests.
 
 The introduction contains two areas:
 

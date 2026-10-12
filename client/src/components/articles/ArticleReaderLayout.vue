@@ -3,6 +3,7 @@
     v-if="showDailyBriefingIntro && hasLoadedContent && isCollectionEmpty"
     reader-mode
   />
+  <BriefingScopeNotice v-if="hasLoadedContent && isCollectionEmpty && currentSelection === 'briefing' && !showDailyBriefingIntro" />
   <template v-if="hasLoadedContent && isCollectionEmpty">
     <slot name="before-context" :reader-mode="true" />
     <UnreadSelectionContext
@@ -42,6 +43,7 @@
       :aria-hidden="readerExpanded"
     >
       <DailyBriefingIntro v-if="showDailyBriefingIntro" reader-mode />
+      <BriefingScopeNotice v-else-if="currentSelection === 'briefing'" />
       <slot name="before-context" :reader-mode="true" />
       <div class="article-list-bulk-header" @click.stop>
         <div class="article-list-bulk-summary">
@@ -263,6 +265,7 @@ import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import ArticleLoadError from "./ArticleLoadError.vue";
 import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
+import BriefingScopeNotice from "../briefing/BriefingScopeNotice.vue";
 import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 import ArticleBulkActionMenu from './ArticleBulkActionMenu.vue';
 import { formatRelativeDate } from '../../utils/date';
@@ -291,6 +294,7 @@ export default {
     ArticleEndState,
     ArticleLoadError,
     DailyBriefingIntro,
+    BriefingScopeNotice,
     HighlightedText,
     UnreadSelectionContext,
     ArticleBulkActionMenu

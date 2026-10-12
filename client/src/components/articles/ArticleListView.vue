@@ -9,6 +9,7 @@
   >
     <div class="article-list-view__items">
       <DailyBriefingIntro v-if="showDailyBriefingIntro" />
+      <BriefingScopeNotice v-else-if="currentSelection === 'briefing'" />
       <div class="article-list-topbars" :class="{ 'headline-list-topbars': useRefinedTopbars }">
         <slot name="before-context" :reader-mode="false" :headline-mode="useRefinedTopbars" />
         <UnreadSelectionContext
@@ -142,6 +143,7 @@ import ArticleEndState from "./ArticleEndState.vue";
 import ArticleLoadError from "./ArticleLoadError.vue";
 import ArticleLoadingState from "./ArticleLoadingState.vue";
 import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
+import BriefingScopeNotice from "../briefing/BriefingScopeNotice.vue";
 import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 import ArticleBulkActionMenu from "./ArticleBulkActionMenu.vue";
 
@@ -153,6 +155,7 @@ export default {
     ArticleLoadError,
     ArticleLoadingState,
     DailyBriefingIntro,
+    BriefingScopeNotice,
     UnreadSelectionContext,
     ArticleBulkActionMenu
   },

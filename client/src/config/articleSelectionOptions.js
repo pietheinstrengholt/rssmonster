@@ -10,6 +10,8 @@ export const ARTICLE_STATUS_OPTIONS = createOptions([
     icon: 'sunrise-fill',
     iconClass: 'icon-briefing',
     countKey: 'briefingCount',
+    countLabel: 'global',
+    description: 'The briefing count is global across your subscriptions. Category, feed, and tag filters narrow the article list.',
     requiresAI: true
   },
   { value: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread', countKey: 'unreadCount' },

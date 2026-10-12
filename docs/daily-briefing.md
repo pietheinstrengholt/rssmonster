@@ -103,8 +103,11 @@ To focus on ongoing stories, enable **Show only developing stories**.
 
 ## Understand counts and empty results
 
-The overview and navigation count describe your global briefing, while a selected
-category, feed, or tag can narrow the article list. **Last 24 hours** uses a
+The introduction is labeled **Global briefing across your subscriptions**, and
+navigation counts are labeled **global**. A selected category, feed, or tag can
+narrow the article list. In that case, **Filtered briefing articles** replaces
+the global introduction and explains the count's scope, including for empty
+results. **Last 24 hours** uses a
 rolling publication-time window for the article list, structured Briefing context,
 and overview count: from 24 hours before evaluation through evaluation time.
 **Last 7 days** uses the equivalent rolling seven-day window. A compact category
