@@ -236,7 +236,7 @@ for scheduling, network restrictions, and worker diagnostics.
 
 **Settings → Official Sources** lets you add an organization, its domain, and an
 enabled flag. During crawling, matching articles are marked official and stored
-with the organization name. See [Official Feeds]({% link official-feeds.md %}) for
+with the organization name. See [Official Sources]({% link official-feeds.md %}) for
 setup instructions and domain-matching examples. This is a configured source designation, not a
 verification of an article's factual accuracy or a replacement for
 [FeedTrust]({% link feedtrust.md %}).

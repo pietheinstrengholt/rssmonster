@@ -17,8 +17,8 @@ export function hasHighQualityArticleSignal({ quality }) {
 // Returns the official-source label, including the configured organization when available.
 export function getOfficialSourceLabel(officialOrganization) {
   return officialOrganization
-    ? `Official Feed (${officialOrganization})`
-    : 'Official Feed';
+    ? `Official source (${officialOrganization})`
+    : 'Official source';
 }
 
 // Returns whether feed metadata clears the trusted-source presentation threshold.
@@ -35,7 +35,7 @@ export function getTrustedSourceLabel({ author, feed }) {
     : 'Trusted source';
 }
 
-// Returns the finite unique-source score stored on event metadata.
+// Returns the finite distinct-feed count stored on event metadata.
 export function getEventSourceScore(event) {
   const score = Number(event?.sourceCount);
   return Number.isFinite(score) ? score : 0;
@@ -66,7 +66,11 @@ export function createArticleSignals({
   }
 
   if (isOfficialSource === true) {
-    signals.push({ label: getOfficialSourceLabel(officialOrganization), icon: 'patch-check-fill' });
+    signals.push({
+      label: getOfficialSourceLabel(officialOrganization),
+      icon: 'patch-check-fill',
+      description: 'Article URL matches a configured official-source domain. This label does not verify provenance or independent reporting.'
+    });
   } else if (hasTrustedSourceSignal(feed)) {
     signals.push({ label: getTrustedSourceLabel({ author, feed }), icon: 'shield-fill-check' });
   }
@@ -129,7 +133,7 @@ export const articleSignalComputed = {
     return getEventSourceScore(this.event) > 6;
   },
 
-  // Returns the unique-source score stored on the event metadata.
+  // Returns the distinct-feed count stored on the event metadata.
   eventSourceScore() {
     return getEventSourceScore(this.event);
   }

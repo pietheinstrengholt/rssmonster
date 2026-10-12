@@ -30,7 +30,7 @@ Learn how to use RSSMonster's core reading, feed management, search, and organiz
 - [Generated Feeds]({% link generated-feeds.md %}) exposes selections to other RSS clients.
 - [Actions]({% link actions.md %}) automates incoming article state, tags, and score overrides.
 - [Webhooks]({% link webhooks.md %}) covers creating, editing, and pausing outbound notifications in Settings, with condition and signing options.
-- [Official Feeds]({% link official-feeds.md %}) identifies articles from configured organization domains.
+- [Official Sources]({% link official-feeds.md %}) identifies articles from configured organization domains.
 - [Daily Briefing]({% link daily-briefing.md %}) explains the story overview and selection preferences.
 - [Account and Email]({% link account.md %}) covers passwords, verification, recovery, and scheduled briefings.
 - [Assistant and MCP]({% link assistant.md %}) explains conversational article discovery and authenticated tools.

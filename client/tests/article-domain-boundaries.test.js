@@ -286,10 +286,17 @@ describe('Article relevance signals', () => {
       }
     });
 
+    expect(wrapper.findAll('.signal-badge').at(-1).attributes('title')).toContain(
+      'Article URL matches a configured official-source domain.'
+    );
     expect(wrapper.vm.articleSignals).toEqual([
       { label: 'High overall quality', icon: 'stars' },
       { label: 'Major event', icon: 'broadcast' },
-      { label: 'Official Feed (Public Agency)', icon: 'patch-check-fill' }
+      {
+        label: 'Official source (Public Agency)',
+        icon: 'patch-check-fill',
+        description: 'Article URL matches a configured official-source domain. This label does not verify provenance or independent reporting.'
+      }
     ]);
   });
 });

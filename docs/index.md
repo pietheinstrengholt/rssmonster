@@ -40,7 +40,7 @@ to suit your reading session and screen. [Bookmarks]({% link bookmarks.md %}),
 - **[Tags]({% link tag.md %}):** organize articles using publisher, feed, generated, or rule-based labels.
 - **[Actions]({% link actions.md %}):** automatically bookmark, mark read, tag, score, or hide incoming articles.
 - **[Webhooks]({% link webhooks.md %}):** send matching new articles to external services.
-- **[Official Feeds]({% link official-feeds.md %}):** recognize articles from organization domains you configure.
+- **[Official Sources]({% link official-feeds.md %}):** recognize articles from organization domains you configure.
 - **[Feed item filters]({% link feed-item-filters.md %}):** decide which future entries a subscription accepts.
 - **[HTML + XPath feeds]({% link html-xpath-feeds.md %}):** follow sites without a usable syndication feed.
 - **[Generated feeds]({% link generated-feeds.md %}):** publish a saved selection at a revocable, token-protected RSS URL.

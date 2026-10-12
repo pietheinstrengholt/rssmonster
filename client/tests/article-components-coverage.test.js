@@ -647,7 +647,7 @@ describe('Article relevance signal coverage', () => {
       recommendationScore: 0
     })).toBe(false);
     expect(evaluate('hasOfficialSourceSignal', { isOfficialSource: true })).toBe(true);
-    expect(evaluate('officialSourceLabel', { officialOrganization: '' })).toBe('Official Feed');
+    expect(evaluate('officialSourceLabel', { officialOrganization: '' })).toBe('Official source');
     expect(evaluate('hasTrustedSourceSignal', { feed: { feedTrust: 'invalid' } })).toBe(false);
     expect(evaluate('trustedSourceLabel', {
       author: 'Reporter',

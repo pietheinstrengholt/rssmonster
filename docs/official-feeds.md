@@ -1,17 +1,17 @@
 ---
 layout: page
-title: Official Feeds
+title: Official Sources
 parent: How RSSMonster Works
 nav_order: 12
 ---
 
-# Official Feeds
+# Official Sources
 
-Official Feeds help you recognize articles published on an organization's own
+Official Sources help you recognize articles published on an organization's own
 domains. You manage these domain rules in **Settings → Official Sources**.
 During crawling, RSSMonster checks an article's URL against your enabled rules
 and records the matching organization. The article's source signal is labeled
-**Official Feed**, with the organization name when available.
+**Official source**, with the organization name when available.
 
 This is useful for identifying company announcements, product updates, and
 other direct sources among the wider coverage in your subscriptions. The rules
@@ -64,7 +64,7 @@ For example, `news.example.com` takes precedence over `example.com`.
 
 Matching articles are stored with an official-source indicator and the
 configured organization name. This supplies a source label such as
-**Official Feed (Nintendo)** in the article's signals.
+**Official source (Nintendo)** in the article's signals.
 
 The organization name is stored as source metadata. Although the settings
 introduction describes organization tagging, the current crawl implementation
@@ -72,7 +72,8 @@ does not automatically add it to the article's searchable tags. Use feed tags
 or an **Assign tag** [Action]({% link actions.md %}) when you also want a
 [tag]({% link tag.md %}) for filtering.
 
-Official status reflects your configured domain list. It does not verify an
+Official status reflects your configured domain list. It does not verify
+provenance or independent reporting. It does not verify an
 article's factual accuracy or replace [FeedTrust]({% link feedtrust.md %}), which
 estimates a source's value from article and reading signals.
 

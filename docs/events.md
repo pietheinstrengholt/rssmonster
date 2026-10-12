@@ -183,7 +183,9 @@ this is Event membership, not a general similarity search. Select the label agai
 to collapse the group. Desktop and mobile grouping controls both use **Events**.
 
 The source badge opens **Same story, different sources**, which shows other
-articles in the same Event from different feeds. **Developing story** identifies
+articles in the same Event from different feeds. Source counts represent distinct
+feeds, which may share a publisher or reporting; separate feeds do not necessarily
+represent independent reporting. **Developing story** identifies
 the Event's developing article; its popover opens other coverage in that Event.
 These story labels describe specific Event coverage controls. Neither control
 changes Event membership or identifies deterministic duplicates.

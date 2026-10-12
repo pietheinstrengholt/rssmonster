@@ -74,7 +74,7 @@
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
             <template v-for="(signal, index) in articleSignals" :key="signal.label">
               <span v-if="index > 0" class="signal-divider" aria-hidden="true"></span>
-              <span class="signal-badge">
+              <span class="signal-badge" :title="signal.description">
                 <BootstrapIcon :icon="signal.icon" class="signal-icon" aria-hidden="true" />
                 {{ signal.label }}
               </span>

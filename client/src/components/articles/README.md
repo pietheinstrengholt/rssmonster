@@ -194,7 +194,9 @@ read/unread directly in the sticky toolbar and also in its article actions menu.
 Event expansion is labeled **other articles in this event**, with the number of
 other members. It fetches Event members and inserts them into the reading layout;
 it is not a general similarity search. The **Same story, different sources**
-source badge opens a popover of the same Event's coverage from other feeds. The
+source badge opens a popover of the same Event's coverage from other feeds.
+Its count represents distinct feeds, which may share a publisher or reporting;
+it does not establish reporting independence. The
 **Developing story** icon opens other Event coverage from its developing article.
 These controls differ from expanding deterministic duplicates.
 
@@ -220,7 +222,7 @@ metadata area. Context includes:
 
 - Relative publication time.
 - Author or feed name, linked to the feed's origin.
-- Number of distinct sources covering an event.
+- Number of distinct feeds covering an event, shown as sources.
 - Similar-article count.
 - Duplicate count.
 - Rule-assigned tags.
@@ -240,7 +242,10 @@ An article can include a secondary signal bar for stronger relevance evidence. C
 - An official source.
 - A trusted source.
 
-Where useful, official and trusted-source labels identify the organization or feed. A major-event signal takes precedence over the weaker trending signal. These signals explain why an article may matter; they should never compete visually with the title or body.
+**Official source** identifies an article URL matching a configured enabled
+organization-domain rule; its hover text explains that it does not verify
+provenance or independent reporting. Official and trusted-source labels identify
+the organization or feed where available. A major-event signal takes precedence over the weaker trending signal. These signals explain why an article may matter; they should never compete visually with the title or body.
 
 ## Similar, event and duplicate articles
 

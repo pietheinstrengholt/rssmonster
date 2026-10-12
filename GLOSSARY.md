@@ -9,12 +9,19 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Source / official feed / independence | Source counts refer to feeds, Original source is publisher-declared attribution, and Official Sources are configured domain mappings. The article signal calls an official-source article **Official Feed**. These meanings should not be conflated with verified provenance or independent reporting. | [Story sources](client/src/components/articles/ArticleStorySourcesPopover.vue), [article signals](client/src/components/articles/helpers/articleSignals.js), [article attribution](client/src/components/articles/README.md#experience-model), [Official Sources](client/src/components/settings/README.md#official-sources) |
 | Refresh / crawl | “Refresh” can reload database-backed article results, crawl subscribed feeds, prepare offline downloads, or reload an insight snapshot. Pull-to-refresh explicitly does not crawl feeds. | [Shell refresh behavior](client/src/components/shell/README.md#layout-and-scroll-ownership), [feed refresh stream](client/src/services/feedRefreshStream.js), [offline reading](client/src/services/offlineReading.js) |
 | Settings names | Navigation uses **Your interests**, **Refresh history**, and **Health & errors** for sections/components/docs also called Islands, Crawl Statistics, and Observability. Cleanup uses an API contract named archiving, although the UI describes deletion. | [Settings navigation](client/src/components/settings/Settings.vue), [Settings documentation](client/src/components/settings/README.md), [Cleanup](client/src/components/dialogs/Cleanup.vue) |
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Source meanings:** **Official source** replaces the **Official Feed** article
+signal and identifies an article URL that matches a configured enabled domain
+rule, with the organization name when available. Its hover explanation distinguishes
+this label from verified provenance or independent reporting. Story-source counts
+represent distinct feeds; the accessible badge label and popover explain that
+separate feeds may share a publisher or reporting. **Original source** remains
+publisher-declared attribution. Counts, matching, ranking and API contracts are unchanged.
 
 **Priority scopes:** **Prioritize trusted feeds in Unread** adds source-trust
 priority when sorting Unread by Newest or Oldest; disabling it preserves strictly
@@ -473,7 +480,9 @@ gate. Query `quality:>=0.75` means overall quality of at least 75/100.
 **FeedTrust** (`feedTrust`), a user-specific source-history score. It is separate
 from the article's overall-quality badge and filters. The client labels a Feed
 trusted above 0.85. An **official source** matches an enabled organization/domain
-mapping and is presented with its configured organization when available.
+mapping and is presented as **Official source**, with its configured organization
+when available. This is configured recognition, not verified provenance or
+independent reporting.
 Official and trusted-source labels are separate signals; the former takes
 precedence in the signal bar. Trust is separate from crawl reliability.
 

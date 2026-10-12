@@ -45,10 +45,15 @@ describe('ArticleStorySourcesPopover', () => {
 
     const trigger = wrapper.get('button.source-badge');
     expect(trigger.text()).toContain('3 sources');
+    expect(trigger.attributes('aria-label')).toBe('3 distinct feeds. Show articles from different feeds');
     await trigger.trigger('click');
     await flushPromises();
 
     expect(fetchStorySourceArticles).toHaveBeenCalledWith(42);
+    expect(document.body.querySelector('.article-explanation-summary').textContent)
+      .toContain('Sources count distinct feeds covering this story.');
+    expect(document.body.querySelector('.article-explanation-summary').textContent)
+      .toContain('do not necessarily represent independent reporting.');
     expect(document.body.querySelector('.article-explanation-header h3').textContent)
       .toBe('Same story, different sources');
     expect(document.body.querySelector('.related-story-feed').textContent).toBe('Other News');

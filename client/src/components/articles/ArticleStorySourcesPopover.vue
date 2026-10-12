@@ -5,9 +5,9 @@
     root-class="article-story-sources-popover"
     panel-class="story-sources-panel"
     trigger-class="source-badge story-sources-trigger"
-    :aria-label="`${sourceCount} unique sources. Show articles from different sources`"
+    :aria-label="`${sourceCount} distinct feeds. Show articles from different feeds`"
     dialog-title="Same story, different sources"
-    summary="Other feeds currently covering the same story."
+    summary="Sources count distinct feeds covering this story. Separate feeds may share a publisher or reporting; they do not necessarily represent independent reporting."
     error-message="Couldn’t load articles from different sources."
     empty-message="No articles from other sources are currently available."
   >

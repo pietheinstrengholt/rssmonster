@@ -103,9 +103,9 @@ tag, mark it as saved or read, override a score, or hide it from normal
 queries. For example, automatically tag articles mentioning Verstappen or save
 Nintendo and Zelda news to Saved. These rules do not require AI processing.
 
-### Official Feeds
+### Official Sources
 
-[Official Feeds]({% link official-feeds.md %}) identify articles whose URLs match
+[Official Sources]({% link official-feeds.md %}) identify articles whose URLs match
 organization domains you configure in **Settings → Official Sources**. During
 crawling, matching articles receive an official-source indicator and the
 organization name, helping you recognize direct announcements and updates.

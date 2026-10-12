@@ -216,7 +216,9 @@ Selecting a feed opens its observability details inside the same Settings sectio
 
 ### Official Sources
 
-Official Sources manages organization-domain mappings used during crawling. Articles from enabled matching domains are marked as official and tagged with the configured organization name.
+Official Sources manages organization-domain mappings used during crawling. Articles whose URLs match enabled domains receive an **Official source** label
+with the configured organization name. This metadata does not verify provenance
+or reporting independence and does not automatically add searchable tags.
 
 Rows contain an organization, domain, and enabled state. Users can add, remove, edit, enable, or disable rows locally. Save Changes persists the complete resulting collection and replaces the editor with the normalized server response.
 
