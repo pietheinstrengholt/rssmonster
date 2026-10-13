@@ -2,9 +2,23 @@
 
 ## Unresolved inconsistencies and conflicts
 
-No unresolved items remain from this review. Resolutions are recorded below.
+The definitions below describe current implementation. These remaining conflicts
+are in supporting UI copy or documentation; they are recorded for later work.
 
-## Resolved contract migrations
+| Area | Confirmed inconsistency or conflict | Evidence |
+| --- | --- | --- |
+| Your interests controls | The settings README describes a read-only overview with an explicit recalculation action. The current page instead offers search, polarity/lifecycle filters, inspection, and mute/unmute; it has no recalculation control. | [Current page](client/src/components/settings/SettingsIslands.vue), [settings documentation](client/src/components/settings/README.md#your-interests), [page contract](docs/interests-page.md) |
+| Official Sources organization metadata | The settings introduction says matching articles are “tagged with the organization name.” The crawl stores official-source metadata; this does not automatically create a searchable Article tag. | [Settings introduction](client/src/components/settings/SettingsOfficialSources.vue), [crawl persistence](server/services/crawl/persistence/updateArticle.js), [documented distinction](docs/official-feeds.md#what-changes-on-an-article) |
+
+## Scope and usage
+
+This glossary covers domain language found in client components, stores,
+composables, services, API wrappers, and client tests. Supporting repository
+documentation supplies established scoring and processing meanings where the
+client consumes server results. It is not an exhaustive backend schema glossary.
+Code identifiers in backticks record existing contracts, not proposed renames.
+
+## Resolved terminology and contract decisions
 
 **Single-tag filter:** The Smart Folder visual editor labels its field **Tag**
 and explains that it matches one tag, including names containing spaces. Article
@@ -58,14 +72,15 @@ pending, processing and failed analysis whose inferred scores and tags are hidde
 Unavailable inference-owned scores are exempt from score gates, while Action
 score overrides remain effective. Skipped analysis retains scores subject to
 thresholds; all-70 component sets do not display an Overall quality badge.
-Provider configuration, values, status handling and contracts are unchanged.
+The terminology clarification preserves score values and analysis-state behavior.
+Provider configuration now uses the canonical capability-specific contracts.
 
 **Tone contract:** **Tone** measures emotional neutrality and balance, with
 higher scores indicating calmer, more factual language rather than positive news.
 `toneScore` and `minToneScore` are canonical throughout source code, APIs,
 inference, database columns, persisted settings, and cached articles.
-Only canonical names are accepted at runtime and returned in responses. Scoring, thresholds, formulas, and
-search expressions are unchanged. See [the migration guide](docs/tone-score-migration.md).
+Only canonical names are accepted at runtime and returned in responses. Scoring,
+thresholds, formulas and search expressions are unchanged. See [the migration guide](docs/tone-score-migration.md).
 
 **Quality precision:** Overall quality badges, accessible labels, breakdown
 footers, and quality-filter preview chips preserve fractional points and trim
@@ -131,14 +146,6 @@ expression names are `saved` and `openedOriginal`. Runtime compatibility aliases
 have been removed; historical data conversions remain in migrations/fixtures. See
 [Bookmarks](docs/bookmarks.md) and [Search](docs/search.md) for usage and expressions.
 
-## Scope and usage
-
-This glossary covers domain language found in client components, stores,
-composables, services, API wrappers, and client tests. Supporting repository
-documentation supplies established scoring and processing meanings where the
-client consumes server results. It is not an exhaustive backend schema glossary.
-Code identifiers in backticks record existing contracts, not proposed renames.
-
 ## Articles, subscriptions, and organization
 
 ### Article
@@ -192,8 +199,8 @@ normalized to lowercase; display formatting can change capitalization. Tags can
 be edited through article controls or assigned by Actions. Rule-assigned tags
 also appear in server-supplied recommendation explanations. **Top Tags** is a
 fetched, status/presentation-scoped navigation snapshot, not a count recomputed
-from only the rendered Articles. The Smart Folder visual editor accepts one tag
-despite labeling its field **Tags**.
+from only the rendered Articles. The Smart Folder visual editor’s **Tag** field matches one tag, including
+names containing spaces; it does not select multiple labels.
 
 Evidence: [Tag normalization](client/src/utils/tags.js),
 [tag dialog](client/src/components/articles/ArticleTagDialog.vue),
@@ -245,12 +252,17 @@ visible as read**, and selected-row-relative actions therefore have different
 targets. Temporarily inserted Event members and duplicates remain associated
 with their parent.
 
-### New Articles and unread baseline
+### New articles, unread baseline, and new-only selection
 
-The new-Articles banner counts matching unread arrivals newer than the current
-snapshot's maximum Article ID. The unread baseline is stored per browser,
-account, and selection scope. “New” here means a newer stored ID, not necessarily
-a newer publication timestamp; adopting new arrivals reloads the collection.
+The new-articles banner counts matching unread Articles with IDs above the
+browser's stored unread baseline. That baseline is the maximum ID from the last
+successfully loaded full unread result, scoped by browser, account and selection;
+it is separate from the cursor pagination snapshot's library-wide maximum ID.
+**Show new only** applies explicit unread constraints and an ID filter while
+retaining the selection's other filters. **Show full list** removes that temporary
+constraint and updates the baseline after a successful replacement load. An
+age-limited subset does not advance the full unread baseline. “New”
+means a newer stored ID, not necessarily a newer publication timestamp.
 
 ### Selection count, total count, and sidebar preferences
 
@@ -263,6 +275,7 @@ All feeds filters. These are display preferences, not Article visibility rules.
 Evidence: [Selection store](client/src/store/selection.js),
 [Article collection documentation](client/src/components/articles/README.md#collection-loading),
 [unread baseline](client/src/services/unreadBaseline.js),
+[arrivals and pagination](client/src/components/articles/feed/pagination.js),
 [new-Articles banner](client/src/components/articles/NewArticlesBanner.vue),
 [sidebar preferences](client/src/components/dialogs/SidebarConfigurationModal.vue).
 
@@ -436,8 +449,15 @@ An **Interest Island** is a learned personal-interest cluster, presented in
 opened originals, deep reads, and negative feedback. Preference can be positive,
 neutral, or negative; Island activity state and signed weight are separate from
 relationship confidence. The client displays server attribution and does not
-recompute semantic confidence. Recalculating Islands rebuilds the user's
-interest data from existing evidence.
+recompute semantic confidence. **Your interests** offers search, polarity and
+lifecycle filters, evidence inspection, and mute/unmute. It has no recalculation
+button; backend recalculation is separate from inspecting these results.
+
+**Active** and **Archived** are lifecycle states, distinct from positive/neutral/
+negative preference. **Muted** is a separately stored user choice, not a negative
+preference or a lifecycle state. **Evidence strength** displays the bounded
+magnitude of signed weight on a 0–100 scale, not recommendation confidence.
+Evidence bars compare counts within an interest, not their scoring weights.
 
 ### More like this, Not Interested, and mute Feed
 
@@ -461,13 +481,17 @@ for a selected Article, distinct from expanding its Event or duplicates.
 **Top Stories** (`sort:topStories`) is non-personalized, Event-driven ordering
 using coverage plus freshness and quality; Articles without Events remain
 eligible. **Newest** (`desc`) and **Oldest** (`asc`) are chronological ordering,
-subject to the documented optional Unread high-trust override.
+subject to **Prioritize trusted feeds in Unread**, which can change those
+chronological orders. It does not change Recommended, Top Stories, or Quality &
+source trust sorting.
 
 Evidence: [Event presentation](client/src/components/articles/ArticleMeta.vue),
 [Event API](client/src/api/events.js),
 [Briefing developing filters](client/src/components/briefing/README.md#article-selection),
 [signal labels](client/src/components/articles/helpers/articleSignals.js),
 [interest evidence](client/src/services/interestPresentation.js),
+[interest inspector](client/src/components/interests/InterestInspector.vue),
+[interest DTO](server/controllers/interests.js),
 [Article feedback](client/src/components/articles/helpers/articleActions.js),
 [recommendation presentation](client/src/services/articleRecommendationPresentation.js),
 [ranking contract](docs/scoring.md).
@@ -480,7 +504,8 @@ Evidence: [Event presentation](client/src/components/articles/ArticleMeta.vue),
 **Ad-free content** (`advertisementScore`) are separate 0–100 components, with
 higher values better. Higher Tone means more neutral, balanced language, not a
 more positive subject. Higher advertisement score means less promotion.
-The minimum Tone threshold is `minToneScore`. Runtime inputs and responses use
+The overall-quality threshold is `minOverallQualityScore`; component thresholds
+are `minQualityScore`, `minToneScore`, and `minAdvertisementScore`. Runtime inputs and responses use
 only canonical score properties.
 **Score thresholds** restrict eligibility; 0 disables the corresponding Settings
 gate. Query `quality:>=0.75` means overall quality of at least 75/100.
@@ -489,7 +514,8 @@ gate. Query `quality:>=0.75` means overall quality of at least 75/100.
 
 **Quality & source trust** (`sort:quality`) combines article quality with
 **FeedTrust** (`feedTrust`), a user-specific source-history score. It is separate
-from the article's overall-quality badge and filters. The client labels a Feed
+from the article's overall-quality badge and filters: the ranking signal uses
+70% article-only quality and 30% FeedTrust. The client labels a Feed
 trusted above 0.85. An **official source** matches an enabled organization/domain
 mapping and is presented as **Official source**, with its configured organization
 when available. This is configured recognition, not verified provenance or
@@ -515,8 +541,8 @@ Evidence: [Quality breakdown](client/src/components/articles/ArticleQualityExpla
 ### Daily Briefing and morning summary
 
 An AI-enabled, event-aware recent Article collection selected with the user's
-Briefing preferences. It defaults to seven days, read and unread Articles, one
-required source, and Hot inclusion. The **context strip** gives collection
+Briefing preferences. It defaults to a rolling seven-day publication window,
+read and unread Articles, one required source feed, and Hot inclusion. The **context strip** gives collection
 statistics; the **morning summary** (“The stories shaping your morning”) presents
 up to four distinct Event stories with source-grounded excerpts. The structured
 introduction is separate from the normal Article list, and is compact in Reader.
@@ -525,9 +551,9 @@ introduction is separate from the normal Article list, and is compact in Reader.
 
 Per-user eligibility and presentation choices: rolling selection period
 (`24h`/`7d`), unread-only, scrolling read behavior, Hot inclusion, minimum distinct
-sources,
-interest-only or developing-story-only selection, summary developing coverage,
-and Recommended summary ordering. The two “show only” choices are mutually
+feeds (labeled **Minimum distinct sources**), articles with positive or negative
+learned preferences, developing-story-only selection, developing coverage in the
+summary, and Recommended summary ordering. The two “show only” choices are mutually
 exclusive. Some preferences are server-side and need not appear in query text.
 
 ### Daily briefing email, SMTP, and Web Push
@@ -592,9 +618,11 @@ through Desktop settings rather than Article preferences.
 
 **Feed health** describes fetch/processing reliability and failures, separate
 from source trust. **Refresh history** summarizes completed/failed user-triggered
-crawls, including new/updated Article totals. **Cleanup** deletes retained
+crawls, including new/updated Article totals. **Cleanup** permanently deletes retained
 Articles under age/count limits and unread/saved/opened protections. Count limits
 take priority over age, and protected Articles can leave counts above a limit.
+Cleanup does not create a recoverable archive; internal archiving configuration
+and API names describe this deletion policy.
 
 Evidence: [Actions](client/src/components/settings/SettingsActions.vue),
 [phrase conditions](client/src/services/actionConditions.js),
@@ -617,7 +645,8 @@ An **offline profile** belongs to this device/browser and account, scoped by API
 origin and user ID. Its **downloaded snapshot** contains a bounded recent Article
 collection prepared while connected; replacing it activates a complete new
 generation. **Update offline downloads** replaces this stored-article snapshot
-without crawling publisher feeds. Disabling future updates retains existing downloads.
+without crawling publisher feeds. Disabling future updates retains existing
+downloads.
 **Synchronization** sends queued read/unread and save/unsave assignments and
 reconciles accepted server state. Pending and failed assignments remain distinct
 from downloaded content and the last successful synchronization.
@@ -662,16 +691,21 @@ force. Inference **Test connection** probes the draft without saving, whereas
 
 ### Article analysis, processing jobs, and semantic labels
 
-Article analysis can be pending, processing, or failed; those states suppress
-unusable scores/summaries for the current version. **AI Processing** presents the
-server's background queue health as healthy, busy, degraded, or stalled, with
+Article analysis states include `pending`, `processing`, `complete`, `skipped`,
+and `failed`. Pending, processing and failed states suppress unusable inferred
+scores, summaries and inferred tags for the current version; manual/rule tags
+remain separate. Skipped analysis can retain default scores, so unavailable
+analysis and neutral fallback values are not interchangeable. **AI Processing**
+presents the server's background queue health as healthy, busy, degraded, or stalled, with
 user-facing job labels **Article analysis** and **Semantic labels**.
 **Awaiting recovery** means unfinished analysis without an active job.
 Retrying failed jobs and clearing completed/dead history are distinct operations.
 
 ### Health & errors, failure group, and occurrence
 
-**Health & errors** (Observability) is the user's processing-failure inbox.
+**Health & errors** (`SettingsObservability.vue`) combines current service-health
+checks with the user's processing-failure inbox. Health checks are separate from
+the failure filters and historical occurrences.
 A **failure group** combines abnormal outcomes by stable fingerprint; an
 **occurrence** is one captured failure with identifiers, stage, message, retry
 state, stack/context, and time. These failure occurrences are not news Events.
@@ -683,8 +717,10 @@ Evidence: [Offline snapshots](client/src/services/offlineReading.js),
 [account controls](client/src/components/settings/SettingsAccount.vue),
 [OIDC configuration](client/src/components/settings/SettingsOidc.vue),
 [Inference capabilities](client/src/components/settings/SettingsInference.vue),
+[inference orchestration](inference/README.md#local-models),
 [runtime overrides](client/src/components/settings/SettingsInferenceRuntime.vue),
 [assistant](client/src/components/assistant/ChatAssistant.vue),
-[analysis states](client/src/services/articleAnalysisPresentation.js),
+[analysis presentation](client/src/services/articleAnalysisPresentation.js),
+[analysis status contract](server/models/article.js),
 [queue operations](client/src/components/settings/SettingsProcessingJobs.vue),
 [failure inspection](client/src/components/settings/SettingsObservability.vue).
