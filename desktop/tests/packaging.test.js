@@ -19,7 +19,7 @@ test('Windows produces separate installer and portable artifacts', () => {
   assert.equal(configuration.portable.artifactName, '${productName}-Portable-${version}-${arch}.${ext}');
 });
 
-for (const omitted of [null, 'parser', 'migration', 'historical-migration', 'migration-helper', 'baseline-mysql', 'baseline-sqlite', 'baseline-bootstrap', 'baseline-definition', 'history-mysql', 'history-sqlite', 'migration-lock', 'migration-schema', 'migration-state', 'migration-runner', 'migration-converter', 'migration-scope', 'migration-seeder', 'seeder-scope', 'inference', 'storage', 'crawler', 'tray']) {
+for (const omitted of [null, 'parser', 'migration', 'historical-migration', 'migration-helper', 'baseline-mysql', 'baseline-sqlite', 'baseline-bootstrap', 'baseline-definition', 'history-mysql', 'legacy-mysql', 'history-sqlite', 'migration-lock', 'migration-schema', 'migration-state', 'migration-runner', 'migration-converter', 'migration-scope', 'migration-seeder', 'seeder-scope', 'inference', 'storage', 'crawler', 'tray']) {
   test(`packaged runtime ${omitted ? `rejects missing ${omitted}` : 'contains parser and ESM migrations'}`, async () => {
     const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-package-regression-'));
     try {
@@ -46,6 +46,7 @@ for (const omitted of [null, 'parser', 'migration', 'historical-migration', 'mig
       if (omitted !== 'baseline-bootstrap') files.push('server/migrations/lib/baseline24Bootstrap.mjs');
       if (omitted !== 'baseline-definition') files.push('server/migrations/lib/baseline24Definition.mjs');
       if (omitted !== 'history-mysql') files.push('server/migrations/lib/history24-mysql.json');
+      if (omitted !== 'legacy-mysql') files.push('server/migrations/lib/legacy24-mysql.json');
       if (omitted !== 'history-sqlite') files.push('server/migrations/lib/history24-sqlite.json');
       if (omitted !== 'migration-lock') files.push('server/config/migrationLock.js');
       if (omitted !== 'migration-schema') files.push('server/config/migrationSchema.js');

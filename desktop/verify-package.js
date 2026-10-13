@@ -31,6 +31,7 @@ export const verifyPackagedRuntime = async (
     '/server/migrations/lib/baseline24-mysql.json',
     '/server/migrations/lib/baseline24-sqlite.json',
     '/server/migrations/lib/history24-mysql.json',
+    '/server/migrations/lib/legacy24-mysql.json',
     '/server/migrations/lib/history24-sqlite.json',
     '/server/config/migrationLock.js',
     '/server/config/migrationSchema.js',

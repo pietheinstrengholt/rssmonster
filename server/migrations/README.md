@@ -24,6 +24,33 @@ edit an already released migration to make a model change appear applied.
 `RSSMonsterMigrationState` records the last successfully observed schema hash;
 it is not another schema definition. Retain `SequelizeMeta` filenames unchanged.
 
+### Verified existing MySQL layouts
+
+Some fully migrated installations retain the pre-reset native layout instead of
+the archived reference layout: column ordering differs, Smart Folder indexes use
+`smartFolders_*` names, Feed URLs already use binary collation, `feedTags` permits
+NULL, the sort default is `DESC`, and a publisher-status CHECK is present.
+`lib/legacy24-mysql.json` records that inspected layout and its four exact
+fingerprints from `20261009000000-add-article-sync-actions.mjs` through
+`20261012002000-standardize-tone-score.mjs`. Its table overrides are evidence for
+reproducing those fingerprints in isolated tests, not schema creation instructions.
+
+Recognition requires both the exact fingerprint and the matching contiguous
+historical migration prefix. Pending naming migrations must reach the next
+verified checkpoint before their completion is recorded. Baseline adoption
+retains these existing tables, constraints, defaults, NULL tag values and history;
+it records the actual schema hash rather than asserting byte-identical baseline
+DDL. Fresh installations still use the unchanged baseline. The nullable tag field
+and uppercase sort default are retained legacy differences; current models still
+require non-null tags and default to lowercase `desc` on application inserts.
+
+These checkpoints do not permit arbitrary schema drift, missing foreign keys,
+extra columns, incomplete migrations or unknown earlier layouts. Do not add an
+unexplained hash to bypass recognition. Capture and compare native definitions
+read-only, establish compatibility and data semantics, reproduce the exact
+checkpoint transition in an isolated database, and test rejection of conflicting
+history before registering another verified layout.
+
 ## Creating a migration
 
 Copy `templates/new-migration.mjs` directly into this directory, naming it

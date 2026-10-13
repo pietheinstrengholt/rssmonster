@@ -8,6 +8,7 @@ import mysqlBaseline from '../migrations/lib/baseline24-mysql.json' with { type:
 import sqliteBaseline from '../migrations/lib/baseline24-sqlite.json' with { type: 'json' };
 import mysqlHistory from '../migrations/lib/history24-mysql.json' with { type: 'json' };
 import sqliteHistory from '../migrations/lib/history24-sqlite.json' with { type: 'json' };
+import mysqlLegacy from '../migrations/lib/legacy24-mysql.json' with { type: 'json' };
 import { withMigrationConnection, withMigrationLock } from './migrationLock.js';
 import { inspectMigrationSchema, reconcileHistoricalSqlite, rememberSqliteSequences, restoreSqliteSequences, schemaHash, validateHistoricalSqliteData, validateMigrationData } from './migrationSchema.js';
 import { beginMigration, completeMigration, initializeMigrationState, readMigrationHistory } from './migrationState.js';
@@ -45,6 +46,13 @@ const requirePrefix = (recorded, available, label) => {
 
 const mismatch = (label, expected, actual) => new Error(`Unrecognized ${label} schema: expected fingerprint ${expected}, found ${actual}. History and schema cannot be safely reconciled; no speculative repair or baseline recreation is permitted.`);
 
+// Existing MySQL installations can have the verified pre-reset layout rather
+// than the archived reference layout. Accept only exact native fingerprints at
+// their recorded checkpoints; retain the actual schema and tracking hash.
+const matchesCheckpoint = (dialect, migration, hash) => Boolean(migration && (
+  migration.schemaHash === hash || (dialect === 'mysql' && mysqlLegacy.schemas.some(schema => schema.lastMigration === migration.name && schema.schemaHash === hash))
+));
+
 // Shared, read-only recognition: never creates metadata or executes migrations.
 export const inspectDatabaseMigrations = async (sequelize, migrationsPath = migrationsDirectory) => {
   await sequelize.authenticate();
@@ -78,6 +86,8 @@ export const inspectDatabaseMigrations = async (sequelize, migrationsPath = migr
   requirePrefix(historicalDone, historicalNames, 'historical');
   requirePrefix(incrementalDone, incrementalNames, 'incremental');
   const recordedBaseline = history.names.includes(BASELINE_24);
+  const legacyEndpoint = historicalDone.length === historicalNames.length && matchesCheckpoint(sequelize.getDialect(), catalog.migrations.at(-1), current.hash);
+  const baselineCompatible = current.hash === baselineHash || (sequelize.getDialect() === 'mysql' && legacyEndpoint);
   if ((!recordedBaseline && incrementalDone.length) || (recordedBaseline && historicalDone.length && historicalDone.length !== historicalNames.length)) {
     throw new Error('Inconsistent history: incremental/baseline tracking conflicts with incomplete historical migrations.');
   }
@@ -88,19 +98,20 @@ export const inspectDatabaseMigrations = async (sequelize, migrationsPath = migr
       throw new Error(`Migration state, SequelizeMeta and actual schema disagree: history ends at ${last}, state ends at ${history.state.lastMigration}; expected schema ${history.state.schemaHash}, found ${current.hash}. Refusing speculative recovery.`);
     }
   }
-  if (recordedBaseline && !incrementalDone.length && current.hash !== baselineHash && !(!history.state && historicalDone.length === historicalNames.length && current.hash === catalog.migrations.at(-1).schemaHash)) {
+  if (recordedBaseline && !incrementalDone.length && !baselineCompatible && !(!history.state && legacyEndpoint)) {
     throw mismatch('recorded 2.4 baseline', baselineHash, current.hash);
   }
   if (!empty && !history.names.length) throw new Error('Existing schema has no migration history. Refusing to initialize or recreate it.');
   const legacyHash = catalog.migrations.at(-1).schemaHash;
   if (!history.state || !recordedBaseline) {
     const expected = empty ? current.hash : recordedBaseline ? baselineHash : catalog.migrations[historicalDone.length - 1]?.schemaHash;
-    const knownEndpoint = historicalDone.length === historicalNames.length && [baselineHash, legacyHash].includes(current.hash);
-    if (!expected || (current.hash !== expected && !knownEndpoint)) throw mismatch(last || 'legacy', expected || 'a known historical checkpoint', current.hash);
+    const knownEndpoint = historicalDone.length === historicalNames.length && (baselineCompatible || legacyEndpoint);
+    const knownLegacy = !recordedBaseline && matchesCheckpoint(sequelize.getDialect(), catalog.migrations[historicalDone.length - 1], current.hash);
+    if (!expected || (current.hash !== expected && !knownEndpoint && !knownLegacy)) throw mismatch(last || 'legacy', expected || 'a known historical checkpoint', current.hash);
   }
   await validateMigrationData(sequelize);
   if (sequelize.getDialect() === 'sqlite' && current.hash === legacyHash && current.hash !== baselineHash) await validateHistoricalSqliteData(sequelize);
-  return { catalog, baselineHash, history, current, historicalNames, incrementalNames, historicalDone, incrementalDone, recordedBaseline, empty, last, legacyHash };
+  return { catalog, baselineHash, baselineCompatible, history, current, historicalNames, incrementalNames, historicalDone, incrementalDone, recordedBaseline, empty, last, legacyHash };
 };
 
 export const migrateDatabase = async (db, migrationsPath = migrationsDirectory) => {
@@ -121,8 +132,9 @@ export const migrateDatabase = async (db, migrationsPath = migrationsDirectory) 
       logMigration: async name => {
         await restoreSqliteSequences(sequelize, retainedSequences);
         const applied = await inspectMigrationSchema(sequelize);
-        const expected = name === BASELINE_24 ? baselineHash : catalog.migrations.find(migration => migration.name === name)?.schemaHash;
-        if (expected && applied.hash !== expected) throw mismatch(name, expected, applied.hash);
+        const checkpoint = catalog.migrations.find(migration => migration.name === name);
+        const expected = name === BASELINE_24 ? baselineHash : checkpoint?.schemaHash;
+        if (expected && applied.hash !== expected && !matchesCheckpoint(sequelize.getDialect(), checkpoint, applied.hash)) throw mismatch(name, expected, applied.hash);
         await validateMigrationData(sequelize);
         await completeMigration(sequelize, name, applied.hash, version, assertHeld);
       },
@@ -144,14 +156,16 @@ export const migrateDatabase = async (db, migrationsPath = migrationsDirectory) 
         if (sequelize.getDialect() === 'sqlite') await sequelize.query('PRAGMA foreign_keys = ON');
       }
       const endpoint = await inspectMigrationSchema(sequelize);
-      if (![legacyHash, baselineHash].includes(endpoint.hash)) throw mismatch('2.4 endpoint', legacyHash, endpoint.hash);
+      const compatibleEndpoint = matchesCheckpoint(sequelize.getDialect(), catalog.migrations.at(-1), endpoint.hash);
+      if (endpoint.hash !== baselineHash && !compatibleEndpoint) throw mismatch('2.4 endpoint', legacyHash, endpoint.hash);
       await validateMigrationData(sequelize);
-      if (endpoint.hash !== baselineHash) await validateHistoricalSqliteData(sequelize);
+      const reconcileSqlite = sequelize.getDialect() === 'sqlite' && endpoint.hash !== baselineHash;
+      if (reconcileSqlite) await validateHistoricalSqliteData(sequelize);
       await beforeUp(BASELINE_24);
-      if (endpoint.hash !== baselineHash) await reconcileHistoricalSqlite(sequelize);
+      if (reconcileSqlite) await reconcileHistoricalSqlite(sequelize);
       await restoreSqliteSequences(sequelize, retainedSequences);
       const adopted = await inspectMigrationSchema(sequelize);
-      if (adopted.hash !== baselineHash) throw mismatch('2.4 baseline adoption', baselineHash, adopted.hash);
+      if (adopted.hash !== baselineHash && !(sequelize.getDialect() === 'mysql' && matchesCheckpoint('mysql', catalog.migrations.at(-1), adopted.hash))) throw mismatch('2.4 baseline adoption', baselineHash, adopted.hash);
       await completeMigration(sequelize, BASELINE_24, adopted.hash, '2.4.0', assertHeld, { alreadyRecorded: recordedBaseline });
     }
     await createDatabaseMigrator(db, migrationsPath, { baseline: true, beforeUp, storage: storageFor('2.4.0') }).up();

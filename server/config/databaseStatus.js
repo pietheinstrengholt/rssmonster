@@ -26,8 +26,8 @@ export const databaseStatus = async (sequelize, migrationsPath) => {
       await assertHeld();
       const historicalPending = plan.historicalNames.length - plan.historicalDone.length;
       const incrementalPending = plan.incrementalNames.length - plan.incrementalDone.length;
-      const adoption = !plan.recordedBaseline || (!history.state && plan.current.hash !== plan.baselineHash);
-      status.baseline = plan.recordedBaseline && !adoption ? '2.4.0' : plan.empty ? 'Uninitialized' : plan.current.hash === plan.baselineHash ? '2.4.0 (adoption required)' : 'Pre-2.4 (recognized checkpoint)';
+      const adoption = !plan.recordedBaseline || (!history.state && status.dialect === 'sqlite' && plan.current.hash !== plan.baselineHash);
+      status.baseline = plan.recordedBaseline && !adoption ? '2.4.0' : plan.empty ? 'Uninitialized' : plan.baselineCompatible ? '2.4.0 (adoption required)' : 'Pre-2.4 (recognized checkpoint)';
       status.pending = incrementalPending + (adoption ? 1 : 0) + (!plan.empty && !plan.recordedBaseline ? historicalPending : 0);
       status.legacy = plan.empty ? 'Not required' : historicalPending && !plan.recordedBaseline ? `${historicalPending} historical migrations required; baseline adoption required` : adoption ? 'Baseline adoption required' : 'Complete';
       status.state = plan.empty ? 'Initialization required' : status.pending ? 'Pending migrations' : 'Up to date';
