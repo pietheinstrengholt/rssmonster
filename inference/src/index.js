@@ -4,7 +4,14 @@ import { getConfig } from './config/config.js';
 import { getSafeErrorDetails, getSafeStartupErrorDetails } from './debug.js';
 import { checkAssistantHandshake, checkGenerationHandshake } from './providerHandshake.js';
 
-dotenv.config({ quiet: true });
+const dotenvResult = dotenv.config({ quiet: true });
+
+// A missing .env uses local models; explicit process settings still take precedence.
+if (dotenvResult.error?.code === 'ENOENT') {
+  process.env.EMBEDDING_PROVIDER ||= 'local';
+  process.env.GENERATION_PROVIDER ||= 'local';
+  process.env.CLASSIFICATION_PROVIDER ||= process.env.ARTICLE_SCORING_PROVIDER || 'local';
+}
 
 // Load the app and startup providers only after dotenv so their singletons see inference/.env.
 const [

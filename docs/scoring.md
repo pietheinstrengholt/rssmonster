@@ -12,11 +12,23 @@ meaning. A score may describe one article, a source's recent history, personal
 relevance, or the importance of a current story. No single score decides
 whether an article is allowed to exist or be read.
 
+| Concept | Meaning | Use |
+| --- | --- | --- |
+| Overall article quality (`articleQuality`) | Article content quality, independent of source trust and personal interest. | Overall quality badge and article-quality thresholds, including `quality:` expressions. |
+| FeedTrust | Recent source value in the user's account. | Source contribution to Quality & source trust ranking. |
+| Personal interest (`interestScore`) | Signed relevance to the user. | Personalization contribution to Recommended. |
+
+**Quality & source trust** ranking combines 70% articleQuality with 30% FeedTrust.
+Recommended uses that combined ranking signal alongside personal interest and
+other signals. These ranking combinations do not change Overall quality badges
+or Article-only quality thresholds. A high-quality article may come from an
+inconsistent source or cover a subject the user dislikes.
+
 ## Core Signals
 
-### Overall quality
+### Overall article quality
 
-Overall quality asks: **How good is this particular article?**
+Overall article quality asks: **How good is this particular article?**
 
 It is a normalized `0.0`–`1.0` content score derived from the article's stored
 quality, tone, and advertising scores. Feed reputation is not inserted
@@ -195,7 +207,7 @@ coverage**, while personalization coverage may legitimately be sparse.
 | Event/corroboration | Optional; zero without an Event. |
 | Island, embedding | Optional; not Recommended prerequisites. |
 | Article quality components | Unavailable/nonfinite article components default to 70. |
-| FeedTrust | Missing/nonfinite trust defaults to 0.5; finite stored values remain meaningful. |
+| FeedTrust | Unavailable trust (missing, null, or nonfinite) uses the neutral prior 0.75; finite estimated values, including zero, remain meaningful. |
 | Freshness | Article model uses zero for missing publication time; a plain object without freshness uses 0.5. |
 | Matching rule tags | Optional; no boost without a match. |
 

@@ -8,7 +8,7 @@ nav_order: 3
 # Inference
 
 RSSMonster uses a standalone service for every provider inference call. It
-handles embeddings, article classification, assistant model requests, Smart
+handles embeddings, article classification, assistant agent runs, Smart
 Folder recommendations, and feed rediscovery. The server retains authenticated
 tools and database/business logic; the inference process has no database access.
 
@@ -23,7 +23,45 @@ Embeddings, combined article classification, named generation workloads, and
 assistant model requests share one RSSMonster inference provider adapter. That
 adapter alone knows inference HTTP paths; `inferenceClient` owns transport,
 request IDs, cancellation, timeouts, safe errors, and existing circuit breakers.
-Agent tools and orchestration remain server-owned.
+Agent orchestration runs in inference; database tool handlers remain server-owned.
+
+### Assistant orchestration and database tools
+
+`POST /api/agent` keeps the existing authenticated chat SSE contract. The server
+compacts history and sends input, shared tool schemas, and a short-lived callback
+token to `POST /api/assistant/run/stream`. Inference owns the Agents SDK loop,
+instructions, model calls and tool selection. It returns NDJSON progress and a
+terminal result; the server sanitizes rendered HTML and constructs semantic history.
+
+Inference calls `POST /api/agent/tools` on the application server. Configure
+`ASSISTANT_TOOL_URL` in **inference/.env** to the URL reachable from inference:
+
+```env
+# Same machine:
+ASSISTANT_TOOL_URL=http://127.0.0.1:3000/api/agent/tools
+# Private Docker network (use the application service name):
+# ASSISTANT_TOOL_URL=http://rssmonster:3000/api/agent/tools
+```
+
+These callbacks reuse the existing MCP tool handlers. Every callback checks its
+signed user scope, allowed tool names, account existence, current password version,
+and the original Zod input schema. The token expires after five minutes and uses a
+separate derived signing key, so it cannot authenticate as an application session.
+No JWT secret or database credentials are sent to inference or the model. Callback
+tokens stay outside model context and logs. The callback URL comes only from
+inference configuration; requests cannot select it, and redirects are rejected.
+Tool calls have a 30-second timeout and are cancelled when the chat disconnects;
+an already-started database action may still finish. Calls are not automatically retried.
+
+Set the same `INFERENCE_API_KEY` on server and inference, and connect them over a
+private network or HTTPS. Keep the existing `INFERENCE_BASE_URL`; the configured
+inference timeout now bounds the entire agent run, including tool calls, rather
+than each separate model round trip. Increase it if multi-step runs need more
+time; callback tokens expire after five minutes.
+Move any `ASSISTANT_REASONING_EFFORT` value from server/.env to inference/.env.
+The application server keeps `@modelcontextprotocol/sdk`; only inference needs
+`@openai/agents`. Existing `/api/assistant/model` endpoints remain for compatibility.
+Upgrade server and inference together: the new server requires the run endpoint.
 
 The AI health layer combines `/health`, `/ready`, and validated `/api/capabilities`
 metadata. Server feature permissions may restrict use but never establish remote
@@ -240,9 +278,9 @@ connection, startup, and contract failure states.
 
 1. A nonempty `INFERENCE_BASE_URL` makes the connection environment-managed.
 2. Otherwise, the deployment's saved Settings connection is used.
-3. Without either, no inference endpoint is configured. There is no implicit localhost connection.
+3. Without either, the endpoint defaults to `http://127.0.0.1:3001`. Settings remains editable; removing a saved connection restores this default.
 
-An environment key alone never creates an endpoint or replaces a database key.
+An environment key alone is ignored for the local default and never replaces a database key.
 Environment values are never copied into the database. When an environment URL
 exists, Settings hides endpoint/key inputs and Save/Remove controls entirely;
 capability status and refresh remain visible. Direct update/delete API calls are
@@ -252,7 +290,7 @@ normal permissions to consume intelligent features.
 
 Explicit `INFERENCE_AI_ENABLED=false` remains a deployment kill switch, and
 `INFERENCE_ASSISTANT_ENABLED=false` can prohibit assistant use. These switches
-are optional permission overrides; enabling them alone does not create a connection.
+are optional permission overrides; disabling inference prevents use of the local fallback as well.
 Existing article and semantic skip flags and per-feed preferences remain respected.
 
 ### Deployment examples
@@ -381,7 +419,7 @@ timeout:
 ```env
 # server/.env
 INFERENCE_BASE_URL=http://127.0.0.1:3001
-INFERENCE_TIMEOUT_MS=30000
+INFERENCE_TIMEOUT_MS=120000
 INFERENCE_AGENT_TIMEOUT_MS=300000
 INFERENCE_AI_ENABLED=true
 SKIP_ARTICLE_CLASSIFICATION_ANALYSIS=false
@@ -521,7 +559,7 @@ generation defaults to `gpt-4o-mini` for article/label work and `gpt-4.1-mini` f
 folder/feed work. Set the provider and model explicitly for a consistent deployment.
 Set `OPENAI_OMIT_TEMPERATURE=true` if your generation or classification endpoint
 rejects explicit temperature values; this existing shared compatibility switch
-is preserved. Assistant reasoning remains an optional server-side
+is preserved. Assistant reasoning is an optional inference-side
 `ASSISTANT_REASONING_EFFORT` setting.
 
 #### Optional reasoning controls for structured output
@@ -764,7 +802,7 @@ capability assigned to OpenAI does not load its corresponding local model.
 In **Settings → AI / Inference → Runtime configuration**, enable **Override
 environment default** to save these settings together:
 
-- `INFERENCE_TIMEOUT_MS` (30,000 ms) and `INFERENCE_AGENT_TIMEOUT_MS` (300,000 ms).
+- `INFERENCE_TIMEOUT_MS` (120,000 ms) and `INFERENCE_AGENT_TIMEOUT_MS` (300,000 ms).
 - `INFERENCE_CIRCUIT_FAILURE_THRESHOLD` (5 consecutive availability failures)
   and `INFERENCE_CIRCUIT_COOLDOWN_MS` (30,000 ms before a recovery probe).
 - `INFERENCE_AI_ENABLED` and `INFERENCE_ASSISTANT_ENABLED`: Automatic, Enabled,

@@ -4,7 +4,7 @@ import { isInferenceConfigured } from '../inference/configuration.js';
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import embedArticle from './embedArticle.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { shouldSkipArticleEmbeddings } from '../../config/intelligentFeatures.js';
 
 /**
@@ -81,7 +81,7 @@ async function embedArticlesOperation(userId, options = {}) {
           [Op.gt]: lastId,
           ...(articleIds.length ? { [Op.in]: articleIds } : {})
         },
-        ...canonicalArticleWhere(),
+        ...unfilteredCanonicalArticleWhere(),
         filteredInd: false,
         articleVector: { [Op.is]: null },
         ...(createdAtFrom ? { createdAt: { [Op.gte]: createdAtFrom } } : {})

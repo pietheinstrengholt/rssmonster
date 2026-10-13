@@ -1,5 +1,5 @@
 import db from '../../models/index.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 
 // Provides the shared dependencies used by this service.
 const { Article } = db;
@@ -109,7 +109,7 @@ export async function resolveDevelopingArticleIdForAssignment({
       id: pointerId,
       userId: event.userId,
       eventId: event.id,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     },
     attributes: ['id', 'status', 'readAt'],
     transaction
@@ -126,7 +126,7 @@ export async function resolveDevelopingArticleIdForAssignment({
         id: event.representativeArticleId,
         userId: event.userId,
         eventId: event.id,
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       },
       attributes: ['id', 'status', 'readAt'],
       transaction
@@ -157,7 +157,7 @@ export async function resolveDevelopingArticleIdForAssignment({
     where: {
       userId: event.userId,
       eventId: event.id,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     },
     attributes: [
       'id',

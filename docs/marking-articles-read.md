@@ -15,6 +15,20 @@ selection changes as the completion signal.
 You can also explicitly mark an article as read or unread at any time. An
 explicit choice takes precedence over automatic scroll tracking.
 
+## Read status and reading evidence
+
+Read/unread tracks whether an article remains in your reading queue. Marking an
+article read, whether manually, while scrolling, when leaving it in Reader mode,
+or through a bulk or grouped-Event action, does not by itself demonstrate sustained
+reading or interest in its subject. Marking it unread does not express dislike.
+
+`readAt` records read-state timing. `firstSeen` records first on-screen exposure;
+exposure alone does not establish preference. Observed deep reads, outbound clicks,
+favorites, and **More like this** or **Not interested** feedback provide separate
+behavioral evidence for personalization. A reading session can record engagement
+and change read status, but those are independent observations. Read-state changes
+alone do not request Island recalibration.
+
 ## Mark as Read While Scrolling
 
 Open [Tune your unread selection](#tune-your-unread-selection) to configure

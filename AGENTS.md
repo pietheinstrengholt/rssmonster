@@ -68,7 +68,10 @@ Article processing conceptually follows:
 
 Do not reorder these stages casually.
 
-`contentOriginal`, `contentStripped`, `contentText`, and `description` are distinct contracts. Do not treat them as interchangeable.
+`contentOriginal` preserves publisher source, `contentHtml` stores sanitized reading
+HTML, and `contentText` stores canonical visible text. `description` preserves the
+publisher description; `descriptionHtml` and `descriptionText` store its sanitized
+HTML and visible text. These Article fields are distinct contracts. Do not treat them as interchangeable.
 
 Deterministic identity takes precedence over semantic similarity. Similar content is not automatically duplicate content.
 
@@ -179,6 +182,12 @@ When asked to audit, investigate, review, or analyze, do not modify code unless 
 ## MySQL performance
 
 For MySQL/Sequelize query-performance investigations, use the `mysql-performance` skill. You may inspect the local MySQL slow-query and error logs and query the local development Performance Schema without asking the user to paste diagnostic output.
+
+## Domain vocabulary
+
+- Read the project's domain glossary (`GLOSSARY.md`). Use GLOSSARY.md vocabulary for the domain language. Avoid inventing new terms or using synonyms for existing terms.
+- Naming a deepened module after a concept not in `GLOSSARY.md`? Add the term to `GLOSSARY.md`. Create the file lazily if it doesn't exist.
+- Sharpening a fuzzy term during the conversation?** Update `GLOSSARY.md` right there.
 
 ## Final Standard
 

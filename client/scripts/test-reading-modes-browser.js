@@ -8,7 +8,7 @@ const browser = await chromium.launch({
 try {
   for (const width of [390, 768, 900, 1440]) {
     for (const theme of ['light', 'dark']) {
-      for (const [legacy, canonical] of [['full', 'expanded'], ['minimal', 'headlines']]) {
+      for (const canonical of ['expanded', 'headlines']) {
         const page = await browser.newPage({ viewport: { width, height: 900 } });
         const failures = [];
         const saves = [];
@@ -20,7 +20,7 @@ try {
           }
           await route.fulfill({ json: {} });
         });
-        await page.goto(`${process.env.READING_TEST_BASE_URL || 'http://localhost:8080'}/tests/browser/reading-modes.html?storedMode=${legacy}&theme=${theme}`);
+        await page.goto(`${process.env.READING_TEST_BASE_URL || 'http://localhost:8080'}/tests/browser/reading-modes.html?storedMode=${canonical}&theme=${theme}`);
         const selected = page.getByRole('status', { name: 'Selected reading mode' });
         await selected.waitFor();
         assert.equal(await selected.textContent(), canonical);
@@ -48,7 +48,7 @@ try {
         assert.deepEqual(saves, modes.filter(([, value]) => width >= 880 || value !== 'reader').map(([, value]) => value));
         assert.deepEqual(failures, []);
         await page.close();
-        console.log(`PASS: ${width}px ${theme}, restored ${legacy}`);
+        console.log(`PASS: ${width}px ${theme}, restored ${canonical}`);
       }
     }
   }
@@ -71,6 +71,6 @@ try {
       await page.close();
     }
   }
-  console.log('PASS: legacy preferences restore canonical modes; desktop/mobile labels, saves and all rendered modes work at 390/768/900/1440px in light/dark themes');
+  console.log('PASS: canonical preferences restore their modes; desktop/mobile labels, saves and all rendered modes work at 390/768/900/1440px in light/dark themes');
   console.log('PASS: complete Briefing label and global count at 320/390/768px in both themes; dropdown and Escape remain usable');
 } finally { await browser.close(); }

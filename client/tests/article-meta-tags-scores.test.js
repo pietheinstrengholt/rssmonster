@@ -570,7 +570,7 @@ describe('ArticleTagsScores', () => {
   });
 
   // Verifies the summary includes every dimension, including the neutral baseline score.
-  it('renders the backend overall quality score with an individual score breakdown', async () => {
+  it('renders the backend overall article quality score with an individual score breakdown', async () => {
     const wrapper = mountArticleTagsScores({
       advertisementScore: 100,
       toneScore: 70,

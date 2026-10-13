@@ -5,7 +5,7 @@ import { candidateDiagnostic, emitEventDiagnostic, eventDiagnosticsEnabled } fro
 import db from '../../models/index.js';
 import { articleEventSimilarityThreshold, eventClusteringFeedInclude } from './categoryClustering.js';
 import { Op } from 'sequelize';
-import { canonicalArticleWhere, DUPLICATE_ARTICLE_STATUS } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere, DUPLICATE_ARTICLE_STATUS } from '../duplicates/articleDuplicates.js';
 import { createAndAssignEvent as createEventFromCandidates } from './createEvents.js';
 import { assignArticleToExistingEvent as updateExistingEvent } from './updateEvents.js';
 import {
@@ -179,7 +179,7 @@ async function findCandidateArticles({ article, articleEventVector }) {
       userId: article.userId,
       embedding_model: article.embedding_model,
       id: { [Op.ne]: article.id },
-      ...canonicalArticleWhere(),
+      ...unfilteredCanonicalArticleWhere(),
       publishedAt: {
         [Op.gte]: cutoff,
         [Op.lte]: upperBound

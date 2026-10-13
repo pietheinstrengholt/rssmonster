@@ -1,8 +1,10 @@
 # Inference connection
 
 `configuration.js` is the authoritative deployment connection resolver. A nonempty
-`INFERENCE_BASE_URL` wins over the singleton database
-row; an environment key alone is ignored. No endpoint means no inference.
+`INFERENCE_BASE_URL` wins over the singleton database row; an environment key
+alone is ignored. Without either endpoint, the resolver uses `http://127.0.0.1:3001`.
+The default remains editable in Settings; removing a saved connection restores it.
+`INFERENCE_AI_ENABLED=false` disables inference.
 
 The shared secret is AES-256-GCM encrypted using an HKDF purpose-specific key from
 `FEVER_CREDENTIAL_SECRET`. Back up that secret with the database. Rotating it requires
@@ -28,7 +30,7 @@ and validate this group even when the connection comes from the environment.
 Database overrides win over environment values; clearing the group restores
 inheritance. `null` permission values mean automatic, suppressing an environment
 permission override while still requiring a configured, available capability.
-A settings-only row has an empty endpoint and is not an inference connection.
+A settings-only row has an empty endpoint and does not override the local default connection.
 Removing a connection preserves runtime overrides; restoring runtime defaults
 preserves the endpoint and encrypted API key.
 

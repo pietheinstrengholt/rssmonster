@@ -6,7 +6,7 @@ const { Feed, Category, Article, User, sequelize } = db;
 import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 import { generateOpml } from './opml.js';
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import {
   createGreaderActionToken,
   createGreaderAuthToken
@@ -481,7 +481,7 @@ export const getUnreadCount = async (req, res) => {
         ],
         where: {
           userId: user.id,
-          ...canonicalArticleWhere()
+          ...unfilteredCanonicalArticleWhere()
         },
         group: ['feedId'],
         raw: true
@@ -649,7 +649,7 @@ export const getStreamItemContents = async (req, res) => {
       where: {
         id: { [Op.in]: numericIds },
         userId: user.id,
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       },
       include: articleIncludeForUser(user.id)
     });
@@ -725,7 +725,7 @@ export const editTag = async (req, res) => {
         where: {
           id: { [Op.in]: numericIds },
           userId: user.id,
-          ...canonicalArticleWhere()
+          ...unfilteredCanonicalArticleWhere()
         }
       });
     }

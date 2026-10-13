@@ -1,5 +1,5 @@
 import db from '../../models/index.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 
 const { Article, Tag, sequelize } = db;
 
@@ -13,7 +13,7 @@ const currentTags = (articleId, userId, transaction) => Tag.findAll({
 // Serialize manual mutations with article updates performed by the crawler.
 const mutateArticleTags = (articleId, userId, mutate) => sequelize.transaction(async transaction => {
   const article = await Article.findOne({
-    where: { id: articleId, userId, ...canonicalArticleWhere() },
+    where: { id: articleId, userId, ...unfilteredCanonicalArticleWhere() },
     transaction,
     lock: transaction.LOCK.UPDATE
   });

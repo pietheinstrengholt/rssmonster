@@ -36,7 +36,7 @@ vi.mock('../../models/index.js', async () => {
 });
 
 vi.mock('../../services/duplicates/articleDuplicates.js', () => ({
-  canonicalArticleWhere: vi.fn(() => ({
+  unfilteredCanonicalArticleWhere: vi.fn(() => ({
     duplicateOfArticleId: null,
     filteredInd: false
   }))

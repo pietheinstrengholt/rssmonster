@@ -1,4 +1,5 @@
 import express from 'express';
+import { createAssistantAgentService } from './assistant/assistantAgentService.js';
 import { createEmbeddingService } from './embeddings/embeddingService.js';
 import { createEmbeddingProvider } from './embeddings/providers/index.js';
 import { createEmbeddingsRouter } from './routes/embeddings.js';
@@ -45,6 +46,7 @@ export const createApp = ({
   logger = console,
   classificationService,
   assistantService,
+  assistantAgentService,
   smartFolderRecommendationService,
   feedRediscoveryService,
   semanticLabelService,
@@ -73,6 +75,7 @@ export const createApp = ({
   const assistantRateLimiter = createAssistantRateLimiter({ environment });
   app.use('/api/assistant', readinessGate, express.json({ limit: '1mb' }), createAssistantRouter({
     service: assistantService,
+    agentService: assistantAgentService || createAssistantAgentService({ environment }),
     logger,
     rateLimiter: assistantRateLimiter
   }));

@@ -67,8 +67,8 @@
         </div>
 
         <div class="feeds-toolbar-filters">
-          <select v-model="healthFilter" class="feeds-status-filter settings-control" aria-label="Filter feeds by health">
-            <option value="all">All Health</option>
+          <select v-model="healthFilter" class="feeds-status-filter settings-control" aria-label="Filter feeds by overview health">
+            <option value="all">All overview health</option>
             <option value="NEW">New</option>
             <option value="HEALTHY">Healthy</option>
             <option value="RECOVERED">Recovered</option>
@@ -105,7 +105,7 @@
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Health</th>
+                  <th>Feed overview health</th>
                   <th>Articles</th>
                   <th>Per Day</th>
                   <th>Reliability</th>
@@ -694,12 +694,12 @@ export default {
         feedStatus(feed) {
             return (feed?.status || 'disabled').toLowerCase();
         },
-        // Returns the backend-owned health state without deriving it from local metrics.
+        // Returns the backend-owned overview health without deriving it from local metrics.
         feedHealthKey(feed) {
             const health = String(feed?.health || '').toUpperCase();
             return Object.hasOwn(FEED_HEALTH_LABELS, health) ? health : '';
         },
-        // Converts backend health states into overview labels.
+        // Converts backend overview health values into overview labels.
         feedHealthLabel(feed) {
             return FEED_HEALTH_LABELS[this.feedHealthKey(feed)] || 'Unknown';
         },

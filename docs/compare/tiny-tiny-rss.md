@@ -84,9 +84,15 @@ RSSMonster can retain deterministic rules while adding relationships:
 
 ```text
 Incoming article -> identity / revision / duplicate analysis
-                 -> Event -> Interest Island
-                 -> Recommended / Top Stories / Smart Folders
+Article coverage -> Event
+Article behavior -> Interest Island
+Candidate Article vector -> direct Island comparison -> personal interest
+Article, source, Event and interest signals -> Recommended / Top Stories
+Search expression -> Smart Folder
 ```
+
+Events group coverage of one occurrence; Islands learn signed preferences from
+Article behavior. Articles can match Islands without belonging to an Event.
 
 TT-RSS is compelling when the user wants to author the system's behavior.
 RSSMonster is compelling when relationships across articles are difficult to

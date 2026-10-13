@@ -159,7 +159,7 @@ export default {
         { key: 'crawlStatistics', title: 'Refresh history', icon: 'clipboard-data-fill', purpose: 'Review daily crawl outcomes and article activity.', visible: true },
         { key: 'processingJobs', title: 'AI Processing', icon: 'cpu-fill', purpose: 'Check background AI queue health and processing progress.', capability: 'AI feature', visible: aiEnabled },
         { key: 'observability', title: 'Health & errors', icon: 'activity', purpose: 'Inspect grouped processing failures and captured diagnostics.', visible: true },
-        { key: 'feeds', title: 'Feeds', icon: 'rss-fill', purpose: 'Manage subscriptions, feed health, and OPML transfers.', visible: true },
+        { key: 'feeds', title: 'Feeds', icon: 'rss-fill', purpose: 'Manage subscriptions, Feed overview health, and OPML transfers.', visible: true },
         { key: 'officialSources', title: 'Official Sources', icon: 'patch-check-fill', purpose: 'Mark trusted organization domains during crawl.', visible: true },
         { key: 'users', title: 'Manage Users', icon: 'people-fill', purpose: 'Review existing accounts and update roles or access.', capability: 'Admin only', visible: this.authStore.role === 'admin' }
       ].filter(section => section.visible);

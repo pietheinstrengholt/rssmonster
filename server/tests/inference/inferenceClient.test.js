@@ -125,6 +125,21 @@ describe('inference client', () => {
     });
   });
 
+  it.each([undefined, ''])('uses a 120-second request deadline when the timeout setting is %j', async timeout => {
+    vi.stubEnv('INFERENCE_TIMEOUT_MS', timeout);
+    const timeouts = vi.spyOn(AbortSignal, 'timeout');
+    try {
+      await requestInferenceJson('/api/classifications/article', { text: 'Article' }, {
+        baseUrl: 'http://inference.internal',
+        environment: { INFERENCE_AI_ENABLED: 'true' },
+        fetchImplementation: async () => new Response('{}')
+      });
+      expect(timeouts).toHaveBeenLastCalledWith(120000);
+    } finally {
+      timeouts.mockRestore();
+    }
+  });
+
   it('identifies request timeouts for concise crawl logging', async () => {
     const timeoutCause = Object.assign(new Error('timed out'), { name: 'TimeoutError' });
     const request = requestInferenceJson('/api/test', {}, {

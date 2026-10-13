@@ -59,7 +59,7 @@
         </footer>
         <small class="inference-muted">Test connection checks this form without saving. Refresh checks the saved connection.</small>
         <div v-if="confirmRemove" class="app-notice app-notice--warning inference-confirmation">
-          <p>Remove the saved connection and API key? Existing articles and semantic data will remain.</p>
+          <p>Remove the saved connection and API key and restore the local default? Existing articles and semantic data will remain.</p>
           <div class="inference-actions">
             <button type="button" class="app-button app-button--danger" :disabled="busy" @click="remove">Confirm removal</button>
             <button type="button" class="app-button app-button--outline-secondary" :disabled="busy" @click="confirmRemove = false">Cancel</button>
@@ -151,7 +151,7 @@ export default {
       this.saving = true; this.error = '';
       try {
         const { data } = await clearInferenceSettings(); this.applyConfiguration(data);
-        this.status = { state: 'not_configured', capabilities: null }; this.$emit('forceReload');
+        await this.check(); this.$emit('forceReload');
       } catch { this.error = 'Could not remove the inference connection.'; } finally { this.saving = false; }
     },
     async check(draft = false) {

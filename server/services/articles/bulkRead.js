@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { searchArticles } from '../articleSearch/articleSearch.service.js';
 import { ArticleSearchCursorError } from '../articleSearch/articleSearchCursor.service.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { retryDatabaseWrite } from '../../utils/databaseRetry.js';
 
 const { Article, Feed } = db;
@@ -41,7 +41,7 @@ const readScope = async (userId, itemIds, grouping) => {
   let eventIds = [];
   if (grouping === 'event') {
     const selectedArticles = await Article.findAll({
-      where: { id: { [Op.in]: itemIds }, userId, ...canonicalArticleWhere() },
+      where: { id: { [Op.in]: itemIds }, userId, ...unfilteredCanonicalArticleWhere() },
       attributes: ['id', 'eventId']
     });
     eventIds = [...new Set(selectedArticles.map(article => article.eventId).filter(Boolean))];
@@ -51,7 +51,7 @@ const readScope = async (userId, itemIds, grouping) => {
     eventIds,
     where: {
       userId,
-      ...canonicalArticleWhere(),
+      ...unfilteredCanonicalArticleWhere(),
       status: 'unread',
       ...(eventIds.length
         ? { [Op.or]: [{ id: { [Op.in]: itemIds } }, { eventId: { [Op.in]: eventIds } }] }

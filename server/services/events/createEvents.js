@@ -8,7 +8,7 @@ import {
   EVENT_LIFECYCLE, EVENT_STRENGTH_CONFIG,
   MIN_EVENT_ARTICLES, MIN_EVENT_SOURCES, REQUIRE_MULTI_SOURCE_FOR_EVENT
 } from '../config/semanticConfig.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { eventDateFromArticle } from './articleEventTime.js';
 import { buildCanonicalEventProjection } from './eventProjection.js';
 import { evaluateEventCreation } from './eventOccurrencePolicy.js';
@@ -154,7 +154,7 @@ export async function createAndAssignEvent({
       id: { [Op.in]: eventArticleIds },
       userId: article.userId,
       eventId: null,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     },
     order: [['id', 'ASC']],
     transaction,
@@ -242,7 +242,7 @@ export async function createAndAssignEvent({
         id: { [Op.in]: eventArticleIds },
         userId: lockedSeedArticle.userId,
         eventId: null,
-        ...canonicalArticleWhere()
+        ...unfilteredCanonicalArticleWhere()
       },
       transaction
     }

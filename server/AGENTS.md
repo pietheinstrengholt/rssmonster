@@ -75,7 +75,10 @@ Conceptual order:
 
 Do not reorder these stages without tracing dependencies.
 
-`contentOriginal`, `contentStripped`, `contentText`, and `description` are distinct contracts.
+`contentOriginal` preserves publisher source, `contentHtml` stores sanitized reading
+HTML, and `contentText` stores canonical visible text. `description` preserves the
+publisher description; `descriptionHtml` and `descriptionText` store its sanitized
+HTML and visible text. These Article fields are distinct contracts.
 
 Prefer fixing canonical article data once instead of adding caller-specific transformations.
 

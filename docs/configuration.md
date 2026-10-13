@@ -587,9 +587,9 @@ reverse proxy so client addresses are interpreted correctly.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `INFERENCE_BASE_URL` | unset | Deployment-managed inference endpoint. Takes precedence over Settings; without either, inference is not configured. |
+| `INFERENCE_BASE_URL` | `http://127.0.0.1:3001` | Explicit environment URL takes precedence over Settings. Without either, the local default is used. |
 | `INFERENCE_API_KEY` | unset | Optional opaque shared secret; set the exact same value on server/workers and inference. No inference key disables authentication. |
-| `INFERENCE_TIMEOUT_MS` | `30000` | Timeout for embeddings, classification, recommendations, and feed rediscovery. |
+| `INFERENCE_TIMEOUT_MS` | `120000` | Timeout for embeddings, classification, recommendations, and feed rediscovery. |
 | `INFERENCE_AGENT_TIMEOUT_MS` | `300000` | Timeout for streamed assistant model requests. |
 | `INFERENCE_CIRCUIT_FAILURE_THRESHOLD` | `5` | Consecutive qualifying failures before a capability-specific server inference circuit opens. Must be a positive integer. |
 | `INFERENCE_CIRCUIT_COOLDOWN_MS` | `30000` | Minimum open-circuit cooldown before one half-open probe is allowed. Must be a positive integer. |
@@ -644,8 +644,8 @@ evaluate results across several users and feed mixes.
 
 | Variable | Example | Description |
 | --- | --- | --- |
-| `VITE_APP_HOSTNAME` | `http://localhost:3000` | Base URL used by the browser for API requests. Use the public server origin. |
-| `VITE_BASE_URL` | `/` | Reserved in the example configuration; the current client does not read this custom variable. |
+| `VITE_APP_HOSTNAME` | `http://localhost:3000` | Base URL used by the browser for API requests. Defaults to `http://localhost:3000` when unset; set an empty value for same-origin requests or use the public server origin. |
+| `VITE_BASE_URL` | `/` | Client asset base path. Defaults to `/` when unset. |
 
 Vite embeds these values during `npm run build`. Restarting an already-built
 client without rebuilding does not apply changes.

@@ -5,7 +5,7 @@ const { Feed, Category, Article, User, Hotlink } = db;
 import { Op } from 'sequelize';
 import bcrypt from 'bcryptjs';
 import { Builder } from 'xml2js';
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import {
   createFeverApiKey,
   createFeverCredentialHash
@@ -155,7 +155,7 @@ export const postFever = async (req, res, _next) => {
             where: {
               status: 'unread',
               userId: loggedInUser.id,
-              ...canonicalArticleWhere()
+              ...unfilteredCanonicalArticleWhere()
             },
             order: [['id', 'ASC']]
           });
@@ -176,7 +176,7 @@ export const postFever = async (req, res, _next) => {
             where: {
               savedInd: 1,
               userId: loggedInUser.id,
-              ...canonicalArticleWhere()
+              ...unfilteredCanonicalArticleWhere()
             },
             order: [['id', 'ASC']]
           });
@@ -195,7 +195,7 @@ export const postFever = async (req, res, _next) => {
           const total_articles = await Article.count({
             where: {
               userId: loggedInUser.id,
-              ...canonicalArticleWhere()
+              ...unfilteredCanonicalArticleWhere()
             }
           });
           arr['total_items'] = total_articles;
@@ -215,7 +215,7 @@ export const postFever = async (req, res, _next) => {
                   where: {
                     id: { [Op.in]: arrayIds },
                     userId: loggedInUser.id,
-                    ...canonicalArticleWhere()
+                    ...unfilteredCanonicalArticleWhere()
                   },
                   order: [['id', 'ASC']],
                   limit: 50
@@ -229,7 +229,7 @@ export const postFever = async (req, res, _next) => {
                   [Op.gt]: req.query.since_id
                 },
                 userId: loggedInUser.id,
-                ...canonicalArticleWhere()
+                ...unfilteredCanonicalArticleWhere()
               },
               order: [['id', 'ASC']],
               limit: 50
@@ -239,7 +239,7 @@ export const postFever = async (req, res, _next) => {
             const maxId = Number(req.query.max_id);
             const where = {
               userId: loggedInUser.id,
-              ...canonicalArticleWhere()
+              ...unfilteredCanonicalArticleWhere()
             };
 
             if (Number.isSafeInteger(maxId) && maxId > 0) {
@@ -258,7 +258,7 @@ export const postFever = async (req, res, _next) => {
             articles = await Article.findAll({
               where: {
                 userId: loggedInUser.id,
-                ...canonicalArticleWhere()
+                ...unfilteredCanonicalArticleWhere()
               },
               order: [['id', 'ASC']],
               limit: 50
@@ -336,7 +336,7 @@ export const postFever = async (req, res, _next) => {
                 status: 'read',
                 readAt: { [Op.gte]: oneDayAgo },
                 userId: loggedInUser.id,
-                ...canonicalArticleWhere()
+                ...unfilteredCanonicalArticleWhere()
               }
             }
           );
@@ -361,7 +361,7 @@ export const postFever = async (req, res, _next) => {
                 where: {
                   id: { [Op.in]: itemIds },
                   userId: loggedInUser.id,
-                  ...canonicalArticleWhere()
+                  ...unfilteredCanonicalArticleWhere()
                 }
               });
               mutationHandled = true;
@@ -378,7 +378,7 @@ export const postFever = async (req, res, _next) => {
                   [Op.lte]: timestamp
                 },
                 userId: loggedInUser.id,
-                ...canonicalArticleWhere()
+                ...unfilteredCanonicalArticleWhere()
               }
             });
             mutationHandled = true;
@@ -392,7 +392,7 @@ export const postFever = async (req, res, _next) => {
                 [Op.lte]: timestamp
               },
               userId: loggedInUser.id,
-              ...canonicalArticleWhere()
+              ...unfilteredCanonicalArticleWhere()
             };
 
             // id === '0' means all items (Kindling super group)
@@ -742,7 +742,7 @@ async function appendFeverSyncIds(response, userId, state) {
     where: {
       ...stateWhere,
       userId,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     },
     order: [['id', 'ASC']]
   });
@@ -802,7 +802,7 @@ async function getFeverLinks(userId, query, now = new Date()) {
     where: {
       id: { [Op.in]: sourceArticleIds },
       userId,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     },
     raw: true
   });
@@ -842,7 +842,7 @@ async function getFeverLinks(userId, query, now = new Date()) {
     attributes: ['id', 'feedId', 'title', 'url', 'normalizedUrl', 'savedInd'],
     where: {
       userId,
-      ...canonicalArticleWhere(),
+      ...unfilteredCanonicalArticleWhere(),
       [Op.or]: [
         { normalizedUrl: { [Op.in]: pageUrls } },
         { url: { [Op.in]: pageUrls } }

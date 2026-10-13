@@ -4,7 +4,7 @@ import {
   buildBriefingArticleWhere,
   resolveDailyBriefingFilters
 } from '../services/dailyBriefing/dailyBriefing.service.js';
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { normalizeTagName } from '../services/crawl/persistence/tags.js';
 
 const { Article, BriefingPreference, Tag } = db;
@@ -74,7 +74,7 @@ const topTagArticleWhere = async ({ userId, status }) => {
 
   const where = {
     userId,
-    ...canonicalArticleWhere()
+    ...unfilteredCanonicalArticleWhere()
   };
 
   if (status === 'saved') {

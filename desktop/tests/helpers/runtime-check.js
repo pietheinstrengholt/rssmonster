@@ -87,8 +87,12 @@ try {
       feedName: 'Desktop fixture', crawlSince: 'all'
     });
     assert.ok(result.feed.id);
-    assert.equal(result.feed.generateEmbeddings, false);
-    assert.equal(result.feed.applyAiAnalysis, false);
+    assert.equal(result.feed.generateEmbeddings, true);
+    assert.equal(result.feed.applyAiAnalysis, true);
+    // Keep this persistence/drain test independent of model-backed processing.
+    const configured = await api(`/feeds/${result.feed.id}`, { generateEmbeddings: false, applyAiAnalysis: false }, 'PUT');
+    assert.equal(configured.feed.generateEmbeddings, false);
+    assert.equal(configured.feed.applyAiAnalysis, false);
     const saved = await api('/setting/inference', { baseUrl: inferenceUrl, apiKeyAction: 'replace', apiKey: 'desktop-test-key' }, 'PUT');
     assert.equal(saved.apiKeyConfigured, true);
     assert.equal(JSON.stringify(saved).includes('desktop-test-key'), false);

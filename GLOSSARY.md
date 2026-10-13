@@ -516,7 +516,8 @@ gate. Query `quality:>=0.75` means overall quality of at least 75/100.
 **FeedTrust** (`feedTrust`), a user-specific source-history score. It is separate
 from the article's overall-quality badge and filters: the ranking signal uses
 70% article-only quality and 30% FeedTrust. The client labels a Feed
-trusted above 0.85. An **official source** matches an enabled organization/domain
+trusted above 0.85. Missing, null or nonfinite FeedTrust uses the neutral prior
+0.75; finite estimates, including zero, remain meaningful. An **official source** matches an enabled organization/domain
 mapping and is presented as **Official source**, with its configured organization
 when available. This is configured recognition, not verified provenance or
 independent reporting.

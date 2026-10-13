@@ -210,7 +210,7 @@ describe('articleSort.service', () => {
       { id: 3, qualityScore: 10, toneScore: 10, advertisementScore: 10, Feed: { feedTrust: 4 } }
     ], { sortQuality: true });
 
-    expect(result.map(article => article.id)).toEqual([3, 2, 1]);
+    expect(result.map(article => article.id)).toEqual([2, 3, 1]);
   });
 
   // Adds feed trust to both chronological directions using freshness as the base score.

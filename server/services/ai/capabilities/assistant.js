@@ -10,6 +10,13 @@ const prepareRequest = (request, options) => {
 };
 
 export const createAssistantCapability = (inference = provider) => ({
+  async *runStream(request, options = {}) {
+    const prepared = prepareRequest(request, options);
+    for await (const event of inference.assistantRunStream(prepared.payload, prepared.options)) {
+      if (!isRecord(event) || typeof event.type !== 'string') throw new AIValidationError('Assistant run', true);
+      yield event;
+    }
+  },
   async chat(request, options = {}) {
     const prepared = prepareRequest(request, options);
     const response = await inference.assistantChat(prepared.payload, prepared.options);

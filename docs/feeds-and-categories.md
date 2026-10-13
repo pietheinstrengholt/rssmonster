@@ -197,7 +197,7 @@ succeeds, and closing the dialog without saving discards the edit.
 ## Edit feed processing
 
 The feed editor includes a display name, description, category, active/disabled
-status, and these processing controls:
+Feed state, and these processing controls:
 
 | Control | Meaning |
 | --- | --- |
@@ -222,11 +222,24 @@ before proceeding and use [backups]({% link backup-restore.md %}) for recovery.
 Refreshing an article collection, including mobile pull-to-refresh, reloads stored
 results and is a different operation.
 
-In **Settings → Feeds**, inspect a feed's health, recent crawl history, article
+In **Settings → Feeds**, inspect Feed overview health, recent Feed crawl results, article
 counts, warnings, and request attempts. Retry a failing feed after checking its
 reported error. For feeds in error, the editor can offer AI-assisted RSS
 rediscovery when AI is enabled; review the suggested URL and save the change.
 Rediscovery can return no result.
+
+These labels describe separate contracts:
+
+| Term | Meaning | API values |
+| --- | --- | --- |
+| **Feed state** | Stored subscription state (`Feed.status`); the editor offers Active and Disabled. | `active`, `error`, `disabled` |
+| **Feed overview health** | Derived current condition based on Feed state and recent reliability (`health`). | `NEW`, `HEALTHY`, `RECOVERED`, `DEGRADED`, `FAILING`, `DISABLED` |
+| **Feed crawl result** | Final result of one Feed attempt within a crawl run (`FeedCrawlResult.status`). | `SUCCESS`, `RECOVERED`, `FAILED` |
+
+A recovered Feed crawl result means that attempt succeeded through recovery.
+Recovered Feed overview health means the source is currently operational and its
+latest crawl needed recovery, subject to the overview's reliability rules. These
+labels do not describe FeedTrust or personal source affinity.
 
 For stale subscriptions, check that the feed is active, the crawl worker is
 running, and cache or retry deadlines have elapsed. See [Crawling]({% link crawling.md %})

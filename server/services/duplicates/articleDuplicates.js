@@ -14,8 +14,8 @@ export const DUPLICATE_SIMILARITY_THRESHOLD = Number.parseFloat(
   process.env.DUPLICATE_SIMILARITY_THRESHOLD || '0.99'
 );
 
-// This function returns the default canonical-article predicate for user-facing queries.
-export function canonicalArticleWhere() {
+// Selects unfiltered Articles without a duplicate pointer; callers add ownership and other eligibility rules.
+export function unfilteredCanonicalArticleWhere() {
   return {
     duplicateOfArticleId: { [Op.is]: null },
     filteredInd: false
@@ -53,7 +53,7 @@ export async function findCanonicalDuplicateForArticle(article, options = {}) {
       userId: article.userId,
       embedding_model: article.embedding_model,
       id: { [Op.lt]: article.id },
-      ...canonicalArticleWhere(),
+      ...unfilteredCanonicalArticleWhere(),
       filteredInd: false,
       articleVector: { [Op.ne]: null },
       publishedAt: duplicateCandidateWindow(article)
@@ -166,7 +166,7 @@ export async function markDuplicateArticlesForUser(userId, options = {}) {
   // Builds the where assembled while performing mark duplicate articles for user.
   const where = {
     userId,
-    ...canonicalArticleWhere(),
+    ...unfilteredCanonicalArticleWhere(),
     filteredInd: false,
     articleVector: { [Op.ne]: null }
   };

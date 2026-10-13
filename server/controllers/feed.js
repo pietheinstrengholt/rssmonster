@@ -6,7 +6,7 @@ import { getSafeInferenceErrorDetails, getSafeInferenceErrorMessage } from '../s
 import crawlController from './crawl.js';
 import { crawlJobManager } from '../services/crawl/index.js';
 import { normalizeTagList } from '../services/crawl/persistence/tags.js';
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { calculateFeedTrustForAllFeeds } from '../scripts/calculateFeedTrust.js';
 import {
   addFeedSubscription,
@@ -146,7 +146,7 @@ const getFeeds = async (req, res, _next) => {
         [Article.sequelize.fn('COUNT', Article.sequelize.col('id')), 'articleCount'],
         [Article.sequelize.fn('COUNT', Article.sequelize.col('eventId')), 'eventArticleCount']
       ],
-      where: { userId: userId, ...canonicalArticleWhere() },
+      where: { userId: userId, ...unfilteredCanonicalArticleWhere() },
       group: ['feedId'],
       raw: true
     });
@@ -160,7 +160,7 @@ const getFeeds = async (req, res, _next) => {
       ],
       where: { 
         userId: userId,
-        ...canonicalArticleWhere(),
+        ...unfilteredCanonicalArticleWhere(),
         publishedAt: { [db.Sequelize.Op.gte]: thirtyDaysAgo }
       },
       group: ['feedId'],

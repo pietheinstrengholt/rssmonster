@@ -3,7 +3,7 @@ import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { resolveDateFilterToRange } from '../articleSearch/articleDateParser.service.js';
 import { applyBriefingEligibility } from '../articleSearch/briefingEligibility.service.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { computeRecommended } from '../recommendations/recommendedScore.js';
 import { applyArticleScoreEligibility } from '../articles/articleScoreEligibility.js';
 
@@ -214,7 +214,7 @@ export const buildBriefingArticleWhere = async ({
   // Builds the where assembled while building briefing article where.
   const where = applyArticleScoreEligibility({
     userId,
-    ...canonicalArticleWhere(),
+    ...unfilteredCanonicalArticleWhere(),
     publishedAt: { [Op.between]: [dateFrom, dateTo] }
   }, {
     minAdvertisementScore: settings?.minAdvertisementScore,
@@ -439,7 +439,7 @@ export async function getDailyBriefing({
         where: {
           id: { [Op.in]: representativeArticleIds },
           userId,
-          ...canonicalArticleWhere(),
+          ...unfilteredCanonicalArticleWhere(),
           ...(includeHotArticles ? {} : { [Op.or]: [{ hotInd: 0 }, { hotInd: null }] })
         },
         attributes: [

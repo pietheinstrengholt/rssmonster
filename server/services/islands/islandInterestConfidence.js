@@ -3,7 +3,7 @@ import { behavioralIntent, behavioralIntentCompatibility, behavioralIntentTypeCo
 import { Op } from 'sequelize';
 import { BEHAVIOR_TIMESTAMP_FIELDS, activeSignal, signalTimestamp, latestBehaviorTimestamp, behaviorTimestampExpression } from '../articles/articleBehaviorTime.js';
 import db from '../../models/index.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { embeddingSimilarity, compatibleEmbeddingModels } from '../vectors/embeddingModel.js';
 import { DEFAULT_ARTICLE_AFFINITY_THRESHOLD, clamp } from './islandVectorUtils.js';
 import { islandSupportArticleIds, isCurrentIslandSupport } from './islandSupport.js';
@@ -107,7 +107,7 @@ export function prepareIslandEvidence(islands, evidence, explicitEvidence = evid
 
 // Apply interaction windows and stable interaction ordering before the existing evidence bounds.
 export async function loadIslandEvidence(userId, { transaction, now = Date.now(), positiveOnly = false } = {}) {
-  const where = { userId, ...canonicalArticleWhere(), filteredInd: false, articleVector: { [Op.ne]: null } };
+  const where = { userId, ...unfilteredCanonicalArticleWhere(), filteredInd: false, articleVector: { [Op.ne]: null } };
   const attributes = ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'userId', 'feedId', 'publishedAt', 'articleVector', 'embedding_model', 'positiveInd', 'negativeInd', 'savedInd', 'openedOriginalCount', 'attentionBucket', ...BEHAVIOR_TIMESTAMP_FIELDS];
   const query = (extra, limit, fields = BEHAVIOR_TIMESTAMP_FIELDS) => db.Article.findAll({ where: { ...where, ...extra }, attributes,
     order: [[behaviorTimestampExpression(db.sequelize, fields, now), 'DESC'], ['id', 'ASC']], limit, raw: true, transaction });

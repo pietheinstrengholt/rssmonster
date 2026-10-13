@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { deriveFeedOverviewHealth } from '../services/feeds/feedOverviewHealth.js';
 
 const { Article, Feed, FeedCrawlResult, Sequelize } = db;
@@ -147,7 +147,7 @@ export const getFeedObservability = async (req, res, _next) => {
             [recentArticleCountLiteral(), 'articleCount30Days'],
             [Sequelize.fn('MAX', Sequelize.col('publishedAt')), 'lastArticleAt']
           ],
-          where: { userId, feedId: feed.id, ...canonicalArticleWhere() },
+          where: { userId, feedId: feed.id, ...unfilteredCanonicalArticleWhere() },
           raw: true
         })
       ]);

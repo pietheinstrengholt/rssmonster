@@ -11,7 +11,7 @@ import {
   EVENT_MAX_GAP_HOURS,
   RECENCY_WINDOW_DAYS
 } from '../config/semanticConfig.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { logEventProcessingSummary } from '../events/eventPipelineDebug.js';
 import { reconcileTouchedEvents, prepareArticleEventRemoval } from '../events/eventReconciliation.js';
 import { HOUR_MS } from '../events/articleEventTime.js';
@@ -128,7 +128,7 @@ async function summarizeArticleAssignments(userId, articleIds) {
     where: {
       id: { [Op.in]: articleIds },
       userId,
-      ...canonicalArticleWhere(),
+      ...unfilteredCanonicalArticleWhere(),
       eventId: { [Op.ne]: null }
     },
     attributes: ['eventId'],
@@ -374,7 +374,7 @@ async function runIncrementalEventsForUserInternal(userId, options = {}) {
   // Builds the article where assembled while performing run incremental events for user.
   const articleWhere = {
     userId,
-    ...canonicalArticleWhere(),
+    ...unfilteredCanonicalArticleWhere(),
     filteredInd: false,
     eventId: null
   };
@@ -476,7 +476,7 @@ export async function repairRecentEventsForUser(userId, _options = {}) {
   const windowArticles = await Article.findAll({
     where: {
       userId,
-      ...canonicalArticleWhere(),
+      ...unfilteredCanonicalArticleWhere(),
       publishedAt: { [Op.gte]: cutoffDate }
     },
     include: [eventClusteringFeedInclude],
@@ -539,7 +539,7 @@ export async function repairRecentEventsForUser(userId, _options = {}) {
   // survivors. A failed/retried assignment pass must not leave stale projections.
   const deletedCount = await db.sequelize.transaction(async transaction => {
     const removal = await prepareArticleEventRemoval(userId, {
-      id: { [Op.in]: windowArticleIds }, ...canonicalArticleWhere()
+      id: { [Op.in]: windowArticleIds }, ...unfilteredCanonicalArticleWhere()
     }, transaction);
     if (removal.articleIds.length) {
       await Article.update({ eventId: null }, {
@@ -609,7 +609,7 @@ export async function backfillHistoricalEventsForUser(userId, options = {}) {
     const articles = await Article.findAll({
       where: {
         userId,
-        ...canonicalArticleWhere(),
+        ...unfilteredCanonicalArticleWhere(),
         id: { [Op.gt]: lastId },
         articleVector: { [Op.ne]: null }
       },

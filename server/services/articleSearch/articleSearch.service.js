@@ -18,7 +18,7 @@ import {
 } from './articleSearchExecutor.service.js';
 import { fetchFeedIds, fetchTaggedArticleIds } from './articleSearchDataAccess.service.js';
 import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { applyArticleScoreEligibility } from '../articles/articleScoreEligibility.js';
 import {
   ArticleSearchCursorError,
@@ -362,7 +362,7 @@ export const searchArticles = async ({
     const feedIds = resolvedFeedIds
       ?? await fetchFeedIds({ userId, categoryId, feedId });
     funnel?.captureQuery('owned_articles', { userId });
-    funnel?.captureQuery('canonical_source_scope', { userId, feedId: feedIds, ...canonicalArticleWhere() });
+    funnel?.captureQuery('canonical_source_scope', { userId, feedId: feedIds, ...unfilteredCanonicalArticleWhere() });
 
     /**
      * Build base WHERE clause for article query.
@@ -372,7 +372,7 @@ export const searchArticles = async ({
     const baseWhere = applyArticleScoreEligibility({
       userId: userId,
       feedId: feedIds,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     }, {
       minAdvertisementScore: finalMinAdvertisementScore,
       minToneScore: finalMinToneScore,

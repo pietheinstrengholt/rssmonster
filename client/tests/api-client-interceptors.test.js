@@ -53,9 +53,11 @@ afterEach(() => {
 });
 
 describe('shared API base URL', () => {
-  // This test verifies missing and empty hosts resolve against the current origin.
-  it('uses the same-origin API path by default', () => {
-    expect(resolveApiBaseUrl()).toBe('/api');
+  it('defaults to the local server when the API host is missing', () => {
+    expect(resolveApiBaseUrl()).toBe('http://localhost:3000/api');
+  });
+
+  it('preserves an explicitly empty same-origin API host', () => {
     expect(resolveApiBaseUrl('')).toBe('/api');
   });
 

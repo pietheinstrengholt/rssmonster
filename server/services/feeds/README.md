@@ -113,6 +113,21 @@ transport-specific errors through the crawler. Outcomes are `changed`,
 | `crawlResult.js` | Stable crawl result construction and reporting. |
 | `feedLogging.js` | Feed diagnostics with sensitive URL values redacted. |
 
+## Feed state, Feed overview health, and Feed crawl result
+
+Use these distinct terms when describing subscription condition and diagnostics:
+
+- **Feed state** is persisted `Feed.status`: `active`, `error`, or `disabled`.
+- **Feed overview health** is derived by `feedOverviewHealth.js`: `NEW`, `HEALTHY`,
+  `RECOVERED`, `DEGRADED`, `FAILING`, or `DISABLED`. It combines current state and
+  recent reliability, and remains separate from FeedTrust.
+- **Feed crawl result** is one final `FeedCrawlResult.status` within a crawl run:
+  `SUCCESS`, `RECOVERED`, or `FAILED`. Recovery describes that attempt, while overview
+  health summarizes the source's current condition.
+
+API field names and enum values remain unchanged. Fetch outcomes describe the
+acquisition layer and are separate from these three contracts.
+
 ## HTTP caching and unchanged feeds
 
 Accepted `ETag` and `Last-Modified` validators are stored on the feed and sent as

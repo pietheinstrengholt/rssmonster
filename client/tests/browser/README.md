@@ -77,7 +77,7 @@ from `client/` with Vite running on its configured port. The script uses
 `READING_TEST_BASE_URL`, `PLAYWRIGHT_MODULE`, and `READING_BROWSER_EXECUTABLE` when
 an external browser runtime is needed.
 
-The fixture restores legacy `full`/`minimal` preferences and verifies canonical
+The fixture restores canonical `expanded`/`headlines` preferences and verifies
 labels, API saves, content rendering, and Headlines expansion at 390, 768, 900, and
 1440 pixels in light and dark themes. API responses are intercepted; this is
 component/browser contract validation rather than an authenticated deployment test.

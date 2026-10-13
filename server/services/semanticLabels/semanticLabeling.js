@@ -3,7 +3,7 @@ import { isInferenceConfigured } from '../inference/configuration.js';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { shouldSkipSemanticLabeling } from '../../config/intelligentFeatures.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { getSafeInferenceErrorDetails } from '../ai/errors.js';
 import { generateSemanticLabels } from '../ai/capabilities/generation.js';
 
@@ -41,7 +41,7 @@ export const loadEventSemanticLabelTitles = async (eventId, userId, models = def
     where: {
       userId,
       eventId,
-      ...canonicalArticleWhere()
+      ...unfilteredCanonicalArticleWhere()
     },
     attributes: ['title'],
     order: [['publishedAt', 'DESC'], ['id', 'DESC']],

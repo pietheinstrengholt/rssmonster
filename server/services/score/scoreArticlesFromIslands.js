@@ -1,6 +1,6 @@
 import { col, fn, literal, Op } from 'sequelize';
 import db from '../../models/index.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { embeddingSimilarity } from '../vectors/embeddingModel.js';
 import { DEFAULT_ARTICLE_AFFINITY_THRESHOLD, ISLAND_DEBUG } from '../islands/islandVectorUtils.js';
 import { evaluateArticleInterest, loadIslandEvidence, prepareIslandEvidence } from '../islands/islandInterestConfidence.js';
@@ -59,7 +59,7 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
   while (true) {
     await options.assertLease?.();
     const batch = await Article.findAll({ where: {
-      userId, status: 'unread', ...canonicalArticleWhere(), filteredInd: false, id: { [Op.gt]: afterId },
+      userId, status: 'unread', ...unfilteredCanonicalArticleWhere(), filteredInd: false, id: { [Op.gt]: afterId },
       ...(createdAtFrom ? { createdAt: { [Op.gte]: createdAtFrom } } : {})
     }, attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'embedding_model', 'interestScore', 'positiveInd', 'negativeInd', 'savedInd', 'openedOriginalCount', 'attentionBucket'],
     order: [['id', 'ASC']], limit: ARTICLE_BATCH_SIZE, transaction });
@@ -90,7 +90,7 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
         && Math.fround(stored) === Math.fround(result.score));
       if (!unchanged) {
         const [changed] = await Article.update({ interestScore: result.score, interestScoredAt: evaluatedAt }, {
-          where: { id: article.id, userId, status: 'unread', ...canonicalArticleWhere(), filteredInd: false }, transaction
+          where: { id: article.id, userId, status: 'unread', ...unfilteredCanonicalArticleWhere(), filteredInd: false }, transaction
         });
         summary.interestScoresChanged += Number(changed);
         summary.recordedEvaluationCount += Number(changed);
@@ -109,7 +109,7 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
     // One metadata write per unchanged batch; never stamp skipped or newly ineligible rows.
     if (unchangedIds.length) {
       const [recorded] = await Article.update({ interestScoredAt: evaluatedAt }, {
-        where: { userId, id: unchangedIds, status: 'unread', ...canonicalArticleWhere() }, transaction, silent: true
+        where: { userId, id: unchangedIds, status: 'unread', ...unfilteredCanonicalArticleWhere() }, transaction, silent: true
       });
       summary.recordedEvaluationCount += Number(recorded);
     }

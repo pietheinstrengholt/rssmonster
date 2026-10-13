@@ -3,7 +3,7 @@ import { Op } from 'sequelize';
 import { BEHAVIOR_TIMESTAMP_FIELDS, signalTimestamp } from '../articles/articleBehaviorTime.js';
 import db from '../../models/index.js';
 import { aggregateEmbeddingModel, embeddingSimilarity, hasEmbeddingModel } from '../vectors/embeddingModel.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { summarizeIslandSelection } from './islandCapacity.js';
 import {
   DEFAULT_ARTICLE_AFFINITY_THRESHOLD,
@@ -273,7 +273,7 @@ export async function loadIslandBehavioralArticles(userId, { transaction } = {})
   return Article.findAll({
     where: {
       userId,
-      ...canonicalArticleWhere(),
+      ...unfilteredCanonicalArticleWhere(),
       filteredInd: false,
       articleVector: { [Op.ne]: null },
       [Op.or]: [

@@ -1,2 +1,3 @@
 .cache/models/
 coverage/
+.env

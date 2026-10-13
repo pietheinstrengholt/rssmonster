@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import db from '../../models/index.js';
-import { computeArticleQuality } from '../../services/articles/articleQuality.js';
+import { computeArticleQuality, computeFeedTrust, computeQuality } from '../../services/articles/articleQuality.js';
 
 const { Article, Feed } = db;
 
@@ -57,5 +57,30 @@ describe('Article quality virtual score', () => {
 
     expect(Article.build(scores).quality).toBe(computeArticleQuality(scores));
     expect(computeArticleQuality(scores)).toBe(0.7);
+  });
+});
+
+describe('FeedTrust in quality ranking', () => {
+  it.each([undefined, null, NaN, Infinity, -Infinity])('uses the neutral prior for unavailable trust (%s)', feedTrust => {
+    const article = { Feed: { feedTrust } };
+    expect(computeFeedTrust(article)).toBe(0.75);
+    expect(computeQuality(article)).toBe(computeQuality({ Feed: { feedTrust: 0.75 } }));
+  });
+
+  it('uses the neutral prior when the Feed association is absent', () => {
+    expect(computeFeedTrust({})).toBe(0.75);
+    expect(computeFeedTrust(buildNeutralArticle())).toBe(0.75);
+  });
+
+  it.each([0, 0.4, 0.75, 1])('preserves estimated trust (%s)', feedTrust => {
+    expect(computeFeedTrust({ Feed: { feedTrust } })).toBe(feedTrust);
+    expect(computeFeedTrust(buildNeutralArticle(Feed.build({ feedTrust })))).toBe(feedTrust);
+  });
+
+  it('ranks unavailable trust above an estimated zero without changing Article quality', () => {
+    const unavailable = buildNeutralArticle();
+    const lowTrust = buildNeutralArticle(Feed.build({ feedTrust: 0 }));
+    expect(computeQuality(unavailable)).toBeGreaterThan(computeQuality(lowTrust));
+    expect(unavailable.quality).toBe(lowTrust.quality);
   });
 });

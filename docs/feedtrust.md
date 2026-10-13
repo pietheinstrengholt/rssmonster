@@ -11,6 +11,11 @@ FeedTrust is RSSMonster's user-specific estimate of **how consistently valuable
 a subscribed source has been as a source of articles**. Every feed has a score
 from `0.0` to `1.0`.
 
+FeedTrust contributes to **Quality & source trust** ranking, which combines
+70% article quality and 30% FeedTrust. It does not change the Article's Overall
+quality badge or article-quality thresholds. Recommended additionally considers
+personal interest and other signals; FeedTrust is not itself subject relevance.
+
 The score summarizes recent source value. It is not:
 
 - factual-accuracy verification;
@@ -20,7 +25,7 @@ The score summarizes recent source value. It is not:
 - a penalty for covering events that other publishers also cover; or
 - a reflection of whether the feed is muted.
 
-[Article quality]({% link scoring.md %}#article-quality) asks how good one particular
+[Overall article quality]({% link scoring.md %}#overall-article-quality) asks how good one particular
 article is. FeedTrust asks whether the source has produced consistently
 valuable articles across its recent history. Interest Islands and Recommended
 ranking remain responsible for personal relevance.
@@ -114,7 +119,7 @@ diluting several explicit negative signals.
 ## Evidence Confidence
 
 Each component has its own confidence. An uncertain observation is blended
-toward the neutral value `0.75` before the four components are combined:
+toward the neutral prior `0.75` before the four components are combined:
 
 ```text
 effective component =
@@ -135,6 +140,14 @@ This is intentionally evidence-aware rather than based on publication count
 alone. A high-quality weekly source can establish strong FeedTrust, while a
 high-volume source does not gain trust merely by publishing often. With no
 usable evidence, every component resolves to `0.75`, so FeedTrust does too.
+
+The **neutral prior** is the baseline used before sufficient source evidence is
+available; it is not a measured endorsement of the source. An **estimated
+FeedTrust value** combines observed components with this prior according to their
+confidence. The Feed model starts at `0.75`. Ranking also uses `0.75` when the
+Feed association or trust value is missing, null, or nonfinite. Valid finite
+estimates, including zero, are retained and bounded to 0–1 for ranking. An estimate
+of `0.75` can therefore coincide with the prior without implying absent evidence.
 
 ## Stored Supporting Metrics
 

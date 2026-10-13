@@ -1,6 +1,6 @@
 import { Op, Transaction } from 'sequelize';
 import db from '../../models/index.js';
-import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { ISLAND_INACTIVITY_DAYS, islandBehaviorTime, islandReactivationBoundary } from '../islands/islandDeadline.js';
 import { createRequestPersonalization } from './requestPersonalization.js';
 
@@ -68,7 +68,7 @@ export async function refreshExpiredArticleInterests(userId, articles, now = Dat
     const batch = stale.slice(start, start + BATCH_SIZE);
     const valuesById = await db.sequelize.transaction(transactionOptions, async transaction => {
       const rows = await db.Article.findAll({
-        where: { userId, id: batch.map(article => article.id), ...canonicalArticleWhere(), filteredInd: false },
+        where: { userId, id: batch.map(article => article.id), ...unfilteredCanonicalArticleWhere(), filteredInd: false },
         attributes: ['id', 'title', 'description', 'articleVector', 'embedding_model',
           'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'interestScore', 'interestScoredAt'],
         raw: true, transaction, lock: transaction.LOCK.UPDATE
@@ -95,7 +95,7 @@ export async function refreshExpiredArticleInterests(userId, articles, now = Dat
       }
       for (const [interestScore, ids] of groups) {
         await db.Article.update({ interestScore, interestScoredAt: evaluatedAt }, {
-          where: { userId, id: ids, ...canonicalArticleWhere(), filteredInd: false }, transaction, silent: true
+          where: { userId, id: ids, ...unfilteredCanonicalArticleWhere(), filteredInd: false }, transaction, silent: true
         });
       }
       return values;

@@ -6,7 +6,7 @@ import db from '../models/index.js';
 const { Feed, Category, Article, Tag } = db;
 import { Op, fn, col, literal } from 'sequelize';
 import { startUserCrawl } from "./crawl.js";
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { unfilteredCanonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { buildArticleKeywordWhereClause } from '../services/articleSearch/articleTextSearch.service.js';
 
 const ARTICLE_METADATA_ATTRIBUTES = [
@@ -487,7 +487,7 @@ export const registerRssMonsterTools = (server, userId) => {
           const whereClause = {
             userId,
             ...articleStatusWhere(status),
-            ...canonicalArticleWhere(),
+            ...unfilteredCanonicalArticleWhere(),
             ...(feedIds?.length ? { feedId: { [Op.in]: [...new Set(feedIds)] } } : {}),
             ...(saved !== undefined ? { savedInd: saved ? 1 : 0 } : {}),
             ...(hot !== undefined ? { hotInd: hot ? 1 : 0 } : {}),
@@ -594,7 +594,7 @@ export const registerRssMonsterTools = (server, userId) => {
               userId: userId,
               ...articleStatusWhere(status),
               ...(feedId ? { feedId: feedId } : {}),
-              ...canonicalArticleWhere(),
+              ...unfilteredCanonicalArticleWhere(),
               ...textSearchWhere
             },
             order: [["createdAt", "DESC"], ["id", "DESC"]],
@@ -660,7 +660,7 @@ export const registerRssMonsterTools = (server, userId) => {
           const whereClause = {
             userId,
             ...articleStatusWhere(status),
-            ...canonicalArticleWhere(),
+            ...unfilteredCanonicalArticleWhere(),
             ...(feedId ? { feedId } : {})
           };
           const dateColumn = applyArticleDateRange(whereClause, { from, to, dateBasis });
@@ -738,7 +738,7 @@ export const registerRssMonsterTools = (server, userId) => {
             feedId,
             userId: userId,
             ...articleStatusWhere(status),
-            ...canonicalArticleWhere()
+            ...unfilteredCanonicalArticleWhere()
           };
 
           const dateColumn = applyArticleDateRange(whereClause, { from, to, dateBasis });
@@ -812,7 +812,7 @@ export const registerRssMonsterTools = (server, userId) => {
             userId: userId,
             ...articleStatusWhere(status),
             ...(feedId ? { feedId: feedId } : {}),
-            ...canonicalArticleWhere()
+            ...unfilteredCanonicalArticleWhere()
           };
 
           const articles = await Article.findAll({
@@ -877,7 +877,7 @@ export const registerRssMonsterTools = (server, userId) => {
             where: {
               userId: userId,
               ...articleStatusWhere(status),
-              ...canonicalArticleWhere(),
+              ...unfilteredCanonicalArticleWhere(),
               hotInd: 1
             },
             order: [["publishedAt", sort], ["id", sort]],
@@ -1056,7 +1056,7 @@ export const registerRssMonsterTools = (server, userId) => {
                 where: { userId, name: tag }
               }
             ],
-            where: { userId: userId, ...canonicalArticleWhere() },
+            where: { userId: userId, ...unfilteredCanonicalArticleWhere() },
             order: [["createdAt", "DESC"], ["id", "DESC"]],
             limit: page.pageLimit + 1,
             offset: page.offset,
@@ -1138,7 +1138,7 @@ export const registerRssMonsterTools = (server, userId) => {
             userId: userId,
             openedOriginalCount: { [Op.gt]: 0 },
             ...(feedId ? { feedId: feedId } : {}),
-            ...canonicalArticleWhere()
+            ...unfilteredCanonicalArticleWhere()
           };
 
           const articles = await Article.findAll({
@@ -1184,7 +1184,7 @@ export const registerRssMonsterTools = (server, userId) => {
         try {
           // 1) Fetch openedOriginal article IDs for this user
           const openedOriginal = await Article.findAll({
-            where: { userId: userId, openedOriginalCount: { [Op.gt]: 0 }, ...canonicalArticleWhere() },
+            where: { userId: userId, openedOriginalCount: { [Op.gt]: 0 }, ...unfilteredCanonicalArticleWhere() },
             attributes: ['id'],
             raw: true
           });
@@ -1325,7 +1325,7 @@ export const registerRssMonsterTools = (server, userId) => {
             where: {
               id: { [Op.in]: [...new Set(articleIds)] },
               userId,
-              ...canonicalArticleWhere()
+              ...unfilteredCanonicalArticleWhere()
             },
             order: [["publishedAt", "DESC"]],
             raw: true

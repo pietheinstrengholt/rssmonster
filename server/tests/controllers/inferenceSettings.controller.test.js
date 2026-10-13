@@ -37,7 +37,7 @@ describe('administrator inference settings API', () => {
     const read = await request(app).get('/api/setting/inference').set('Authorization', auth);
     expect(read.body.baseUrl).toBe('http://test.example'); expect(JSON.stringify([saved.body, read.body])).not.toContain('test-private-secret');
     expect((await request(app).post('/api/setting/inference/test').set('Authorization', auth)).status).toBe(200);
-    expect((await request(app).delete('/api/setting/inference').set('Authorization', auth)).body.configurationSource).toBe('none');
+    expect((await request(app).delete('/api/setting/inference').set('Authorization', auth)).body.configurationSource).toBe('default');
   });
   it('passes an unauthenticated draft to the probe without saving', async () => {
     const draft = { baseUrl: 'http://127.0.0.1:3001/', apiKeyAction: 'replace', apiKey: '' };

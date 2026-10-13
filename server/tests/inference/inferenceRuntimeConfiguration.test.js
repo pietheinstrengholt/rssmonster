@@ -20,6 +20,16 @@ beforeEach(async () => {
 afterEach(async () => { await db.InferenceSetting.destroy({ where: {} }); vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
 describe('inference runtime overrides', () => {
+  it('reports the inherited 120-second request timeout when no timeout is configured', async () => {
+    vi.stubEnv('INFERENCE_TIMEOUT_MS', undefined);
+    expect(await getInferenceRuntimeSettings()).toMatchObject({
+      overridden: false,
+      fields: expect.arrayContaining([
+        expect.objectContaining({ key: 'INFERENCE_TIMEOUT_MS', defaultValue: 120000, value: 120000, environmentValue: 120000 })
+      ])
+    });
+  });
+
   it('stores all nine values only in inference_settings and restores current environment values', async () => {
     const serverRows = await db.ServerSetting.count();
     vi.stubEnv('INFERENCE_TIMEOUT_MS', '17000');
@@ -38,7 +48,7 @@ describe('inference runtime overrides', () => {
   it('supports a settings-only row and preserves settings and credentials across independent updates', async () => {
     vi.stubEnv('INFERENCE_BASE_URL', ''); vi.stubEnv('INFERENCE_URL', '');
     await save({ INFERENCE_TIMEOUT_MS: 12000 });
-    expect((await getEffectiveInferenceConfiguration()).source).toBe('none');
+    expect((await getEffectiveInferenceConfiguration()).source).toBe('default');
     await saveInferenceConfiguration({ baseUrl: 'http://saved.example', apiKeyAction: 'replace', apiKey: 'private-key' });
     expect((await getInferenceEnvironment()).INFERENCE_TIMEOUT_MS).toBe('12000');
     await save({ INFERENCE_TIMEOUT_MS: 13000 });
@@ -47,7 +57,7 @@ describe('inference runtime overrides', () => {
     expect((await getEffectiveInferenceConfiguration()).apiKey).toBe('private-key');
     await save({ INFERENCE_TIMEOUT_MS: 14000 });
     await clearInferenceConfiguration();
-    expect((await getEffectiveInferenceConfiguration()).source).toBe('none');
+    expect((await getEffectiveInferenceConfiguration()).source).toBe('default');
     expect((await getInferenceEnvironment()).INFERENCE_TIMEOUT_MS).toBe('14000');
   });
 

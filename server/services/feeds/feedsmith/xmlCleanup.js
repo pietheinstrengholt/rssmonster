@@ -1,6 +1,6 @@
 // Applies narrowly scoped XML cleanup without mutating JSON Feed or CDATA content.
 
-import he from 'he';
+import * as he from 'he';
 
 const XML_ROOT_PATTERN = /<\?xml\b|<!doctype\b|<(?:rss|feed|rdf:RDF)\b/i;
 const HTML_STRUCTURE_PATTERN = /<!doctype\s+html\b|<(?:html|head|body|script|style)\b/i;

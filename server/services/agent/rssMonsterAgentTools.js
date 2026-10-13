@@ -1,38 +1,25 @@
-import { tool } from '@openai/agents';
 import { z } from 'zod';
 
 import { registerRssMonsterTools } from '../../controllers/mcp.js';
 
-const elapsedMs = startedAt => Math.round((performance.now() - startedAt) * 10) / 10;
-
-// Adapts the shared MCP-style registrar to in-process Agents SDK function tools.
-export const createRssMonsterAgentTools = (userId, { onToolResult, onToolTiming } = {}) => {
-  const tools = [];
+// The same handlers back MCP and inference callbacks; the server owns user scope.
+export const createRssMonsterToolRegistry = userId => {
+  const handlers = new Map();
+  const definitions = [];
   const registrar = {
     tool(name, description, schemaOrHandler, possibleHandler) {
       const hasSchema = typeof schemaOrHandler !== 'function';
       const handler = hasSchema ? possibleHandler : schemaOrHandler;
-      const parameters = z.object(hasSchema ? schemaOrHandler : {});
-
-      tools.push(tool({
-        name,
-        description,
-        parameters,
-        execute: async input => {
-          const startedAt = performance.now();
-          try {
-            const result = hasSchema ? await handler(input) : await handler();
-            const structuredResult = result?.structuredContent ?? result;
-            onToolResult?.({ input, name, result: structuredResult });
-            return structuredResult;
-          } finally {
-            onToolTiming?.({ durationMs: elapsedMs(startedAt), name });
-          }
-        }
-      }));
+      const schema = z.object(hasSchema ? schemaOrHandler : {}).strict();
+      definitions.push({ name, description, parameters: z.toJSONSchema(schema, { target: 'draft-7', io: 'input' }) });
+      handlers.set(name, async input => {
+        const parsed = schema.parse(input);
+        const result = hasSchema ? await handler(parsed) : await handler();
+        return result?.structuredContent ?? result;
+      });
     }
   };
 
   registerRssMonsterTools(registrar, userId);
-  return tools;
+  return { definitions, handlers };
 };

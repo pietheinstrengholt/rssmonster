@@ -23,6 +23,7 @@ export const createAssistantModelService = ({
   const getModel = () => getProvider().getModel(config.modelId);
 
   return Object.freeze({
+    getModel,
     async respond({ request }) {
       const startedAt = Date.now();
       logInferenceDebug(`calling assistant provider=${config.provider} model=${config.modelId}`);

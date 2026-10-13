@@ -16,7 +16,7 @@ import '../../src/assets/scss/global.scss';
 const params = new URLSearchParams(location.search);
 const pinia = createPinia();
 const selection = useSelectionStore(pinia);
-selection.setCurrentSelection({ viewMode: params.get('storedMode') || 'full', AIEnabled: true, status: params.get('storedStatus') || 'read' });
+selection.setCurrentSelection({ viewMode: params.get('storedMode') || 'expanded', AIEnabled: true, status: params.get('storedStatus') || 'read' });
 useOverviewStore(pinia).briefingCount = 1234;
 document.documentElement.dataset.theme = params.get('theme') || 'light';
 const mobile = window.matchMedia('(max-width: 879px)').matches;

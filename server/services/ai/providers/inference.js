@@ -22,6 +22,7 @@ export const createInferenceProvider = ({ json = requestInferenceJson, stream = 
     ...options, circuitKey: 'assistant'
   }),
   assistantStream: (request, options = {}) => stream('/api/assistant/model/stream', { request }, { ...options, circuitKey: 'assistant' }),
+  assistantRunStream: (request, options = {}) => stream('/api/assistant/run/stream', request, { ...options, circuitKey: 'assistant' }),
   getCapabilities: (options = {}) => json('/api/capabilities', undefined, {
     ...options, method: 'GET', circuitKey: 'capabilities'
   }),
