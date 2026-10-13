@@ -8,9 +8,20 @@
     }"
   >
     <div class="article-list-view__items">
-      <DailyBriefingIntro v-if="showDailyBriefingIntro" />
+      <DailyBriefingIntro v-if="showDailyBriefingIntro">
+        <template v-if="useRefinedTopbars" #actions>
+          <ArticleBulkActionMenu
+            :selected-article-id="bulkSelectedArticleId"
+            :selected-article-index="articles.findIndex(article => String(article.id) === String(bulkSelectedArticleId))"
+            :article-count="articles.length"
+            :close-key="`${viewMode}:${container.join(',')}`"
+            @open="bulkSelectedArticleId = articles[selectedArticleIndex()]?.id ?? closestArticleIdToViewport()"
+            @bulk-action="$emit('bulk-action', $event)"
+          />
+        </template>
+      </DailyBriefingIntro>
       <BriefingScopeNotice v-else-if="currentSelection === 'briefing'" />
-      <div class="article-list-topbars" :class="{ 'headline-list-topbars': useRefinedTopbars }">
+      <div v-if="!showDailyBriefingIntro" class="article-list-topbars" :class="{ 'headline-list-topbars': useRefinedTopbars }">
         <slot name="before-context" :reader-mode="false" :headline-mode="useRefinedTopbars" />
         <UnreadSelectionContext
           :key="viewMode"

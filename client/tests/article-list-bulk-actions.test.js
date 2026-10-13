@@ -4,12 +4,16 @@ import ArticleListView from '../src/components/articles/ArticleListView.vue';
 import ArticleBulkActionMenu from '../src/components/articles/ArticleBulkActionMenu.vue';
 import { createFocusedStores } from './helpers/focusedStores.js';
 
+vi.mock('../src/api/articles', () => ({
+  fetchDailyBriefing: vi.fn().mockResolvedValue({ data: { context: null, morningSummary: { items: [] } } })
+}));
+
 let wrapper;
 beforeEach(() => { Element.prototype.scrollIntoView = vi.fn(); });
 afterEach(() => { wrapper?.unmount(); delete Element.prototype.scrollIntoView; });
 
-function renderList(viewMode, status = 'unread') {
-  const stores = createFocusedStores({ selection: { currentSelection: { viewMode, status } } });
+function renderList(viewMode, status = 'unread', selectionOverrides = {}) {
+  const stores = createFocusedStores({ selection: { currentSelection: { viewMode, status, ...selectionOverrides } } });
   wrapper = mount(ArticleListView, {
     props: {
       viewMode,
@@ -18,7 +22,7 @@ function renderList(viewMode, status = 'unread') {
       collectionSummary: { status, totalCount: 3, unreadCount: 3, sourceCount: 1 },
       collectionProgress: { hasLoadedContent: true, loadedCount: 3 }
     },
-    global: { plugins: [stores.pinia], stubs: { ArticleItem: { template: '<article>Article</article>' }, DailyBriefingIntro: true } }
+    global: { plugins: [stores.pinia], stubs: { ArticleItem: { template: '<article>Article</article>' } } }
   });
   return wrapper;
 }
@@ -44,10 +48,31 @@ describe('article list bulk actions', () => {
     expect(wrapper.emitted('bulk-action')[0][0]).toEqual({ action: 'mark-above-read', selectedArticleId: 2 });
   });
 
-  it('offers the menu when the collection context is absent', async () => {
-    renderList('headlines', 'briefing');
+  it.each(['expanded', 'summarized', 'summaryBullets', 'headlines'])('offers briefing bulk actions in %s', async viewMode => {
+    renderList(viewMode, 'briefing', { categoryId: '%', feedId: '%', tag: null });
+    expect(wrapper.findAll('button[aria-label="More actions"]')).toHaveLength(1);
     await more().trigger('click');
     expect(action('Mark all visible as read').isVisible()).toBe(true);
+    await action('Save all visible articles').trigger('click');
+    expect(wrapper.emitted('bulk-action')[0][0]).toEqual({ action: 'saved-visible', selectedArticleId: 1 });
+  });
+
+  it.each([
+    { categoryId: '12', feedId: '%', tag: null },
+    { categoryId: '12', feedId: '34', tag: null },
+    { categoryId: '%', feedId: '%', tag: 'security' }
+  ])('keeps bulk actions available for a scoped briefing: %j', async selectionOverrides => {
+    renderList('headlines', 'briefing', selectionOverrides);
+    await more().trigger('click');
+    expect(action('Mark all visible as read').isVisible()).toBe(true);
+  });
+
+  it('uses the keyboard-selected briefing article for relative actions', async () => {
+    renderList('summarized', 'briefing', { categoryId: '%', feedId: '%', tag: null });
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' }));
+    await more().trigger('click');
+    await action('Mark articles above as read').trigger('click');
+    expect(wrapper.emitted('bulk-action')[0][0]).toEqual({ action: 'mark-above-read', selectedArticleId: 2 });
   });
 
   it('disables relative actions without a current article and closes on Escape', async () => {

@@ -20,6 +20,9 @@
           <strong>{{ formatCountLabel(context.newEventCount, 'event') }}</strong>, and
           <strong>{{ formatCountLabel(context.islandCount, 'interest island') }}</strong>.
       </template>
+      <template v-if="$slots.actions" #actions>
+        <slot name="actions" />
+      </template>
     </BriefingContextText>
 
     <section

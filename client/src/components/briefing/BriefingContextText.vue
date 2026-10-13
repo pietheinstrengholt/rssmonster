@@ -1,5 +1,5 @@
 <template>
-  <aside class="briefing-context" role="note">
+  <aside class="briefing-context" :class="{ 'briefing-context--with-actions': $slots.actions }" role="note">
     <div class="briefing-context-text">
       <template v-if="isLoading">{{ loadingText }}</template>
       <template v-else-if="hasContext">
@@ -11,7 +11,7 @@
       <template v-else-if="hasError">{{ errorText }}</template>
       <template v-else>{{ emptyText }}</template>
     </div>
-
+    <slot name="actions" />
   </aside>
 </template>
 
@@ -93,6 +93,10 @@ export default {
   min-width: 0;
 }
 
+.briefing-context--with-actions {
+  flex-wrap: nowrap;
+}
+
 .briefing-context strong {
   color: inherit;
   font-weight: 600;
@@ -101,6 +105,9 @@ export default {
 @media (max-width: 879px) and (orientation: portrait) {
   .briefing-context {
     display: none;
+  }
+  .briefing-context--with-actions {
+    display: flex;
   }
 }
 
