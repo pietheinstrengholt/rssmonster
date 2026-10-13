@@ -156,24 +156,30 @@ The data is a fetched snapshot. It changes only when the section is loaded or re
 The page title matches the navigation. Internally, learned interest clusters
 remain Islands, implemented by `SettingsIslands.vue` and the existing interest APIs.
 
-**Your interests** explains the interest clusters RSSMonster has learned from reading,
-saved, and click behavior. The overview is read-only, with one explicit
-recalculation action that rebuilds the signed-in user's Islands and article
-interest scores from existing evidence.
+**Your interests** shows the interests learned from reading, saved articles,
+opened originals, and negative feedback. Summary cards count positive, negative,
+active, and archived interests. The page opens with **Active** selected; users
+can choose All, Positive, Negative, Active, or Archived, search by name, and sort
+by Evidence strength, Recent activity, or Name.
 
-The overview shows the active Island count, each Island's activity state, effective interest weight, behavioral evidence, and source articles. Linked source articles open in a separate browser context.
+Each row shows preference polarity, evidence strength, behavioral evidence,
+last activity, and lifecycle. **Inspect** opens the evidence breakdown and example
+articles beside the list on wider screens or in a dialog on smaller screens.
+Example articles open in the current reader. Inspection does not record reading
+or preference evidence.
 
-Island weight is signed preference, not its full scoring authority;
-derived support and relationship confidence attenuate it, including singletons.
-Recalibration replaces unchanged behavioral counters without inflating them. The
-[Island README](../../../../server/services/islands/README.md) documents derived
-trace diagnostics; the Settings API need not expose all of those fields.
+**Mute** excludes an Island from future Island-based interest scoring; **Unmute**
+restores its participation in subsequent calculations. Muted interests remain
+visible with a **Muted** badge. Muting preserves their evidence, weight, vector,
+and Active/Archived lifecycle, and normal maintenance continues. Neither toggle
+immediately recalculates recommendations or rescores existing articles. Search,
+filter, sort, and inspection state are retained while the row is updated.
 
-The section explains why an island exists rather than providing controls to edit the learned model. Users grow or reinforce islands through normal reading behavior. If no islands exist, the empty state directs users toward reading, favoriting, and clicking relevant articles.
-
-Island data is a fetched snapshot and changes only when loaded, explicitly
-refreshed, or deliberately recalculated. Recalculation reports its own success
-or failure and then refreshes the overview.
+Evidence strength is preference magnitude, not recommendation confidence.
+Evidence bars compare counts within an interest, not scoring weights. Users
+reinforce interests through normal reading, saving, and opening originals;
+the page does not provide manual editing of learned weights. Loading and failure
+states remain separate, with retry controls for failed requests.
 
 ### Refresh history
 
@@ -229,7 +235,8 @@ Selecting a feed opens its observability details inside the same Settings sectio
 
 Official Sources manages organization-domain mappings used during crawling. Articles whose URLs match enabled domains receive an **Official source** label
 with the configured organization name. This metadata does not verify provenance
-or reporting independence and does not automatically add searchable tags.
+or reporting independence and does not automatically add searchable tags. Use
+feed tags or an **Assign tag** Action when you also need a searchable tag.
 
 Rows contain an organization, domain, and enabled state. Users can add, remove, edit, enable, or disable rows locally. Save Changes persists the complete resulting collection and replaces the editor with the normalized server response.
 
@@ -261,8 +268,8 @@ Settings sections follow these principles:
 3. Saving indicators prevent duplicate submissions.
 4. Failed saves retain the user's editable state whenever possible.
 5. Successful changes that affect feeds, article visibility, sidebar navigation, or account state refresh the relevant local data and wider application.
-6. Insight sections remain read-only unless they expose a clearly labeled,
-   deliberate operational action such as recalculating Interest Islands.
+6. Insight sections change state only through clearly labeled actions, such as
+   muting or unmuting an interest. Inspection alone does not write evidence.
 
 Some sections save a whole ordered collection rather than one row at a time. For Smart Folders, Actions, and Official Sources, removing an item in the interface remains a local change until the collection is successfully saved.
 

@@ -265,7 +265,7 @@ become new behavioral evidence and does not itself change an Island.
 ## Inspecting Your Islands
 
 Open **Settings → Your interests** to review and configure the interests RSSMonster has
-learned. The Island Insights introduction stays at the top of the page, followed
+learned. The **Your interests** introduction stays at the top of the page, followed
 by summary cards for positive, negative, active, and archived interests. The
 **Active** filter is selected when you open the page. Use the other filters,
 search, and sort control to find an Island. Each row shows its preference

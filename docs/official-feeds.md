@@ -66,9 +66,8 @@ Matching articles are stored with an official-source indicator and the
 configured organization name. This supplies a source label such as
 **Official source (Nintendo)** in the article's signals.
 
-The organization name is stored as source metadata. Although the settings
-introduction describes organization tagging, the current crawl implementation
-does not automatically add it to the article's searchable tags. Use feed tags
+The organization name is stored as source metadata for the **Official source**
+label; it is not automatically added to the article's searchable tags. Use feed tags
 or an **Assign tag** [Action]({% link actions.md %}) when you also want a
 [tag]({% link tag.md %}) for filtering.
 

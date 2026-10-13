@@ -8,7 +8,7 @@
         <p class="settings-page-eyebrow">Settings — Official Sources</p>
         <h3 id="official-sources-title">Official source domains</h3>
         <p>
-          Articles from matching domains are marked as official during crawl and tagged with the organization name.
+          Articles whose URLs match enabled domains receive an Official source label with the configured organization name. This does not add searchable tags.
         </p>
       </div>
     </section>

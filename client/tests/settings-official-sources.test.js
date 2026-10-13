@@ -61,6 +61,8 @@ describe('official-source administration', () => {
       entity: 'Example'
     }]);
     expect(wrapper.text()).toContain('1 configured domains');
+    expect(wrapper.text()).toContain('Articles whose URLs match enabled domains receive an Official source label');
+    expect(wrapper.text()).toContain('This does not add searchable tags.');
   });
 
   it('shows a load failure without presenting an empty collection', async () => {

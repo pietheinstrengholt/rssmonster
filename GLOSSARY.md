@@ -2,13 +2,7 @@
 
 ## Unresolved inconsistencies and conflicts
 
-The definitions below describe current implementation. These remaining conflicts
-are in supporting UI copy or documentation; they are recorded for later work.
-
-| Area | Confirmed inconsistency or conflict | Evidence |
-| --- | --- | --- |
-| Your interests controls | The settings README describes a read-only overview with an explicit recalculation action. The current page instead offers search, polarity/lifecycle filters, inspection, and mute/unmute; it has no recalculation control. | [Current page](client/src/components/settings/SettingsIslands.vue), [settings documentation](client/src/components/settings/README.md#your-interests), [page contract](docs/interests-page.md) |
-| Official Sources organization metadata | The settings introduction says matching articles are “tagged with the organization name.” The crawl stores official-source metadata; this does not automatically create a searchable Article tag. | [Settings introduction](client/src/components/settings/SettingsOfficialSources.vue), [crawl persistence](server/services/crawl/persistence/updateArticle.js), [documented distinction](docs/official-feeds.md#what-changes-on-an-article) |
+No unresolved items remain from this review.
 
 ## Scope and usage
 
@@ -17,134 +11,6 @@ composables, services, API wrappers, and client tests. Supporting repository
 documentation supplies established scoring and processing meanings where the
 client consumes server results. It is not an exhaustive backend schema glossary.
 Code identifiers in backticks record existing contracts, not proposed renames.
-
-## Resolved terminology and contract decisions
-
-**Single-tag filter:** The Smart Folder visual editor labels its field **Tag**
-and explains that it matches one tag, including names containing spaces. Article
-tag management supports multiple labels. The editor’s `content.tags` property,
-normalization, query generation and saved folders are unchanged.
-
-**Settings terminology:** Navigation, page titles and documentation consistently
-use **Your interests**, **Refresh history**, and **Health & errors**. Islands,
-Crawl Statistics and Observability remain internal implementation names. Cleanup
-loading/error messages use **cleanup settings** and its introduction explicitly
-describes permanent deletion, not a recoverable archive. Internal identifiers,
-API contracts, persisted settings and behavior are unchanged.
-
-**Reload and fetch scopes:** **Reload articles** and pull-to-refresh reload stored
-article results and counts without fetching publisher feeds. **Fetch new articles**
-starts the subscribed-feed crawl and then reloads results. **Update offline
-downloads** downloads stored articles to this device without crawling publishers.
-**Reload insights** and **Reload history** reload their server snapshots. Labels
-and documentation now distinguish these operations; behavior, function names,
-events, routes and persisted contracts are unchanged.
-
-**Source meanings:** **Official source** replaces the **Official Feed** article
-signal and identifies an article URL that matches a configured enabled domain
-rule, with the organization name when available. Its hover explanation distinguishes
-this label from verified provenance or independent reporting. Story-source counts
-represent distinct feeds; the accessible badge label and popover explain that
-separate feeds may share a publisher or reporting. **Original source** remains
-publisher-declared attribution. Counts, matching, ranking and API contracts are unchanged.
-
-**Priority scopes:** **Prioritize trusted feeds in Unread** adds source-trust
-priority when sorting Unread by Newest or Oldest; disabling it preserves strictly
-chronological ordering. Other ranking modes are unchanged. Briefing’s **Use
-Recommended ordering for summary** orders summary stories by Recommended score
-before event-strength fallbacks; article list ordering is unchanged. Recommended
-includes learned preferences, freshness, quality and source trust, rather than
-source trust alone. Neither setting is an article-only Overall quality filter.
-Existing behavior and the persisted `prioritizeHighTrust` contracts are unchanged.
-
-**Learned preferences:** **Show only articles with learned preferences** includes
-positive and negative nonzero stored interest, excluding neutral or absent
-preferences. Article badges distinguish **Positive learned preference** and
-**Negative learned preference** using `interestScore`, independently of the overall
-recommendation score. Existing attributed ranking signals open under **Why this
-article was ranked**. Eligibility, scoring, expressions and the persisted
-`showOnlyInterestMatchedArticles` contract are unchanged.
-
-**AI provider and defaults:** Scores help describes the configured inference
-service, which supports local models or compatible remote providers; OpenAI is
-not required. Fallback component values of 70 are defaults, separate from
-pending, processing and failed analysis whose inferred scores and tags are hidden.
-Unavailable inference-owned scores are exempt from score gates, while Action
-score overrides remain effective. Skipped analysis retains scores subject to
-thresholds; all-70 component sets do not display an Overall quality badge.
-The terminology clarification preserves score values and analysis-state behavior.
-Provider configuration now uses the canonical capability-specific contracts.
-
-**Tone contract:** **Tone** measures emotional neutrality and balance, with
-higher scores indicating calmer, more factual language rather than positive news.
-`toneScore` and `minToneScore` are canonical throughout source code, APIs,
-inference, database columns, persisted settings, and cached articles.
-Only canonical names are accepted at runtime and returned in responses. Scoring,
-thresholds, formulas and search expressions are unchanged. See [the migration guide](docs/tone-score-migration.md).
-
-**Quality precision:** Overall quality badges, accessible labels, breakdown
-footers, and quality-filter preview chips preserve fractional points and trim
-trailing zeros. Badge colors use the unrounded score, including preview chips.
-For example, 74.75/100 remains 74.75 rather than appearing to meet a minimum of
-75. Filtering, ranking, and saved expressions are unchanged.
-
-**Quality terminology:** the article badge and article-only filters use
-**Overall quality**; the breakdown popup is titled **Overall article quality**.
-The `qualityScore` component uses **Writing quality**;
-source-aware `sort:quality` uses **Quality & source trust**, including query
-preview chips. Controls and badges use 0–100, while `quality` expressions retain
-0–1 (`quality:>=0.75` means at least 75/100). Identifiers, scoring formulas, and
-expressions are unchanged.
-
-**Publication time and first seen:** Smart Folder time choices explicitly identify
-publication windows and first-seen windows. **Custom first-seen window** replaces
-**Relative range**. First-seen windows include never-seen Articles plus Articles
-first shown on screen within the selected window, regardless of publication date.
-Publication presets retain `@today`, `@yesterday`, and `@lastweek`; first-seen
-presets and custom windows retain `firstSeen` expressions. Unread date and age
-controls continue to constrain publication time. Existing saved folders are unchanged.
-
-**Briefing scope:** the introduction is labeled **Global briefing across your
-subscriptions**. Sidebar hover text explains Daily Briefing and its count of
-matching articles across subscriptions for the configured period and preferences,
-rather than stories in the summary. The sidebar count has no visible **global**
-label; mobile navigation retains it. Category, feed, or tag filters hide the
-global introduction and show **Filtered briefing articles**
-with a count-scope explanation, including for empty results. Existing collection
-filters and global summary/count contracts are preserved.
-
-**Daily Briefing period:** **Last 24 hours** (`24h`) uses a rolling 24-hour
-publication-time window for article results, structured Briefing context, and
-overview counts. The existing `@today` token resolves to that rolling window.
-The previous calendar-day interpretation in the documentation was outdated.
-
-**Developing coverage scopes:** **Include developing coverage** includes new
-coverage in the Unread view; **Include developing coverage in the summary**
-affects only the Briefing morning summary; **Show only developing stories**
-restricts article eligibility to the strict developing-story predicate. Smart
-Folder chips label `developing:true` **Developing stories** and `developing:false`
-**Not Developing stories**. Existing settings and expressions are unchanged.
-
-**Event grouping and coverage controls:** desktop and mobile grouping use
-**Events**; expansion uses **other articles in this event** and fetches Event
-members. **Developing story** opens coverage from a developing Event article;
-**Same story, different sources** opens that Event's coverage from other feeds.
-These controls are distinct from general similarity and deterministic duplicates.
-
-**Summarized description:** the UI and documentation describe the first 100 words
-of canonical `contentText`. The `summarized` mode and its behavior are unchanged;
-AI-generated **Summary bullets** remain a separate presentation.
-
-Reading modes use **Reader** (`reader`), **Expanded** (`expanded`),
-**Summarized** (`summarized`), **Summary bullets** (`summaryBullets`), and
-**Headlines** (`headlines`) across UI, source, APIs, and persisted settings.
-API requests and persisted settings use only these canonical values.
-See [the migration guide](docs/reading-mode-migration.md).
-
-**Saved and Opened originals:** canonical UI, source, API, database and persisted
-expression names are `saved` and `openedOriginal`. Runtime compatibility aliases
-have been removed; historical data conversions remain in migrations/fixtures. See
-[Bookmarks](docs/bookmarks.md) and [Search](docs/search.md) for usage and expressions.
 
 ## Articles, subscriptions, and organization
 
@@ -450,12 +316,15 @@ opened originals, deep reads, and negative feedback. Preference can be positive,
 neutral, or negative; Island activity state and signed weight are separate from
 relationship confidence. The client displays server attribution and does not
 recompute semantic confidence. **Your interests** offers search, polarity and
-lifecycle filters, evidence inspection, and mute/unmute. It has no recalculation
-button; backend recalculation is separate from inspecting these results.
+lifecycle filters, sorting, evidence inspection, and mute/unmute. Backend
+recalculation is separate from inspecting these results.
 
 **Active** and **Archived** are lifecycle states, distinct from positive/neutral/
 negative preference. **Muted** is a separately stored user choice, not a negative
-preference or a lifecycle state. **Evidence strength** displays the bounded
+preference or a lifecycle state. Muting excludes the Island from future
+Island-based scoring while preserving evidence and lifecycle; unmuting restores
+subsequent participation. Neither toggle immediately rescores existing articles.
+**Evidence strength** displays the bounded
 magnitude of signed weight on a 0–100 scale, not recommendation confidence.
 Evidence bars compare counts within an interest, not their scoring weights.
 
