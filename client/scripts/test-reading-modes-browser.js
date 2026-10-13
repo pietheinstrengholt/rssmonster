@@ -65,7 +65,7 @@ try {
       assert.ok(await label.evaluate(element => element.scrollWidth <= element.clientWidth),
         `${width}px ${theme}: the complete Briefing label must fit above its global count`);
       await trigger.click();
-      await page.getByRole('menuitem', { name: 'Daily briefing (global) 1234', exact: true }).waitFor();
+      await page.getByRole('menuitem', { name: 'Daily briefing 1234', exact: true }).waitFor();
       await page.keyboard.press('Escape');
       assert.equal(await trigger.getAttribute('aria-expanded'), 'false');
       await page.close();

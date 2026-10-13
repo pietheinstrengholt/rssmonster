@@ -102,7 +102,7 @@ describe('toolbar Daily Briefing status', () => {
     const store = createStore(true);
     const wrapper = mount(MobileToolbar);
     const briefingOption = wrapper.findAll('#readModeDropdown-menu [role="menuitem"]')
-      .find(option => option.text() === 'Daily briefing (global) 8');
+      .find(option => option.text() === 'Daily briefing 8');
 
     expect(briefingOption).toBeDefined();
     await briefingOption.trigger('click');
