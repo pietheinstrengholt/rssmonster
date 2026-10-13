@@ -115,6 +115,36 @@ export const requestPasswordReset = async (email, {
   return { accepted: true };
 };
 
+const replacePassword = async (user, password, passwordHash, now, transaction) => {
+  await user.update({
+    password: passwordHash,
+    feverCredentialHash: createFeverCredentialHash(createFeverApiKey(user.username, password)),
+    passwordChangedAt: now
+  }, { transaction, logging: false });
+  await PasswordResetToken.update({ usedAt: now }, {
+    where: { userId: user.id, usedAt: { [Op.is]: null } },
+    transaction,
+    logging: false
+  });
+  return { reset: true };
+};
+
+// Operator recovery requires backend access, but preserves local authentication policy.
+export const resetPasswordForUsername = async (username, password) => {
+  const validatedPassword = validateResetPassword(password, password);
+  if (!(await isLocalAuthEnabled())) throw new PasswordResetError('LOCAL_AUTH_DISABLED', 'Local authentication is disabled.', 403);
+  const passwordHash = await bcrypt.hash(validatedPassword, 10);
+
+  return sequelize.transaction({ logging: false }, async transaction => {
+    const user = await User.findOne({
+      where: { username }, transaction, lock: transaction.LOCK.UPDATE, logging: false
+    });
+    if (!user) throw new PasswordResetError('USER_NOT_FOUND', 'User not found.', 404);
+    if (!user.password) throw new PasswordResetError('LOCAL_PASSWORD_DISABLED', 'This account uses provider sign-in. Local password changes are unavailable.', 403);
+    return replacePassword(user, validatedPassword, passwordHash, new Date(), transaction);
+  });
+};
+
 // Atomically consumes one reset credential, rotates both password derivatives, and ends old sessions.
 export const confirmPasswordReset = async ({ token, password, passwordRepeat }, {
   now = new Date(),
@@ -150,16 +180,6 @@ export const confirmPasswordReset = async ({ token, password, passwordRepeat }, 
       );
     }
 
-    const feverApiKey = createFeverApiKey(user.username, validatedPassword);
-    await user.update({
-      password: passwordHash,
-      feverCredentialHash: createFeverCredentialHash(feverApiKey),
-      passwordChangedAt: now
-    }, { transaction });
-    await PasswordResetToken.update({ usedAt: now }, {
-      where: { userId: user.id, usedAt: { [Op.is]: null } },
-      transaction
-    });
-    return { reset: true };
+    return replacePassword(user, validatedPassword, passwordHash, now, transaction);
   });
 };

@@ -53,7 +53,8 @@
     "seed:official-sources": "NODE_ENV=production node scripts/seedOfficialSources.js",
     "hotlinks": "NODE_ENV=production node scripts/rebuildHotlinks.js",
     "repair-duplicates": "NODE_ENV=production node scripts/repairDuplicateCounts.js",
-    "reset:semantic": "node scripts/resetSemanticState.js"
+    "reset:semantic": "node scripts/resetSemanticState.js",
+    "reset:password": "node scripts/resetPassword.js"
   },
   "engines": {
     "node": ">=22.19.0"

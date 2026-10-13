@@ -17,6 +17,27 @@ accounts without a verified address are guided through email enrollment the
 next time they sign in. Password recovery and briefing delivery are available
 only to accounts with a verified address.
 
+## Reset a Password from the Command Line
+
+Administrators with backend access can reset an existing user's local password
+without SMTP or a verified email address. From the `server/` directory, run:
+
+```bash
+npm run reset:password -- 'username' 'new-password'
+```
+
+The command uses the backend's existing database configuration (`server/.env`
+or environment variables) and authentication secrets. Use the same configuration
+as the running server. Passwords must be between 8 and 128 characters. The command
+stores a bcrypt hash, rotates the Fever credential, invalidates previous sessions
+and password reset links, and leaves the user's role unchanged. It does not create
+users or enable local passwords for provider-only accounts, and local
+authentication must be enabled.
+
+Quote arguments containing shell characters. Command-line passwords may be
+visible in shell history and process arguments; run this only from a trusted
+administrator shell. The reset script does not print the password or its hash.
+
 ## Where to Configure Email
 
 Administrators can configure email in **Settings → Server settings → SMTP options**.
