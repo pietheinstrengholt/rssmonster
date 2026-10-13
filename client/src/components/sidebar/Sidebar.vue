@@ -14,7 +14,8 @@
 
       <SidebarActionButton
         icon="arrow-repeat"
-        label="Refresh feeds"
+        label="Fetch new articles"
+        title="Fetch new articles from subscribed feeds, then reload stored results."
         variant="sidebar-button sidebar-button-refresh"
         :loading="refreshing"
         @select="refreshFeeds"

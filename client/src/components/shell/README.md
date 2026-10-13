@@ -59,7 +59,7 @@ Native scrollbar styling uses 6-pixel tracks, transparent backgrounds, rounded t
 
 The connectivity notice is positioned by `.app-shell__overlay-host` inside `.app-shell__main-frame`. The notice component owns only its local inset and maximum width and must not calculate offsets from `--sidebar-width`.
 
-At the top of an active mobile or compact touch-tablet article collection, a resisted downward pull refreshes the current database-backed article query and overview counts. The gesture preserves rendered articles while the request is active, keeps the toolbar visible, and never starts the longer feed-crawl workflow. Its indicator keeps zero flow height while visually translating the article collection by the revealed distance, preventing scroll-geometry changes while letting the articles follow the gesture.
+At the top of an active mobile or compact touch-tablet article collection, a resisted downward pull reloads the current database-backed article query and overview counts. The indicator says **Pull to reload articles** or **Release to reload articles**; no publisher feeds are fetched. The gesture preserves rendered articles while the request is active, keeps the toolbar visible, and never starts the longer feed-crawl workflow. Its indicator keeps zero flow height while visually translating the article collection by the revealed distance, preventing scroll-geometry changes while letting the articles follow the gesture.
 
 ## Structural naming and layers
 
@@ -202,7 +202,7 @@ Search geometry belongs exclusively to `MobileToolbar`. The article list does no
 
 ### Article refresh
 
-The refresh button rebuilds the complete article list from a snapshot of the current selection and returns the collection to its beginning beneath the sticky mobile toolbar after the first page renders. It clears only local list, observer, and pool state, so unread articles that remained later in the previous list are not marked as read and can appear again in the refreshed selection. The button disables itself while loading and does not reload the application or crawl publisher feeds.
+The refresh button rebuilds the complete article list from a snapshot of the current selection and returns the collection to its beginning beneath the sticky mobile toolbar after the first page renders. It clears only local list, observer, and pool state, so unread articles that remained later in the previous list are not marked as read and can appear again in the refreshed selection. The **Reload articles** button disables itself while loading and does not reload the application or crawl publisher feeds.
 
 This differs intentionally from the pull-down gesture, which preserves rendered articles until replacement data is ready and shows its own compact refresh indicator.
 
@@ -231,7 +231,7 @@ Selecting a view applies it immediately and closes the sheet after a short delay
 
 ### Feed actions
 
-Refresh feeds forwards the request to the application shell, which uses the existing sidebar refresh workflow and its server-side crawl behavior. The sheet currently remains open after starting a refresh.
+Fetch new articles forwards the request to the application shell, which uses the existing sidebar refresh workflow and its server-side crawl behavior. The sheet currently remains open after starting a refresh.
 
 Add new feed closes the sheet first and then opens the standard feed-creation dialog.
 
@@ -268,7 +268,7 @@ When an assistant provider is configured, the sheet can open or close the assist
 | Chat | Toolbar action; clears search draft | Options-sheet action; retains search draft | Options-sheet action; retains search draft |
 | Theme | Toolbar dropdown | Not exposed by compact shell | Not exposed by mobile shell |
 | Full Settings | Toolbar gear | Not exposed by compact shell | Not exposed by mobile shell |
-| Refresh feeds | Sidebar | Sidebar and options sheet | Options sheet |
+| Fetch new articles | Sidebar | Sidebar and options sheet | Options sheet |
 | Add feed | Sidebar | Sidebar and options sheet | Options sheet |
 | Notification permission | Browser behavior outside toolbar | Options sheet | Options sheet |
 

@@ -196,11 +196,11 @@ export default {
       if (this.showingNewOnly) return 'View the full unread list to keep reading.';
       if (this.hasSearch) return 'Try another search or clear the current filters.';
       const statusDescriptions = {
-        briefing: 'There are no briefing articles in this view. Refresh your feeds or adjust the current filters.',
-        unread: 'There are no unread articles in this view. Refresh your feeds or enjoy the clear queue.',
+        briefing: 'There are no briefing articles in this view. Fetch new articles from your feeds or adjust the current filters.',
+        unread: 'There are no unread articles in this view. Fetch new articles from your feeds or enjoy the clear queue.',
         read: 'Articles you finish will appear here. Clear the current filters to widen this view.',
         saved: 'Save an article to find it here later, or clear the current filters to look elsewhere.',
-        hot: 'No articles meet the current hot threshold. Refresh your feeds or adjust the filters.',
+        hot: 'No articles meet the current hot threshold. Fetch new articles from your feeds or adjust the filters.',
         openedOriginal: 'Articles opened on their original websites appear here, separately from read status. Clear the current filters to widen this view.'
       };
       return statusDescriptions[this.currentStatus]
@@ -220,7 +220,7 @@ export default {
       if (this.hasSearch) return 'Clear search';
       if (this.hasTagSelection) return 'Clear tag';
       if (this.viewUnreadIsPrimaryAction) return 'View unread articles';
-      return this.refreshIsPrimaryAction ? 'Refresh feeds' : 'Clear filters';
+      return this.refreshIsPrimaryAction ? 'Fetch new articles' : 'Clear filters';
     },
     primaryActionIcon() {
       if (this.noFeeds) return 'plus-lg';
@@ -237,10 +237,10 @@ export default {
     // This labels the secondary action for tag-specific and generic empty states.
     secondaryActionLabel() {
       if (this.noFeeds) return 'Import OPML';
-      if (this.showingNewOnly) return 'Refresh feeds';
+      if (this.showingNewOnly) return 'Fetch new articles';
       if (this.hasSearch) return 'Clear filters';
       if (!this.hasTagSelection) {
-        return this.refreshIsPrimaryAction ? 'View unread articles' : 'Refresh feeds';
+        return this.refreshIsPrimaryAction ? 'View unread articles' : 'Fetch new articles';
       }
       return `View ${this.alternateTagStatus} articles`;
     },

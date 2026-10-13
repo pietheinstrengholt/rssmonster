@@ -189,7 +189,7 @@ describe('feed refresh store', () => {
       running: false
     });
     expect(store.progress.visible).toBe(true);
-    expect(store.progress.logs[0]).toContain('Refresh started in the background');
+    expect(store.progress.logs[0]).toContain('Feed fetch started in the background');
   });
 
   // Verifies a failed fallback publishes safe feedback while retaining diagnostic state.
@@ -209,7 +209,7 @@ describe('feed refresh store', () => {
     expect(store.completionStatus).toBe('error');
     expect(store.error).toEqual({ message: fallbackError.message });
     expect(notifications).toEqual([{
-      message: 'Could not refresh feeds. Please try again.'
+      message: 'Could not fetch new articles from feeds. Please try again.'
     }]);
     expect(console.error).toHaveBeenCalledWith(
       'Error refreshing feeds after stream fallback:',

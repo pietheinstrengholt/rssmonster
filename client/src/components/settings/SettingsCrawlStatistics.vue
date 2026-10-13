@@ -74,7 +74,7 @@
     <div class="settings-refresh-actions">
       <button type="button" class="settings-refresh-button app-button app-button--primary" :disabled="loading" @click="reload">
         <BootstrapIcon icon="arrow-clockwise" aria-hidden="true" />
-        Refresh
+        Reload history
       </button>
     </div>
   </div>

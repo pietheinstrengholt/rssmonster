@@ -112,15 +112,15 @@ describe('Sidebar feed refresh', () => {
     expect(wrapper.text()).not.toContain('Processed: 0/0');
     handlers.done({ type: 'done', data: JSON.stringify({ totalFeeds: 0, processedFeeds: 0 }) });
     await flushPromises();
-    expect(wrapper.text()).toContain('Refresh complete');
-    expect(wrapper.text()).toContain('No feeds were refreshed. 0 new articles.');
+    expect(wrapper.text()).toContain('Feed fetch complete');
+    expect(wrapper.text()).toContain('No feeds were fetched. 0 new articles.');
     expect(wrapper.text()).not.toContain('Waiting to start');
-    await wrapper.get('[aria-label="Dismiss refresh result"]').trigger('click');
-    expect(wrapper.text()).not.toContain('No feeds were refreshed');
+    await wrapper.get('[aria-label="Dismiss feed fetch result"]').trigger('click');
+    expect(wrapper.text()).not.toContain('No feeds were fetched');
     wrapper.unmount();
   });
 
-  it('shows partial failures and starts a fresh attempt from Retry refresh', async () => {
+  it('shows partial failures and starts a fresh attempt from Retry feed fetch', async () => {
     const { eventSource, handlers } = createEventSource();
     startFeedRefresh.mockResolvedValue({ data: { jobId: 'partial' } });
     openFeedRefreshEvents.mockReturnValue(eventSource);
@@ -128,12 +128,12 @@ describe('Sidebar feed refresh', () => {
     await wrapper.vm.refreshFeeds();
     handlers.done({ type: 'done', data: JSON.stringify({ totalFeeds: 2, processedFeeds: 2, errors: 1, newArticles: 4 }) });
     await flushPromises();
-    expect(wrapper.text()).toContain('Refresh finished with errors');
+    expect(wrapper.text()).toContain('Feed fetch finished with errors');
     expect(wrapper.text()).toContain('4 new articles. 1 error.');
-    await wrapper.findAll('button').find(button => button.text() === 'Retry refresh').trigger('click');
+    await wrapper.findAll('button').find(button => button.text() === 'Retry feed fetch').trigger('click');
     await flushPromises();
     expect(startFeedRefresh).toHaveBeenCalledTimes(2);
-    expect(wrapper.text()).not.toContain('Refresh finished with errors');
+    expect(wrapper.text()).not.toContain('Feed fetch finished with errors');
     wrapper.unmount();
   });
 
@@ -202,12 +202,12 @@ describe('Sidebar feed refresh', () => {
 
     expect(triggerCrawl).toHaveBeenCalledOnce();
     expect(notifications).toEqual([{
-      message: 'Could not refresh feeds. Please try again.'
+      message: 'Could not fetch new articles from feeds. Please try again.'
     }]);
     expect(wrapper.find('.sidebar-refresh-progress-panel').exists()).toBe(true);
     expect(wrapper.text()).not.toContain(fallbackFailure.message);
-    expect(wrapper.text()).toContain('Refresh failed');
-    expect(wrapper.text()).toContain('Retry refresh');
+    expect(wrapper.text()).toContain('Feed fetch failed');
+    expect(wrapper.text()).toContain('Retry feed fetch');
     expect(console.error).toHaveBeenCalledWith(
       'Error refreshing feeds after stream fallback:',
       fallbackFailure

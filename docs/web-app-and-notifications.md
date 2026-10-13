@@ -83,7 +83,8 @@ caches the interface and application assets after an online visit. To prepare
 articles, sign in while connected and open **Settings → Offline reading**. Enable
 offline reading and choose **Articles to keep offline**: 100, 250, 1,000,
 2,500, or 5,000 of your latest articles. Preparation starts when you enable it
-or change the limit; **Refresh now** updates downloads while connected.
+or change the limit; **Update offline downloads** downloads the latest stored articles while connected;
+it does not fetch publisher feeds.
 Downloads are stored on this device for this account and server.
 
 When the server cannot be reached, a previously validated session with a prepared

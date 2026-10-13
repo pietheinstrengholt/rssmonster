@@ -137,7 +137,7 @@ the saved theme still applies there, including the device preference when
 
 RSSMonster provides responsive layouts for phones and tablets. Compatible browsers support [installation as a Progressive Web App]({% link web-app-and-notifications.md %}),
 so RSSMonster can be launched from a device's home screen. Pull down on an article
-collection to reload stored results. Use **Refresh feeds** in Options to request
+collection to reload stored results. Use **Fetch new articles** in Options to request
 publisher fetching. In portrait mode, swipe an article to the
 right to toggle its bookmark.
 

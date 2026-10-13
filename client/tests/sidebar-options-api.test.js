@@ -1009,7 +1009,7 @@ describe('Options API sidebar contracts', () => {
     const action = mount(SidebarActionButton, {
       props: {
         icon: 'arrow-repeat',
-        label: 'Refresh feeds',
+        label: 'Fetch new articles',
         variant: 'sidebar-button sidebar-button-refresh',
         loading: true
       }

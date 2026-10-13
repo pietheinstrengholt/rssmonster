@@ -390,7 +390,7 @@ describe('MobileToolbar behavior coverage', () => {
     await wrapper.setProps({ refreshing: true });
     expect(refreshButton.attributes('disabled')).toBeDefined();
     expect(refreshButton.attributes('aria-busy')).toBe('true');
-    expect(refreshButton.attributes('aria-label')).toBe('Refreshing articles…');
+    expect(refreshButton.attributes('aria-label')).toBe('Reloading articles…');
     expect(refreshButton.get('svg').classes()).toContain('bi--animation-spin');
   });
 

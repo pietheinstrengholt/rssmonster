@@ -2,7 +2,7 @@
   <div class="feed-refresh-progress-panel" role="status" aria-live="polite">
     <div class="feed-refresh-progress-header">
       <strong>{{ heading }}</strong>
-      <button v-if="terminal" type="button" class="app-button app-button--outline-secondary app-button--compact" aria-label="Dismiss refresh result" @click="$emit('dismiss')">Dismiss</button>
+      <button v-if="terminal" type="button" class="app-button app-button--outline-secondary app-button--compact" aria-label="Dismiss feed fetch result" @click="$emit('dismiss')">Dismiss</button>
     </div>
     <template v-if="!terminal">
       <p class="feed-refresh-summary">{{ progress.currentFeedLabel }}</p>
@@ -17,7 +17,7 @@
     </template>
     <template v-else>
       <p class="feed-refresh-summary">{{ summary }}</p>
-      <button v-if="status === 'error' || status === 'disconnected' || (status === 'success' && progress.errors > 0)" type="button" class="app-button app-button--outline-secondary app-button--compact" @click="$emit('retry')">{{ status === 'disconnected' ? 'Reconnect' : 'Retry refresh' }}</button>
+      <button v-if="status === 'error' || status === 'disconnected' || (status === 'success' && progress.errors > 0)" type="button" class="app-button app-button--outline-secondary app-button--compact" @click="$emit('retry')">{{ status === 'disconnected' ? 'Reconnect' : 'Retry feed fetch' }}</button>
     </template>
     <details v-if="progress.logs.length" class="feed-refresh-details">
       <summary>Details</summary>
@@ -41,18 +41,18 @@ export default {
   computed: {
     terminal() { return !['idle', 'running'].includes(this.status); },
     heading() {
-      if (this.status === 'success') return this.progress.errors > 0 ? 'Refresh finished with errors' : 'Refresh complete';
-      if (this.status === 'error') return 'Refresh failed';
+      if (this.status === 'success') return this.progress.errors > 0 ? 'Feed fetch finished with errors' : 'Feed fetch complete';
+      if (this.status === 'error') return 'Feed fetch failed';
       if (this.status === 'disconnected') return 'Live updates disconnected';
-      if (this.status === 'fallback-started') return 'Refresh started';
-      return 'Refreshing feeds';
+      if (this.status === 'fallback-started') return 'Feed fetch started';
+      return 'Fetching new articles';
     },
     summary() {
-      if (this.status === 'error') return 'Could not finish the refresh. Try again. Details are available below.';
-      if (this.status === 'disconnected') return 'The refresh may still be running. Reconnect to check its progress.';
-      if (this.status === 'fallback-started') return 'Refreshing in the background. Live results are unavailable; completion is not yet confirmed.';
+      if (this.status === 'error') return 'Could not finish fetching feeds. Try again. Details are available below.';
+      if (this.status === 'disconnected') return 'The feed fetch may still be running. Reconnect to check its progress.';
+      if (this.status === 'fallback-started') return 'Fetching feeds in the background. Live results are unavailable; completion is not yet confirmed.';
       const articles = `${this.progress.newArticles} new ${this.progress.newArticles === 1 ? 'article' : 'articles'}`;
-      if (!this.progress.totalFeeds) return `No feeds were refreshed. ${articles}.`;
+      if (!this.progress.totalFeeds) return `No feeds were fetched. ${articles}.`;
       const feeds = `${this.progress.processedFeeds} of ${this.progress.totalFeeds} feeds processed`;
       return `${feeds}. ${articles}. ${this.progress.errors} ${this.progress.errors === 1 ? 'error' : 'errors'}.`;
     }

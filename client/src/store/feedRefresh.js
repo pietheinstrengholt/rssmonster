@@ -216,7 +216,7 @@ export const useFeedRefreshStore = defineStore('feedRefresh', {
       try {
         await triggerCrawlAPI();
         if (this.refreshGeneration !== refreshGeneration) return;
-        this.appendLog('Refresh started in the background. Live results are unavailable.');
+        this.appendLog('Feed fetch started in the background. Live results are unavailable.');
         this.running = false;
         this.currentJobId = null;
         this.completionStatus = 'fallback-started';
@@ -226,16 +226,16 @@ export const useFeedRefreshStore = defineStore('feedRefresh', {
         this.currentJobId = null;
         this.completionStatus = 'error';
         const refreshError = fallbackError || error;
-        this.error = { message: refreshError?.message || 'Feed refresh failed' };
+        this.error = { message: refreshError?.message || 'Feed fetch failed' };
         console.error('Error refreshing feeds after stream fallback:', refreshError);
-        notifyActionError('Could not refresh feeds. Please try again.', refreshError);
+        notifyActionError('Could not fetch new articles from feeds. Please try again.', refreshError);
       }
     },
 
     // Publishes the result immediately and keeps it available until dismissed or replaced.
     finishStream(success) {
       this.closeEventStream();
-      if (!success && !this.error) this.error = { message: 'Feed refresh failed' };
+      if (!success && !this.error) this.error = { message: 'Feed fetch failed' };
       this.running = false;
       this.currentJobId = null;
       this.completionStatus = success ? 'success' : 'error';

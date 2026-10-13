@@ -80,7 +80,7 @@ describe('MobilePullToRefresh', () => {
     wrapper.vm.handleTouchMove(move);
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.text()).toContain('Release to refresh');
+    expect(wrapper.text()).toContain('Release to reload articles');
     expect(wrapper.classes()).toContain('mobile-pull-to-refresh--tracking');
     expect(wrapper.vm.indicatorStyle).not.toHaveProperty('height');
     expect(wrapper.vm.indicatorStyle['--pull-indicator-reveal']).toBe('46px');
@@ -94,7 +94,7 @@ describe('MobilePullToRefresh', () => {
 
     expect(wrapper.emitted('refresh')).toHaveLength(1);
     expect(wrapper.classes()).not.toContain('mobile-pull-to-refresh--tracking');
-    expect(wrapper.text()).toContain('Refreshing articles');
+    expect(wrapper.text()).toContain('Reloading articles');
     expect(document.querySelector('.app-shell__main').style.getPropertyValue('--mobile-pull-article-duration')).toBe('160ms');
 
     await wrapper.setProps({ refreshing: true });
@@ -159,14 +159,14 @@ describe('MobilePullToRefresh', () => {
     const wrapper = mountPullToRefresh();
 
     await wrapper.setProps({ refreshing: true });
-    expect(wrapper.text()).toContain('Refreshing articles…');
-    expect(wrapper.text()).not.toContain('Pull to refresh');
+    expect(wrapper.text()).toContain('Reloading articles…');
+    expect(wrapper.text()).not.toContain('Pull to reload articles');
 
     await wrapper.setProps({ refreshing: false });
-    expect(wrapper.text()).toContain('Articles refreshed');
+    expect(wrapper.text()).toContain('Articles reloaded');
 
     await vi.advanceTimersByTimeAsync(160);
-    expect(wrapper.text()).toContain('Pull to refresh');
+    expect(wrapper.text()).toContain('Pull to reload articles');
     wrapper.unmount();
     vi.useRealTimers();
   });

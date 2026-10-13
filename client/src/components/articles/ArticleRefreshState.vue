@@ -13,7 +13,7 @@
       <span class="article-refresh-state-title">
         {{ unreadCount }} new unread {{ unreadCount === 1 ? 'article' : 'articles' }}
       </span>
-      <span class="article-refresh-state-action">Refresh to show {{ unreadCount === 1 ? 'it' : 'them' }}</span>
+      <span class="article-refresh-state-action">Reload articles to show {{ unreadCount === 1 ? 'it' : 'them' }}</span>
     </span>
   </button>
 </template>
@@ -31,7 +31,7 @@ export default {
     // Describes the refresh action and its unread article count for assistive technology.
     refreshLabel() {
       const articleLabel = this.unreadCount === 1 ? 'article' : 'articles';
-      return `${this.unreadCount} new unread ${articleLabel}. Refresh to show ${this.unreadCount === 1 ? 'it' : 'them'}.`;
+      return `${this.unreadCount} new unread ${articleLabel}. Reload articles to show ${this.unreadCount === 1 ? 'it' : 'them'}.`;
     }
   }
 }

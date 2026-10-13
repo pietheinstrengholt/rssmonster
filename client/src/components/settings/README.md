@@ -138,6 +138,8 @@ other visibility rules such as read status or publication windows.
 
 ### Events
 
+**Reload insights** reloads the Event snapshot; it does not crawl publisher feeds.
+
 Events is a read-only operational view of occurrence processing. Generated labels
 explain records without establishing identity. It reports active Events, linked
 and unclustered articles, reuse and creation ratios, size/status distributions,
@@ -167,6 +169,8 @@ refreshed, or deliberately recalculated. Recalculation reports its own success
 or failure and then refreshes the overview.
 
 ### Crawl Statistics
+
+**Reload history** reloads stored crawl outcomes; it does not start a crawl.
 
 Crawl Statistics is a read-only daily history of user-triggered crawl activity. It shows new articles, updated articles, completed crawls, and failed crawls for each day.
 
@@ -289,7 +293,7 @@ confirmation. Loading and explicit refresh use a bounded server status cache.
 The Reading navigation includes Offline reading immediately after Smart Folders.
 The device/account setting defaults to 100 articles and supports 100, 250, 1000, 2500 and 5000.
 Enabling or changing the limit prepares a safe replacement snapshot while connected;
-disabling stops future refreshes and retains existing downloads. Refresh now exposes
+disabling stops future refreshes and retains existing downloads. Update offline downloads exposes
 preparation progress, and Clear downloaded articles uses the shared destructive
 confirmation dialog to remove the current account's profile and article records while
 preserving pending intent. The page reports pending/failed state assignments and last

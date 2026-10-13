@@ -218,7 +218,7 @@ before proceeding and use [backups]({% link backup-restore.md %}) for recovery.
 
 ## Refresh and diagnose
 
-**Refresh feeds** requests publisher fetching and displays crawl progress.
+**Fetch new articles** requests publisher fetching and displays crawl progress.
 Refreshing an article collection, including mobile pull-to-refresh, reloads stored
 results and is a different operation.
 

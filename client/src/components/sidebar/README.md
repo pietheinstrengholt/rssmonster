@@ -16,7 +16,7 @@ The sidebar uses a native 6-pixel scrollbar with a transparent track and theme-a
 
 The top of the sidebar displays the RSSMonster logo and name, followed by three primary actions:
 
-- **Refresh feeds** asks the application feed-refresh store to start a feed crawl. While it runs, the sidebar projects shared live progress, including the current feed, processed feeds, new articles, errors, and recent status messages. A standard refresh is used if live progress is unavailable. Completing the refresh reloads the overview and article list even if the Sidebar is not mounted.
+- **Fetch new articles** asks the application feed-refresh store to start a feed crawl. While it runs, the sidebar projects shared live progress, including the current feed, processed feeds, new articles, errors, and recent status messages. A standard refresh is used if live progress is unavailable. Completing the refresh reloads the overview and article list even if the Sidebar is not mounted.
 - **Add new feed** opens the feed-creation flow.
 - **Mark selection read** is the default and marks all matching articles, including unloaded articles, before reloading the overview and article list.
 - Enabling **Mark only visible articles as read** in Sidebar configuration changes that same button to **Mark all visible as read**. It marks only on-screen article cards, respecting the viewport and enclosing scroll panes. Reader includes visible list items and the open article; supplemental recommendations remain outside the collection bulk action. This mode updates article state and counts without reloading the list or marking hidden Event members.

@@ -98,10 +98,10 @@ export default {
     },
     // This computed label communicates the current gesture or refresh state.
     statusLabel() {
-      if (this.isRefreshActive) return 'Refreshing articles…';
-      if (this.refreshFeedbackVisible) return 'Articles refreshed';
-      if (this.isReady) return 'Release to refresh';
-      return 'Pull to refresh';
+      if (this.isRefreshActive) return 'Reloading articles…';
+      if (this.refreshFeedbackVisible) return 'Articles reloaded';
+      if (this.isReady) return 'Release to reload articles';
+      return 'Pull to reload articles';
     }
   },
   watch: {

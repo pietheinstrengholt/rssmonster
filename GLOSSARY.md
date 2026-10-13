@@ -9,11 +9,18 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Refresh / crawl | “Refresh” can reload database-backed article results, crawl subscribed feeds, prepare offline downloads, or reload an insight snapshot. Pull-to-refresh explicitly does not crawl feeds. | [Shell refresh behavior](client/src/components/shell/README.md#layout-and-scroll-ownership), [feed refresh stream](client/src/services/feedRefreshStream.js), [offline reading](client/src/services/offlineReading.js) |
 | Settings names | Navigation uses **Your interests**, **Refresh history**, and **Health & errors** for sections/components/docs also called Islands, Crawl Statistics, and Observability. Cleanup uses an API contract named archiving, although the UI describes deletion. | [Settings navigation](client/src/components/settings/Settings.vue), [Settings documentation](client/src/components/settings/README.md), [Cleanup](client/src/components/dialogs/Cleanup.vue) |
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Reload and fetch scopes:** **Reload articles** and pull-to-refresh reload stored
+article results and counts without fetching publisher feeds. **Fetch new articles**
+starts the subscribed-feed crawl and then reloads results. **Update offline
+downloads** downloads stored articles to this device without crawling publishers.
+**Reload insights** and **Reload history** reload their server snapshots. Labels
+and documentation now distinguish these operations; behavior, function names,
+events, routes and persisted contracts are unchanged.
 
 **Source meanings:** **Official source** replaces the **Official Feed** article
 signal and identifies an article URL that matches a configured enabled domain
@@ -571,8 +578,9 @@ separate from committing the import.
 
 A **crawl** fetches/processes subscribed feed items. **Update interval** controls
 automatic scheduling, including adaptive publisher-activity scheduling or
-manual-only. **Feed refresh** can start crawling and display streamed progress.
-**Collection refresh** reloads stored Article results and overview counts.
+manual-only. **Fetch new articles** starts crawling and displays streamed progress.
+**Reload articles** reloads stored Article results and overview counts without
+crawling publishers.
 **Background refresh** is Electron's profile-wide scheduling facility, managed
 through Desktop settings rather than Article preferences.
 
@@ -604,7 +612,8 @@ Evidence: [Actions](client/src/components/settings/SettingsActions.vue),
 An **offline profile** belongs to this device/browser and account, scoped by API
 origin and user ID. Its **downloaded snapshot** contains a bounded recent Article
 collection prepared while connected; replacing it activates a complete new
-generation. Disabling future refreshes retains existing downloads.
+generation. **Update offline downloads** replaces this stored-article snapshot
+without crawling publisher feeds. Disabling future updates retains existing downloads.
 **Synchronization** sends queued read/unread and save/unsave assignments and
 reconciles accepted server state. Pending and failed assignments remain distinct
 from downloaded content and the last successful synchronization.

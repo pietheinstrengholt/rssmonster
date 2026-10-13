@@ -97,7 +97,7 @@ export const useOfflineReadingStore = defineStore('offlineReading', {
     async refreshSnapshot() {
       if (!this.account) return;
       if (this.readOnly || navigator.onLine === false) {
-        this.error = 'Connect to RSSMonster to refresh downloaded articles.';
+        this.error = 'Connect to RSSMonster to update offline downloads.';
         return;
       }
       const sessionId = this.sessionId;

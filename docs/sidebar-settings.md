@@ -71,7 +71,7 @@ a handle and press **Up** or **Down**. The default order is:
 5. Categories
 
 **Pinned can be moved**, just like the other sections. Global actions such as
-Add new feed, Refresh feeds, and Mark as read stay above these sections; management
+Add new feed, Fetch new articles, and Mark as read stay above these sections; management
 actions stay below them. Saving applies the new order without reloading the page.
 Ordering does not force empty sections to appear: for example, Pinned is absent
 when nothing is pinned.

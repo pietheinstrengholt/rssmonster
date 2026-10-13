@@ -32,8 +32,8 @@
           <button
             type="button"
             class="mobile-toolbar-button mobile-refresh-button"
-            :title="refreshing ? 'Refreshing articles…' : 'Refresh articles'"
-            :aria-label="refreshing ? 'Refreshing articles…' : 'Refresh articles'"
+            :title="refreshing ? 'Reloading articles…' : 'Reload stored articles and counts without fetching from publisher feeds.'"
+            :aria-label="refreshing ? 'Reloading articles…' : 'Reload articles'"
             :aria-busy="refreshing"
             :disabled="refreshing"
             @click="$emit('refresh')"

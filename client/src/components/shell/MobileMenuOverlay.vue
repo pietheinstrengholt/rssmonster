@@ -15,7 +15,7 @@
             </span>
             Options
           </h2>
-          <p id="options-description">Choose how RSSMonster displays and refreshes your feeds.</p>
+          <p id="options-description">Choose how RSSMonster displays articles and fetches new coverage.</p>
         </div>
         <button
           type="button"
@@ -74,9 +74,10 @@
         <section class="options-section" aria-labelledby="refresh-options-heading">
           <div class="options-section-header">
             <span class="options-section-number" aria-hidden="true"><BootstrapIcon icon="arrow-clockwise" /></span>
-            <h3 id="refresh-options-heading">Refresh feeds</h3>
+            <h3 id="refresh-options-heading">Fetch new articles</h3>
           </div>
-          <button @click="refreshFeeds()" type="button" class="options-action-button options-action-button--refresh">Refresh feeds</button>
+          <p>Contact subscribed feeds to fetch new articles, then reload stored results.</p>
+          <button @click="refreshFeeds()" type="button" class="options-action-button options-action-button--refresh">Fetch new articles</button>
         </section>
 
         <section class="options-section" aria-labelledby="new-feed-options-heading">

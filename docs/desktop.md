@@ -75,7 +75,7 @@ The local administrator can open **Settings → Background refresh**:
 The interval is the delay between completed eligibility checks. It does not force
 all feeds to refresh: feed-specific intervals, publisher caching, and retry deadlines
 still apply. Changing it wakes the existing worker. Turning automatic refresh off
-lets current work finish and stops future scheduled cycles; manual **Refresh feeds**
+lets current work finish and stops future scheduled cycles; manual **Fetch new articles**
 and tray **Refresh feeds now** remain available. Checks start after local AI services
 are ready and continue while the window is hidden.
 

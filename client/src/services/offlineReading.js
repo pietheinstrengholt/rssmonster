@@ -37,7 +37,7 @@ export const createOfflineReadingService = (database = offlineDatabase, fetchPag
           for (const id of page.itemIds) {
             if (articles.length + batch.length >= profile.articleLimit) break;
             const article = details.get(String(id));
-            if (!article || seen.has(String(id))) throw new Error('The article collection changed. Please refresh again.');
+            if (!article || seen.has(String(id))) throw new Error('The article collection changed. Please update offline downloads again.');
             seen.add(String(id));
             batch.push(article);
           }
@@ -45,7 +45,7 @@ export const createOfflineReadingService = (database = offlineDatabase, fetchPag
           articles.push(...batch);
           progress({ status: 'preparing', prepared: articles.length, total: profile.articleLimit });
           cursor = page.hasMore ? page.nextCursor : null;
-          if (page.hasMore && (!cursor || !batch.length)) throw new Error('Incomplete article page. Please refresh again.');
+          if (page.hasMore && (!cursor || !batch.length)) throw new Error('Incomplete article page. Please update offline downloads again.');
         } while (cursor && articles.length < profile.articleLimit);
         // Activation and pruning share a single transaction after every page is persisted.
         const ready = await database.writeGeneration(account, generation, articles, true, lease);

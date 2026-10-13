@@ -152,7 +152,7 @@
               <div>
                 <strong>No articles downloaded yet.</strong>
                 <p>
-                  Enable offline reading or refresh the library to prepare
+                  Enable offline reading or update offline downloads to prepare
                   articles.
                 </p>
               </div>
@@ -162,7 +162,7 @@
               <div>
                 <dt>
                   <BootstrapIcon icon="clock" decorative />
-                  Last refreshed
+                  Last updated
                 </dt>
                 <dd>{{ lastRefresh }}</dd>
               </div>
@@ -198,7 +198,7 @@
                 @click="offlineReadingStore.refreshSnapshot()"
               >
                 <BootstrapIcon icon="arrow-clockwise" decorative />
-                Refresh now
+                Update offline downloads
               </button>
 
               <button
@@ -255,8 +255,8 @@
       <div>
         <strong>Offline articles are stored locally on this device.</strong>
         <p>
-          Refresh the offline library while connected to download the latest
-          articles.
+          Update offline downloads while connected to download the latest stored
+          articles. This does not fetch new articles from publisher feeds.
         </p>
       </div>
     </aside>
@@ -274,7 +274,7 @@
       configuration from this device? Unsynchronized changes will be retained.
     </ConfirmDialog>
     <ConfirmDialog v-if="confirmDiscard" title="Discard unsynchronized changes?" confirm-label="Discard changes" :busy="saving" @confirm="discard" @cancel="confirmDiscard = false" @close="confirmDiscard = false">
-      Permanently remove this account's pending and failed changes from this device. Changes already accepted by the server cannot be undone. Downloaded states return to their stored baseline until refreshed.
+      Permanently remove this account's pending and failed changes from this device. Changes already accepted by the server cannot be undone. Downloaded states return to their stored baseline until the downloads are updated.
     </ConfirmDialog>
   </div>
 </template>

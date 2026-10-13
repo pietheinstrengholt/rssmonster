@@ -59,7 +59,7 @@ describe('ArticleEmptyState', () => {
     expect(wrapper.text()).not.toContain('You’re all caught up');
     expect(wrapper.get('.article-empty-state-primary').text()).toContain('Clear search');
     expect(wrapper.get('.article-empty-state-secondary').text()).toContain('Clear filters');
-    expect(wrapper.text()).not.toContain('Refresh feeds');
+    expect(wrapper.text()).not.toContain('Fetch new articles');
 
     await wrapper.get('.article-empty-state-primary').trigger('click');
     await wrapper.get('.article-empty-state-secondary').trigger('click');
@@ -99,7 +99,7 @@ describe('ArticleEmptyState', () => {
     expect(wrapper.get('section').attributes('aria-labelledby')).toBe('article-empty-state-title');
     expect(wrapper.get('h2').text()).toBe('You’re all caught up');
     expect(wrapper.text()).toContain('There are no unread articles in this view.');
-    expect(wrapper.get('.article-empty-state-primary').text()).toContain('Refresh feeds');
+    expect(wrapper.get('.article-empty-state-primary').text()).toContain('Fetch new articles');
     expect(wrapper.get('.article-empty-state-secondary').text()).toContain('View unread articles');
 
     await wrapper.get('.article-empty-state-primary').trigger('click');
@@ -118,7 +118,7 @@ describe('ArticleEmptyState', () => {
 
     expect(wrapper.get('h2').text()).toBe('No saved articles yet');
     expect(wrapper.get('.article-empty-state-primary').text()).toContain('View unread articles');
-    expect(wrapper.get('.article-empty-state-secondary').text()).toContain('Refresh feeds');
+    expect(wrapper.get('.article-empty-state-secondary').text()).toContain('Fetch new articles');
 
     await wrapper.get('.article-empty-state-primary').trigger('click');
     expect(wrapper.emitted('view-tag-status')).toEqual([['unread']]);
@@ -263,8 +263,8 @@ describe('ArticleRefreshState', () => {
     });
 
     expect(wrapper.get('.article-refresh-state-title').text()).toBe('5 new unread articles');
-    expect(wrapper.get('.article-refresh-state-action').text()).toBe('Refresh to show them');
-    expect(wrapper.get('button').attributes('aria-label')).toBe('5 new unread articles. Refresh to show them.');
+    expect(wrapper.get('.article-refresh-state-action').text()).toBe('Reload articles to show them');
+    expect(wrapper.get('button').attributes('aria-label')).toBe('5 new unread articles. Reload articles to show them.');
 
     await wrapper.get('button').trigger('click');
 
@@ -277,8 +277,8 @@ describe('ArticleRefreshState', () => {
     });
 
     expect(wrapper.get('.article-refresh-state-title').text()).toBe('1 new unread article');
-    expect(wrapper.get('.article-refresh-state-action').text()).toBe('Refresh to show it');
-    expect(wrapper.get('button').attributes('aria-label')).toBe('1 new unread article. Refresh to show it.');
+    expect(wrapper.get('.article-refresh-state-action').text()).toBe('Reload articles to show it');
+    expect(wrapper.get('button').attributes('aria-label')).toBe('1 new unread article. Reload articles to show it.');
   });
 });
 

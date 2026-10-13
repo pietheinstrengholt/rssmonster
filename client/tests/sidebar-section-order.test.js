@@ -59,7 +59,7 @@ describe('Sidebar section order', () => {
     mountSidebar(custom, true);
     expect(titles()).toEqual(['Pinned', 'Categories', 'Top tags in Unread', 'All feeds', 'Smart Folders']);
     const pinned = wrapper.get('section[aria-label="Pinned"]').element;
-    for (const label of ['Add new feed', 'Refresh feeds', 'Mark selection read']) {
+    for (const label of ['Add new feed', 'Fetch new articles', 'Mark selection read']) {
       expect(button(label).element.compareDocumentPosition(pinned) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }
     const last = wrapper.findAllComponents(SidebarSectionTitle).at(-1).element;

@@ -111,7 +111,7 @@ Article imagery is publisher-owned rather than decorative application chrome. Im
 
 ### Sidebar and collection navigation
 
-The desktop sidebar is the main library map. A 60px monster mark and 26px RSSMonster label create a compact brand header. Below it, the primary actions—Refresh feeds, Add new feed, and Mark as read—use blue, orange, and green semantics respectively.
+The desktop sidebar is the main library map. A 60px monster mark and 26px RSSMonster label create a compact brand header. Below it, the primary actions—Fetch new articles, Add new feed, and Mark as read—use blue, orange, and green semantics respectively.
 
 Smart Folders, status filters, tags, all categories, categories, and nested feeds use dense rows with counts aligned to the trailing edge. Selected rows use a soft blue surface and blue text; hover uses a neutral gray. Category rows expand in place so the subscription hierarchy remains understandable without a second navigation screen. Management actions and the version link sit quietly at the bottom.
 

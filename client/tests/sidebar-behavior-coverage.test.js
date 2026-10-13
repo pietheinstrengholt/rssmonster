@@ -156,7 +156,7 @@ describe('Sidebar navigation and action coverage', () => {
 
     const actionButtons = wrapper.findAllComponents({ name: 'SidebarActionButton' });
     const selectAction = label => actionButtons.find(button => button.props('label') === label).vm.$emit('select');
-    selectAction('Refresh feeds');
+    selectAction('Fetch new articles');
     selectAction('Add new feed');
     selectAction('Mark selection read');
 

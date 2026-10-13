@@ -51,7 +51,7 @@ describe('offline Settings', () => {
     expect(profile.articleLimit).toBe(250);
     expect(offlineReading.refreshSnapshot).not.toHaveBeenCalled();
   });
-  it('shows progress and provides Refresh now', async () => {
+  it('shows progress and provides Update offline downloads', async () => {
     profile.enabled = true;
     useOfflineReadingStore().profile = { ...profile };
     await flushPromises();
@@ -60,10 +60,10 @@ describe('offline Settings', () => {
       progress({ status: 'preparing', prepared: 72, total: 100 });
       return new Promise(resolve => { finish = resolve; });
     });
-    await button('Refresh now').trigger('click');
+    await button('Update offline downloads').trigger('click');
     expect(wrapper.text()).toContain('72 of 100 articles prepared');
     expect(wrapper.get('progress').attributes('value')).toBe('72');
-    expect(button('Refresh now').attributes('disabled')).toBeDefined();
+    expect(button('Update offline downloads').attributes('disabled')).toBeDefined();
     finish(profile);
     await flushPromises();
     expect(wrapper.find('progress').exists()).toBe(false);
