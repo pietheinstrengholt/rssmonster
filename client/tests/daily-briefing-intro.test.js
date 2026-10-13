@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useOverviewStore } from '../src/store/overview.js';
+import { useSelectionStore } from '../src/store/selection.js';
 import { flushPromises, mount, shallowMount } from '@vue/test-utils';
 
 import ArticleListView from '../src/components/articles/ArticleListView.vue';
@@ -54,8 +56,9 @@ const briefingResponse = {
 // This function mounts the briefing intro with the existing selected query.
 function mountDailyBriefingIntro(search = 'briefing:true @lastweek') {
   const stores = createFocusedStores({
+    overview: { briefingCount: 5, overviewCountsStatus: 'success' },
     selection: {
-      currentSelection: { status: 'briefing', search }
+      currentSelection: { status: 'briefing', search, grouping: 'event' }
     }
   });
   return mount(DailyBriefingIntro, {
@@ -161,9 +164,10 @@ describe('DailyBriefingIntro', () => {
     await flushPromises();
 
     expect(fetchDailyBriefing).toHaveBeenCalledWith({ period: '7d', status: 'all' });
-    expect(wrapper.get('.briefing-context').text()).toContain('12 articles');
+    expect(wrapper.get('.briefing-context').text()).toContain('12 contributing articles');
     expect(wrapper.get('.briefing-context').text()).toContain('15 sources');
-    expect(wrapper.get('.briefing-context').text()).toContain('across 4 events, and 6 interest islands.');
+    expect(wrapper.get('.briefing-context').text()).toContain('5 articles shown after Event grouping.');
+    expect(wrapper.get('.briefing-context').text()).toContain('4 newly created events and 6 interest islands.');
     expect(wrapper.get('.briefing-context').text()).not.toContain('7 events');
     expect(wrapper.get('.briefing-context').text()).not.toContain('new events');
     expect(wrapper.get('.briefing-context').text()).not.toContain('interest areas');
@@ -186,6 +190,61 @@ describe('DailyBriefingIntro', () => {
     expect(wrapper.find('.briefing-morning-summary-text').exists()).toBe(false);
     expect(wrapper.text()).toContain('Global briefing across your subscriptions');
     expect(wrapper.get('#briefing-morning-title').text()).toBe('The stories shaping your morning');
+  });
+
+  it('distinguishes contributing articles from shown articles and updates with sidebar counts', async () => {
+    fetchDailyBriefing.mockResolvedValue({ data: {
+      ...briefingResponse,
+      context: { articleCount: 114, sourceCount: 16, newEventCount: 44, islandCount: 1 }
+    } });
+    const wrapper = mountDailyBriefingIntro();
+    const overview = useOverviewStore();
+    overview.briefingCount = 34;
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Based on 114 contributing articles from 16 sources; 34 articles shown after Event grouping.');
+    expect(wrapper.text()).toContain('44 newly created events and 1 interest island.');
+
+    overview.briefingCount = 33;
+    await flushPromises();
+    expect(wrapper.text()).toContain('33 articles shown after Event grouping.');
+    expect(wrapper.text()).toContain('114 contributing articles');
+  });
+
+  it('labels ungrouped counts without claiming Event grouping', async () => {
+    const wrapper = mountDailyBriefingIntro();
+    useSelectionStore().currentSelection.grouping = 'none';
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('5 articles shown without Event grouping.');
+    expect(wrapper.text()).not.toContain('shown after Event grouping');
+  });
+
+  it.each([
+    ['idle', 'Loading shown article count…'],
+    ['loading', 'Loading shown article count…'],
+    ['error', 'Shown article count is temporarily unavailable.']
+  ])('avoids showing an unconfirmed sidebar count when counts are %s', async (status, message) => {
+    const wrapper = mountDailyBriefingIntro();
+    useOverviewStore().overviewCountsStatus = status;
+    await flushPromises();
+
+    expect(wrapper.text()).toContain(message);
+    expect(wrapper.text()).toContain('12 contributing articles');
+    expect(wrapper.text()).not.toContain('5 articles shown');
+  });
+
+  it('uses singular labels and preserves a confirmed zero shown count', async () => {
+    fetchDailyBriefing.mockResolvedValue({ data: {
+      ...briefingResponse,
+      context: { articleCount: 1, sourceCount: 1, newEventCount: 1, islandCount: 1 }
+    } });
+    const wrapper = mountDailyBriefingIntro();
+    useOverviewStore().briefingCount = 0;
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Based on 1 contributing article from 1 source; 0 articles shown after Event grouping.');
+    expect(wrapper.text()).toContain('1 newly created event and 1 interest island.');
   });
 
   it('submits the one-day period when the existing query selects today', async () => {

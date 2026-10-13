@@ -10,15 +10,20 @@
       :source-count="context?.sourceCount ?? null"
       :is-loading="isLoading"
       :has-error="loadError"
-      has-details
+      article-label="contributing article"
       loading-text="Loading briefing context…"
       error-text="Briefing context is temporarily unavailable."
       empty-text="No briefing context is available for this period."
     >
       <template v-if="context">
-          across
-          <strong>{{ formatCountLabel(context.newEventCount, 'event') }}</strong>, and
-          <strong>{{ formatCountLabel(context.islandCount, 'interest island') }}</strong>.
+        <template v-if="overviewStore.overviewCountsStatus === 'success'">;
+          <strong>{{ formatCountLabel(overviewStore.briefingCount, 'article') }}</strong>
+          shown {{ selectionStore.currentSelection.grouping === 'event' ? 'after' : 'without' }} Event grouping.
+        </template>
+        <template v-else-if="overviewStore.overviewCountsStatus === 'error'">. Shown article count is temporarily unavailable.</template>
+        <template v-else>. Loading shown article count…</template>
+        <strong>{{ formatCountLabel(context.newEventCount, 'newly created event') }}</strong>
+        and <strong>{{ formatCountLabel(context.islandCount, 'interest island') }}</strong>.
       </template>
       <template v-if="$slots.actions" #actions>
         <slot name="actions" />
@@ -63,6 +68,7 @@
 <script>
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
+import { useOverviewStore } from '../../store/overview.js';
 import BriefingContextText from './BriefingContextText.vue';
 import { fetchDailyBriefing } from '../../api/articles';
 
@@ -85,7 +91,7 @@ export default {
     };
   },
   computed: {
-    ...mapStores(useSelectionStore),
+    ...mapStores(useSelectionStore, useOverviewStore),
     // This function maps the existing briefing query to the API period convention.
     briefingPeriod() {
       const search = String(this.selectionStore.currentSelection.search || '').toLowerCase();
@@ -182,11 +188,6 @@ export default {
   height: 1px;
   background-color: var(--briefing-intro-border);
   content: '';
-}
-
-.daily-briefing-intro.daily-briefing-intro--reader {
-  padding-right: 0;
-  padding-left: 0;
 }
 
 .daily-briefing-intro.daily-briefing-intro--reader::after {

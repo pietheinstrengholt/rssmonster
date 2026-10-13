@@ -40,7 +40,7 @@ appears for filtered empty results. Filters do not change summary/count requests
 
 The introduction contains two areas:
 
-1. A context strip describing how many eligible articles and distinct feeds contributed to the briefing, plus the number of newly created events and matched Interest Islands.
+1. A context strip distinguishing contributing articles and distinct feeds from articles shown after Event grouping, plus the number of newly created events and matched Interest Islands. The shown count uses the same overview total as the sidebar, rather than the partially loaded article list. It follows the active grouping, and displays a loading or unavailable message until overview counts succeed. Newly created events are Events created within the briefing period with eligible coverage; their selected articles need not qualify for the grouped collection.
 2. A morning summary titled “The stories shaping your morning.”
 
 The morning summary contains up to four distinct event stories. Stronger events are presented first, with representative publication time used as a secondary ordering signal. Each item uses the event name when available, otherwise the representative article title, and may include a concise excerpt derived from the representative article.

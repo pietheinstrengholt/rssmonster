@@ -4,7 +4,7 @@
       <template v-if="isLoading">{{ loadingText }}</template>
       <template v-else-if="hasContext">
         Based on
-        <strong>{{ formatCountLabel(articleCount, 'article') }}</strong>
+        <strong>{{ formatCountLabel(articleCount, articleLabel) }}</strong>
         from
         <strong>{{ formatCountLabel(sourceCount, 'source') }}</strong><template v-if="hasDetails">,</template><slot></slot>
       </template>
@@ -19,6 +19,10 @@
 export default {
   name: 'BriefingContextText',
   props: {
+    articleLabel: {
+      type: String,
+      default: 'article'
+    },
     articleCount: {
       type: Number,
       default: null
