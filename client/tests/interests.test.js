@@ -46,8 +46,8 @@ describe('Settings Islands interests', () => {
 
   it('renders heading, API labels, signed evidence and accessible normalized strength without decorative icons', async () => {
     const wrapper = render(SettingsIslands); await flushPromises();
-    expect(wrapper.get('.settings-insight-card').text()).toContain('Your evolving interests');
-    expect(wrapper.text()).toContain('Interest islands capture the interests');
+    expect(wrapper.get('.settings-insight-card').text()).toContain('Your interests');
+    expect(wrapper.text()).toContain('Your interests reflect the preferences');
     for (const label of ['Positive interests', 'Negative interests', 'Active', 'Archived']) expect(wrapper.text()).toContain(label);
     expect(wrapper.findAll('.interest-summary-card')).toHaveLength(4);
     expect(wrapper.findAll('.interest-summary-card').map(card => card.get('strong').text())).toEqual(['1', '1', '1', '1']);
@@ -214,7 +214,7 @@ describe('Settings Islands interests', () => {
     } } });
     const settings = render(Settings);
     await button(settings, 'Your interests').trigger('click'); await flushPromises();
-    expect(settings.get('.settings-insight-card').text()).toContain('Your evolving interests');
+    expect(settings.get('.settings-insight-card').text()).toContain('Your interests');
     await settings.get('[aria-label="Inspect Space exploration"]').trigger('click'); await flushPromises();
     document.querySelector('.interest-example').click(); await flushPromises();
     expect(settings.emitted('open-article')).toEqual([[9]]);

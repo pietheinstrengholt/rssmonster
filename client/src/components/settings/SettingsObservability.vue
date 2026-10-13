@@ -3,7 +3,7 @@
     <SettingsPageIntro
       eyebrow="Settings — Health &amp; errors"
       icon="activity"
-      title="Service health & processing failures"
+      title="Health &amp; errors"
       title-id="processing-failures-title"
     >
       Inspect abnormal crawl, article, embedding, event and island processing outcomes.

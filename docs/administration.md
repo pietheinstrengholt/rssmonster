@@ -86,7 +86,7 @@ See [Email Configuration]({% link email-configuration.md %}) for delivery logs a
 
 ## Processing failures and queue health
 
-**Settings → Observability** groups processing failures and lets you inspect
+**Settings → Health & errors** groups processing failures and lets you inspect
 individual occurrences. **Settings → AI Processing** shows optional job states
 and worker health. Clearing diagnostic history is different from fixing a failed
 feed or retrying a dead job; follow [Crawling]({% link crawling.md %}#dead-job-recovery) for

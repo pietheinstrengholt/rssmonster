@@ -9,10 +9,16 @@ not necessarily indicate a functional defect.
 
 | Area | Current inconsistency or conflict | Evidence |
 | --- | --- | --- |
-| Settings names | Navigation uses **Your interests**, **Refresh history**, and **Health & errors** for sections/components/docs also called Islands, Crawl Statistics, and Observability. Cleanup uses an API contract named archiving, although the UI describes deletion. | [Settings navigation](client/src/components/settings/Settings.vue), [Settings documentation](client/src/components/settings/README.md), [Cleanup](client/src/components/dialogs/Cleanup.vue) |
 | Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
 
 ## Resolved contract migrations
+
+**Settings terminology:** Navigation, page titles and documentation consistently
+use **Your interests**, **Refresh history**, and **Health & errors**. Islands,
+Crawl Statistics and Observability remain internal implementation names. Cleanup
+loading/error messages use **cleanup settings** and its introduction explicitly
+describes permanent deletion, not a recoverable archive. Internal identifiers,
+API contracts, persisted settings and behavior are unchanged.
 
 **Reload and fetch scopes:** **Reload articles** and pull-to-refresh reload stored
 article results and counts without fetching publisher feeds. **Fetch new articles**

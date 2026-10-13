@@ -147,9 +147,12 @@ and the largest current Events.
 
 The data is a fetched snapshot. It changes only when the section is loaded or refreshed, not because the user scrolls or opens an item. Empty states explain that events appear after semantic clustering has produced data. Failures are shown without replacing prior server state.
 
-### Islands
+### Your interests
 
-Islands explains the interest clusters RSSMonster has learned from reading,
+The page title matches the navigation. Internally, learned interest clusters
+remain Islands, implemented by `SettingsIslands.vue` and the existing interest APIs.
+
+**Your interests** explains the interest clusters RSSMonster has learned from reading,
 saved, and click behavior. The overview is read-only, with one explicit
 recalculation action that rebuilds the signed-in user's Islands and article
 interest scores from existing evidence.
@@ -168,11 +171,11 @@ Island data is a fetched snapshot and changes only when loaded, explicitly
 refreshed, or deliberately recalculated. Recalculation reports its own success
 or failure and then refreshes the overview.
 
-### Crawl Statistics
+### Refresh history
 
 **Reload history** reloads stored crawl outcomes; it does not start a crawl.
 
-Crawl Statistics is a read-only daily history of user-triggered crawl activity. It shows new articles, updated articles, completed crawls, and failed crawls for each day.
+**Refresh history** is a read-only daily history of user-triggered crawl activity. It shows new articles, updated articles, completed crawls, and failed crawls for each day.
 
 The available date ranges are the last 7, 30, 90, or 365 days. Changing the range retrieves a new bounded snapshot. Only completed and failed user crawls are included. Loading, empty, and failure states are presented separately, and the user can explicitly refresh the current range.
 
@@ -186,9 +189,9 @@ Retry failed jobs queues up to 100 failed jobs or articles awaiting recovery per
 
 Clear records opens an explicit confirmation before permanently deleting the signed-in user's succeeded and dead job history. Pending, retrying, running, and cancelled jobs remain untouched. Successful cleanup refreshes the status view; a failed cleanup keeps the confirmation available for retry.
 
-### Observability
+### Health & errors
 
-Observability is a read-only failure inbox for crawl, article, embedding, event and island processing. It deliberately excludes successful processing statistics and groups abnormal outcomes by their stable failure fingerprint.
+**Health & errors** is a read-only failure inbox for crawl, article, embedding, event and island processing. It deliberately excludes successful processing statistics and groups abnormal outcomes by their stable failure fingerprint.
 
 The overview can be bounded by date range, processing stage, and failure type. Selecting a group opens its individual occurrences without replacing the Settings section. Selecting an occurrence then loads its captured message, identifiers, retry state, stack trace, and structured context. Group and occurrence lists are paginated so older or less common failures remain available without an unbounded request.
 
@@ -238,6 +241,12 @@ Deletion has a separate confirmation view because it permanently removes the acc
 The signed-in account cannot start its own deletion flow; the server also enforces this restriction.
 
 The current implementation manages existing users; account creation is not part of this section.
+
+### Cleanup terminology
+
+**Cleanup** permanently deletes eligible articles; it does not move them to a
+recoverable archive. Loading and error messages refer to **cleanup settings**.
+The existing archiving API and persisted configuration names remain unchanged.
 
 ## Save and refresh expectations
 

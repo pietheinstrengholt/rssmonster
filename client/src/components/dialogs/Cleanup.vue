@@ -1,6 +1,6 @@
 <template>
   <ConfirmDialog title="Cleanup" variant="warning" size="lg" :busy="busy" @cancel="closeDialog" @close="closeDialog">
-    <template #subtitle>Remove old articles based on your settings</template>
+    <template #subtitle>Permanently delete articles based on your cleanup settings</template>
     <div class="cleanup-dialog">
       <div class="app-notice app-notice--warning cleanup-warning">
         <BootstrapIcon icon="info-circle" aria-hidden="true" />
@@ -9,9 +9,9 @@
           <p>Saved articles, unread articles, and opened originals can be excluded based on your settings.</p>
         </div>
       </div>
-      <p v-if="loading" role="status">Loading archiving settings…</p>
+      <p v-if="loading" role="status">Loading cleanup settings…</p>
       <div v-if="loadError" class="app-notice app-notice--danger" role="alert">
-        <p>Could not load archiving settings.</p>
+        <p>Could not load cleanup settings.</p>
         <button class="app-button app-button--secondary" type="button" @click="loadSettings">Retry</button>
       </div>
       <p v-if="message" class="app-notice cleanup-success" role="status">{{ message }}</p>
@@ -113,7 +113,7 @@ export default {
         this.settings = (await fetchArchivingSettings()).data;
       } catch (error) {
         this.loadError = true;
-        notifyActionError('Could not load archiving settings. Please try again.', error);
+        notifyActionError('Could not load cleanup settings. Please try again.', error);
       } finally {
         this.loading = false;
       }
@@ -132,7 +132,7 @@ export default {
         this.settings = (await saveArchivingSettings(this.settingsPayload())).data;
         this.message = 'Archiving settings saved.';
       } catch (error) {
-        notifyActionError('Could not save archiving settings. Please try again.', error);
+        notifyActionError('Could not save cleanup settings. Please try again.', error);
       } finally {
         this.savePending = false;
       }

@@ -3,7 +3,7 @@
     <SettingsPageIntro
       eyebrow="Settings — Refresh history"
       icon="clipboard-data-fill"
-      title="Daily crawl activity"
+      title="Refresh history"
       title-id="crawl-statistics-title"
     >
       Review how many articles were added or updated and how each day&rsquo;s user crawls

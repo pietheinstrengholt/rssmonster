@@ -264,7 +264,7 @@ become new behavioral evidence and does not itself change an Island.
 
 ## Inspecting Your Islands
 
-Open **Settings → Islands** to review and configure the interests RSSMonster has
+Open **Settings → Your interests** to review and configure the interests RSSMonster has
 learned. The Island Insights introduction stays at the top of the page, followed
 by summary cards for positive, negative, active, and archived interests. The
 **Active** filter is selected when you open the page. Use the other filters,
@@ -274,10 +274,10 @@ Evidence strength is preference magnitude, not confidence in a recommendation.
 
 Select **Inspect** to see an Island's evidence breakdown and example articles.
 If an article's **Why this article was ranked** explanation says it matches one of your
-interests, select the interest name to open **Settings → Islands** with that
+interests, select the interest name to open **Settings → Your interests** with that
 Island selected and inspected.
 
-![Settings → Islands with the Active filter, Island actions, and an open inspector](assets/interestislands.png)
+![Settings → Your interests with the Active filter, Island actions, and an open inspector](assets/interestislands.png)
 
 ### Muting an Island
 

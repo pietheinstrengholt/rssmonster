@@ -3,10 +3,10 @@
     <SettingsPageIntro
       eyebrow="Settings — Your interests"
       icon="compass-fill"
-      title="Your evolving interests"
+      title="Your interests"
       title-id="islands-title"
     >
-      Interest islands capture the interests your reading, saved articles, and opened originals keep reinforcing. Review the interests you have developed
+      Your interests reflect the preferences your reading, saved articles, and opened originals keep reinforcing. Review the interests you have developed
       and the behavioral evidence behind them.
     </SettingsPageIntro>
 
