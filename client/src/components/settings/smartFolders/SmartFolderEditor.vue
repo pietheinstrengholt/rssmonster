@@ -144,15 +144,19 @@
                 </legend>
 
                 <label class="smart-folder-field">
-                    <span>Tags</span>
+                    <span>Tag</span>
                     <input
                         v-model.trim="draftConfig.content.tags"
+                        :aria-describedby="`smart-folder-tag-help-${smartFolder.id}`"
                         type="text"
                         class="app-form-control"
                         placeholder="ai"
                         @blur="normalizeDraftTag"
                     />
                 </label>
+                <p :id="`smart-folder-tag-help-${smartFolder.id}`" class="app-form-help">
+                    Match articles with one tag. Tag names may contain spaces.
+                </p>
 
                 <label class="smart-folder-field">
                     <span>Title contains</span>

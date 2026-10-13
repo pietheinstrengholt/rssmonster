@@ -2,16 +2,14 @@
 
 ## Unresolved inconsistencies and conflicts
 
-These observations come from the client code and its supporting documentation.
-They are recorded for later resolution; the definitions below describe current
-usage rather than deciding new names or changing behavior. Naming differences do
-not necessarily indicate a functional defect.
-
-| Area | Current inconsistency or conflict | Evidence |
-| --- | --- | --- |
-| Tags / single-tag filter | The Smart Folder editor labels its field **Tags**, but its help and query parser describe/support one tag in the visual configuration. Article tag management supports multiple labels, which makes the plural field ambiguous. | [Smart Folder editor](client/src/components/settings/smartFolders/SmartFolderEditor.vue), [query parser](client/src/components/settings/smartFolders/smartFolderQuery.js), [article tag dialog](client/src/components/articles/ArticleTagDialog.vue) |
+No unresolved items remain from this review. Resolutions are recorded below.
 
 ## Resolved contract migrations
+
+**Single-tag filter:** The Smart Folder visual editor labels its field **Tag**
+and explains that it matches one tag, including names containing spaces. Article
+tag management supports multiple labels. The editor’s `content.tags` property,
+normalization, query generation and saved folders are unchanged.
 
 **Settings terminology:** Navigation, page titles and documentation consistently
 use **Your interests**, **Refresh history**, and **Health & errors**. Islands,

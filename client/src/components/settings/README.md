@@ -55,6 +55,10 @@ Sections that complete their own nested workflow may return the user to Welcome 
 
 ### Smart Folders
 
+The visual editor’s **Tag** field matches one tag, including names containing
+spaces. Article tag management can assign multiple labels; this filter selects
+one. The internal `content.tags` property and query serialization are unchanged.
+
 Smart Folders manages saved article searches that appear in sidebar navigation. The section loads the user's authoritative folder collection before enabling editing. Load failures preserve the server collection and offer a retry instead of exposing an empty editable state.
 
 Each folder has a name, result limit, and generated search query. A folder can be created, removed, edited in place, or saved as a copy. The editor translates user-friendly controls into the stored query and displays that generated query for inspection or copying.

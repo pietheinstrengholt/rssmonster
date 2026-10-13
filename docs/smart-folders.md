@@ -29,6 +29,11 @@ They update automatically as new articles arrive.
 3. (Optional) Set `limitCount` to cap results (50 by default).
 4. Save. The folder updates itself as content changes.
 
+The visual editor’s **Tag** field matches one tag. Tag names may contain spaces,
+for example `machine learning`; they are serialized as `tag:"machine learning"`.
+Article tag management supports multiple labels, but this field selects one tag
+condition.
+
 Use the same tokens as the search bar: status (`unread:true`, `saved:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), Overall quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), hot items (`hot:true`), and sorts.
 
 ## Overall quality and source-aware sorting

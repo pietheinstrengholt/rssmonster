@@ -163,7 +163,11 @@ describe('SmartFolderEditor', () => {
 
   it('allows typing and saving a multiword tag condition', async () => {
     const wrapper = mountEditor();
-    const input = wrapper.findAll('label').find(label => label.text() === 'Tags').find('input');
+    const input = wrapper.findAll('label').find(label => label.text() === 'Tag').find('input');
+    expect(input.attributes('aria-describedby')).toBe('smart-folder-tag-help-1');
+    expect(wrapper.get('#smart-folder-tag-help-1').text()).toBe(
+      'Match articles with one tag. Tag names may contain spaces.'
+    );
     await input.setValue('Read Later');
     const space = new KeyboardEvent('keydown', { key: ' ', cancelable: true });
     input.element.dispatchEvent(space);
