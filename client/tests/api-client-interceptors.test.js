@@ -49,12 +49,23 @@ const rejectAxiosError = ({
 
 afterEach(() => {
   setAuthToken(null);
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
 
 describe('shared API base URL', () => {
-  it('defaults to the local server when the API host is missing', () => {
-    expect(resolveApiBaseUrl()).toBe('http://localhost:3000/api');
+  it('defaults to same-origin requests when the API host is missing', () => {
+    expect(resolveApiBaseUrl()).toBe('/api');
+  });
+
+  it('sends login requests to the public origin when built without an API host', async () => {
+    vi.stubEnv('VITE_APP_HOSTNAME', undefined);
+    vi.resetModules();
+    const { default: sameOriginApi } = await import('../src/api/client.js');
+    const loginUrl = sameOriginApi.getUri({ url: '/auth/login' });
+
+    expect(new URL(loginUrl, 'https://reader.example.com').href)
+      .toBe('https://reader.example.com/api/auth/login');
   });
 
   it('preserves an explicitly empty same-origin API host', () => {

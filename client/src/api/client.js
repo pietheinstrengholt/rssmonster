@@ -2,8 +2,8 @@ import axios from 'axios';
 
 export const CONNECTIVITY_ERROR_EVENT = 'app:connectivity-error';
 
-// This function defaults to the local server and preserves explicit same-origin configuration.
-export const resolveApiBaseUrl = (hostname = 'http://localhost:3000') => {
+// This function resolves API requests to an explicit host or the current origin.
+export const resolveApiBaseUrl = hostname => {
   const configuredHostname = hostname?.trim().replace(/\/+$/, '');
 
   return configuredHostname ? `${configuredHostname}/api` : '/api';

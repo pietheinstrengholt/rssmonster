@@ -644,11 +644,15 @@ evaluate results across several users and feed mixes.
 
 | Variable | Example | Description |
 | --- | --- | --- |
-| `VITE_APP_HOSTNAME` | `http://localhost:3000` | Base URL used by the browser for API requests. Defaults to `http://localhost:3000` when unset; set an empty value for same-origin requests or use the public server origin. |
+| `VITE_APP_HOSTNAME` | `http://localhost:3000` | Base URL used by the browser for API requests. Defaults to same-origin `/api` requests when unset or empty. Set an explicit server origin for a separate API server, including local development on port 3000. |
 | `VITE_BASE_URL` | `/` | Client asset base path. Defaults to `/` when unset. |
 
 Vite embeds these values during `npm run build`. Restarting an already-built
 client without rebuilding does not apply changes.
+The standard Docker image uses same-origin API requests, so reverse proxies and
+Cloudflare Tunnel use the browser-facing domain automatically. `PUBLIC_APP_URL`
+controls email verification and password-reset links; it does not configure the
+browser's API URL.
 Development-only client behavior is derived automatically from Vite's active mode.
 
 ## Example Manual Configurations
