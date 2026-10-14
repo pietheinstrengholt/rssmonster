@@ -6,10 +6,10 @@ const browser = await chromium.launch({
   ...(process.env.READING_BROWSER_EXECUTABLE ? { executablePath: process.env.READING_BROWSER_EXECUTABLE } : {})
 });
 try {
-  for (const width of [390, 767, 768, 900, 1440]) {
+  for (const [width, height] of [[390, 900], [767, 900], [768, 900], [852, 900], [852, 600], [879, 900], [880, 900], [900, 900], [1440, 900]]) {
     for (const theme of ['light', 'dark']) {
       for (const canonical of ['expanded', 'headlines']) {
-        const page = await browser.newPage({ viewport: { width, height: 900 } });
+        const page = await browser.newPage({ viewport: { width, height } });
         const failures = [];
         const saves = [];
         page.on('pageerror', error => failures.push(error.message));
@@ -47,13 +47,14 @@ try {
           if (['expanded', 'summarized', 'summaryBullets'].includes(value)) {
             const separatorDisplay = await page.locator('.article-list-view__items > .article-card').first()
               .evaluate(article => getComputedStyle(article, '::before').display);
-            assert.equal(separatorDisplay, width <= 767 ? 'none' : 'block', `${width}px ${theme} ${value}: first article separator visibility`);
+            const hideSeparator = width <= 767 || (width <= 879 && height >= width);
+            assert.equal(separatorDisplay, hideSeparator ? 'none' : 'block', `${width}×${height}px ${theme} ${value}: first article separator visibility`);
           }
         }
         assert.deepEqual(saves, modes.filter(([, value]) => width >= 880 || value !== 'reader').map(([, value]) => value));
         assert.deepEqual(failures, []);
         await page.close();
-        console.log(`PASS: ${width}px ${theme}, restored ${canonical}`);
+        console.log(`PASS: ${width}×${height}px ${theme}, restored ${canonical}`);
       }
     }
   }
@@ -78,6 +79,6 @@ try {
       await page.close();
     }
   }
-  console.log('PASS: canonical preferences restore their modes; desktop/mobile labels, saves, rendered modes and first article separators work at 390/767/768/900/1440px in light/dark themes');
+  console.log('PASS: canonical preferences, rendered modes and first article separators in both themes, including 852px portrait/landscape and the 879/880px breakpoint');
   console.log('PASS: single-line Briefing label and count at 320/390/768px in both themes; dropdown and Escape remain usable');
 } finally { await browser.close(); }

@@ -617,12 +617,7 @@ export default {
   margin-inline: 16px 18px;
   background-color: var(--border-subtle);
 }
-@media (max-width: 879px) and (orientation: portrait) {
-  .article-list-view__items > :deep(:nth-child(1 of .article-card):not(.article-list-card))::before {
-    margin-inline: 8px;
-  }
-}
-@media (max-width: 767px) {
+@media (max-width: 767px), (max-width: 879px) and (orientation: portrait) {
   .article-list-view__items > :deep(:nth-child(1 of .article-card):not(.article-list-card))::before {
     display: none;
   }
