@@ -622,6 +622,11 @@ export default {
     margin-inline: 8px;
   }
 }
+@media (max-width: 767px) {
+  .article-list-view__items > :deep(:nth-child(1 of .article-card):not(.article-list-card))::before {
+    display: none;
+  }
+}
 .headline-list-topbars {
   container: headline-topbars / inline-size;
   display: grid;

@@ -6,7 +6,7 @@ const browser = await chromium.launch({
   ...(process.env.READING_BROWSER_EXECUTABLE ? { executablePath: process.env.READING_BROWSER_EXECUTABLE } : {})
 });
 try {
-  for (const width of [390, 768, 900, 1440]) {
+  for (const width of [390, 767, 768, 900, 1440]) {
     for (const theme of ['light', 'dark']) {
       for (const canonical of ['expanded', 'headlines']) {
         const page = await browser.newPage({ viewport: { width, height: 900 } });
@@ -44,6 +44,11 @@ try {
           const expectedBody = value === 'summaryBullets' ? 'First summary point'
             : value === 'summarized' ? 'Plain article preview for scanning.' : 'Rich article body for reading.';
           await page.getByText(expectedBody, { exact: true }).waitFor();
+          if (['expanded', 'summarized', 'summaryBullets'].includes(value)) {
+            const separatorDisplay = await page.locator('.article-list-view__items > .article-card').first()
+              .evaluate(article => getComputedStyle(article, '::before').display);
+            assert.equal(separatorDisplay, width <= 767 ? 'none' : 'block', `${width}px ${theme} ${value}: first article separator visibility`);
+          }
         }
         assert.deepEqual(saves, modes.filter(([, value]) => width >= 880 || value !== 'reader').map(([, value]) => value));
         assert.deepEqual(failures, []);
@@ -73,6 +78,6 @@ try {
       await page.close();
     }
   }
-  console.log('PASS: canonical preferences restore their modes; desktop/mobile labels, saves and all rendered modes work at 390/768/900/1440px in light/dark themes');
+  console.log('PASS: canonical preferences restore their modes; desktop/mobile labels, saves, rendered modes and first article separators work at 390/767/768/900/1440px in light/dark themes');
   console.log('PASS: single-line Briefing label and count at 320/390/768px in both themes; dropdown and Escape remain usable');
 } finally { await browser.close(); }
