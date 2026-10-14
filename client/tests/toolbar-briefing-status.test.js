@@ -104,9 +104,7 @@ describe('toolbar Daily Briefing status', () => {
     const wrapper = mount(MobileToolbar);
     const trigger = wrapper.get('button[aria-controls="readModeDropdown-menu"]');
 
-    expect(trigger.text()).toContain('Daily briefing');
-    expect(trigger.text()).toContain('8');
-    expect(trigger.text()).not.toContain('global');
+    expect(trigger.text()).toBe('Daily briefing 8');
   });
 
   it('shows the Daily Briefing count and selects it from the mobile status dropdown', async () => {

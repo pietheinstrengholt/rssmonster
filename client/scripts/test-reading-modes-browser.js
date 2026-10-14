@@ -61,9 +61,11 @@ try {
       const trigger = page.getByRole('button', { name: /^Daily briefing\s*1234$/ });
       await trigger.waitFor();
       await page.evaluate(() => document.fonts.ready);
-      const label = trigger.getByText('Daily briefing', { exact: true });
-      assert.ok(await label.evaluate(element => element.scrollWidth <= element.clientWidth),
-        `${width}px ${theme}: the complete Briefing label must fit above its count`);
+      assert.ok(await trigger.evaluate(element => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return range.getClientRects().length === 1 && element.scrollWidth <= element.clientWidth;
+      }), `${width}px ${theme}: the complete Briefing label and count must fit on one line`);
       await trigger.click();
       await page.getByRole('menuitem', { name: 'Daily briefing 1234', exact: true }).waitFor();
       await page.keyboard.press('Escape');
@@ -72,5 +74,5 @@ try {
     }
   }
   console.log('PASS: canonical preferences restore their modes; desktop/mobile labels, saves and all rendered modes work at 390/768/900/1440px in light/dark themes');
-  console.log('PASS: complete Briefing label and count at 320/390/768px in both themes; dropdown and Escape remain usable');
+  console.log('PASS: single-line Briefing label and count at 320/390/768px in both themes; dropdown and Escape remain usable');
 } finally { await browser.close(); }
