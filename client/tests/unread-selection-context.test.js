@@ -104,6 +104,29 @@ afterEach(() => {
 });
 
 describe('UnreadSelectionContext', () => {
+  it.each(['read', 'openedOriginal', 'hot', 'saved'])('marks the %s context for mobile hiding unless it contains actions', async status => {
+    const stores = createStore();
+    stores.selectionStore.currentSelection.status = status;
+    wrapper = mount(UnreadSelectionContext, {
+      props: { articleCount: 1, sourceCount: 1 },
+      global: { plugins: [stores.pinia] }
+    });
+    expect(wrapper.classes()).toContain('unread-selection-context--summary-only');
+    expect(wrapper.find('[aria-label^="Article date range:"]').exists()).toBe(false);
+    stores.selectionStore.currentSelection.status = 'unread';
+    await flushPromises();
+    expect(wrapper.classes()).not.toContain('unread-selection-context--summary-only');
+    wrapper.unmount();
+    stores.selectionStore.currentSelection.status = status;
+    wrapper = mount(UnreadSelectionContext, {
+      props: { articleCount: 1, sourceCount: 1, headlineMode: true, hideSaveSmartFolder: true },
+      slots: { actions: () => h('button', 'More actions') },
+      global: { plugins: [stores.pinia] }
+    });
+    expect(wrapper.classes()).not.toContain('unread-selection-context--summary-only');
+    expect(wrapper.text()).toContain('More actions');
+  });
+
   it('hides the date selector only in an empty Reader view', async () => {
     const stores = createStore();
     wrapper = mount(UnreadSelectionContext, {

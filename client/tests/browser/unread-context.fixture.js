@@ -1,4 +1,4 @@
-import { createApp, h, nextTick } from 'vue';
+import { createApp, h, nextTick, ref } from 'vue';
 import { createFocusedStores } from '../helpers/focusedStores.js';
 import UnreadSelectionContext from '../../src/components/articles/UnreadSelectionContext.vue';
 import NewArticlesBanner from '../../src/components/articles/NewArticlesBanner.vue';
@@ -12,15 +12,17 @@ const pane = document.querySelector('#app');
 pane.style.display = 'grid';
 pane.style.alignContent = 'start';
 pane.style.container = 'headline-topbars / inline-size';
+const headlineMode = ref(true);
+const showActions = ref(window.innerWidth <= 767);
 const app = createApp({
   render: () => [h(NewArticlesBanner, { headlineMode: true, count: 55 }), h(UnreadSelectionContext, {
-    headlineMode: true,
+    headlineMode: headlineMode.value,
     hideSaveSmartFolder: window.innerWidth <= 767,
     articleCount: 4281,
     sourceCount: 41,
     oldestPublishedAt: '2020-01-01',
     articles: [{ id: 1, publishedAt: '2026-10-06T12:00:00Z' }]
-  }, window.innerWidth <= 767 ? { actions: () => h(ArticleBulkActionMenu, { articleCount: 1 }) } : undefined)]
+  }, showActions.value ? { actions: () => h(ArticleBulkActionMenu, { articleCount: 1 }) } : undefined)]
 });
 app.use(stores.pinia).component('BootstrapIcon', BootstrapIcon).mount(pane);
 // The sticky-date composable connects on the next tick and then updates the rendered date.
@@ -90,4 +92,24 @@ const failures = rows.filter(row => row.overflow.length || row.scrollOverflow ||
   || row.dateVisible !== (window.innerWidth >= 1250)
   || (window.innerWidth <= 767 ? row.leftOffset > 1 || row.menuRightOffset > 1 : window.innerWidth >= 1250 ? row.centerOffset > 1 : row.rightOffset > 1)
   || (row.width >= 320 && (Math.abs(row.height - 54) > 1 || row.rowSpread > 1)));
-document.querySelector('#result').textContent = JSON.stringify({ viewportWidth: window.innerWidth, cases: rows.length, failures });
+pane.style.width = '100%';
+for (const theme of ['light', 'dark']) {
+  document.documentElement.dataset.theme = theme;
+  for (const status of ['unread', 'read', 'openedOriginal', 'hot', 'saved']) {
+    stores.selectionStore.currentSelection.status = status;
+    for (const headlines of [false, true]) {
+      headlineMode.value = headlines;
+      for (const actions of [false, true]) {
+        showActions.value = actions;
+        await nextTick();
+        const context = pane.querySelector('.unread-selection-context');
+        const hidden = getComputedStyle(context).display === 'none';
+        const expectedHidden = window.innerWidth <= 767 && status !== 'unread' && !actions;
+        if (hidden !== expectedHidden || (hidden && context.getBoundingClientRect().height !== 0)) {
+          failures.push({ theme, status, headlines, actions, hidden, expectedHidden });
+        }
+      }
+    }
+  }
+}
+document.querySelector('#result').textContent = JSON.stringify({ viewportWidth: window.innerWidth, cases: rows.length + 40, failures });

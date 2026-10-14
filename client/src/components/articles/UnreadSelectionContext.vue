@@ -1,5 +1,5 @@
 <template>
-  <div ref="contextBar" class="unread-selection-context" :class="{ 'unread-selection-context--reader': readerMode, 'unread-selection-context--headlines': headlineMode }">
+  <div ref="contextBar" class="unread-selection-context" :class="{ 'unread-selection-context--reader': readerMode, 'unread-selection-context--headlines': headlineMode, 'unread-selection-context--summary-only': selectionStore.currentSelection.status !== 'unread' && !$slots.actions }">
     <div class="unread-selection-context__surface" :aria-label="headlineMode ? 'Headline context and filters' : undefined" :role="headlineMode ? 'region' : undefined">
       <div class="unread-selection-context__summary">
         <span v-if="!readerMode" class="unread-selection-context__meta">
@@ -335,6 +335,7 @@ export default {
   .unread-selection-context__current-date { display: none; }
 }
 @media (max-width: 767px) {
+  .unread-selection-context--summary-only { display: none; }
   .unread-selection-context--headlines .unread-selection-context__meta { display: none; }
   .unread-selection-context--headlines .unread-selection-context__summary { grid-template-columns: minmax(0, 1fr); }
   .unread-selection-context--headlines .unread-selection-context__date-group { justify-self: start; justify-content: flex-start; }
