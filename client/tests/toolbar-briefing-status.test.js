@@ -98,6 +98,17 @@ describe('toolbar Daily Briefing status', () => {
     expect(store.selectionStore.setSelectedStatus).toHaveBeenCalledWith('briefing');
   });
 
+  it('shows the selected Daily Briefing count without a global label on mobile', () => {
+    const { selectionStore } = createStore(true);
+    selectionStore.$patch({ currentSelection: { status: 'briefing' } });
+    const wrapper = mount(MobileToolbar);
+    const trigger = wrapper.get('button[aria-controls="readModeDropdown-menu"]');
+
+    expect(trigger.text()).toContain('Daily briefing');
+    expect(trigger.text()).toContain('8');
+    expect(trigger.text()).not.toContain('global');
+  });
+
   it('shows the Daily Briefing count and selects it from the mobile status dropdown', async () => {
     const store = createStore(true);
     const wrapper = mount(MobileToolbar);

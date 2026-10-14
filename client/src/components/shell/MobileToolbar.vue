@@ -74,7 +74,7 @@
             <button v-bind="triggerProps" class="mobile-filter-button" :class="{ 'mobile-filter-button--scoped-count': currentStatusCountLabel }" type="button">
               <template v-if="currentStatusCountLabel">
                 <span class="mobile-filter-status-label">{{ currentStatusLabel }}</span>
-                <span class="mobile-filter-count-scope">{{ currentStatusCountLabel }} {{ getStatusCount() }}</span>
+                <span class="mobile-filter-count-scope">{{ getStatusCount() }}</span>
               </template>
               <template v-else>{{ currentStatusLabel }} {{ getStatusCount() }}</template>
             </button>
