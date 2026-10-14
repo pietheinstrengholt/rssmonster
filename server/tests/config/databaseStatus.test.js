@@ -22,6 +22,12 @@ const template = new URL('../../migrations/templates/new-migration.mjs', import.
 const baseline = new URL('../../migrations/20261012010000-baseline-2.4.mjs', import.meta.url).href;
 const dialects = db.sequelize.getDialect() === 'mysql' ? ['mysql', 'sqlite'] : ['sqlite'];
 
+// Compare table membership without relying on the database's enumeration order.
+const readHistorySnapshot = async sequelize => {
+  const history = await readMigrationHistory(sequelize);
+  return { ...history, tables: history.tables.toSorted() };
+};
+
 const withDatabase = async (dialect, run) => {
   const directory = await mkdtemp(path.join(tmpdir(), 'rssmonster-status-test-'));
   const sequelize = dialect === 'mysql' ? db.sequelize : new Sequelize({ dialect, storage: path.join(directory, 'db.sqlite'), logging: false });
@@ -47,17 +53,17 @@ describe.each(dialects)('database diagnostics (%s)', dialect => {
   it('reports pending increments and repeated current status without changing schema or history', async () => withDatabase(dialect, async ({ sequelize, database, migrations, directory }) => {
     await migrateDatabase(database, migrations);
     {
-      const beforeCli = await readMigrationHistory(sequelize);
+      const beforeCli = await readHistorySnapshot(sequelize);
       const beforeFile = dialect === 'sqlite' ? await readFile(path.join(directory, 'db.sqlite')) : null;
       const result = await execute(process.execPath, [cli, '--json'], { env: { ...process.env, DB_DIALECT: dialect, ...(dialect === 'sqlite' ? { DB_STORAGE: path.join(directory, 'db.sqlite') } : {}) } });
       expect(JSON.parse(result.stdout)).toMatchObject({ state: 'Pending migrations', applied: 1, pending: 2, validation: 'Passed' });
-      expect(await readMigrationHistory(sequelize)).toEqual(beforeCli);
+      expect(await readHistorySnapshot(sequelize)).toEqual(beforeCli);
       if (beforeFile) expect(await readFile(path.join(directory, 'db.sqlite'))).toEqual(beforeFile);
     }
     await writeFile(path.join(migrations, '20261013000000-status-test.mjs'), 'export async function up() {}');
-    const before = { history: await readMigrationHistory(sequelize), schema: await inspectMigrationSchema(sequelize) };
+    const before = { history: await readHistorySnapshot(sequelize), schema: await inspectMigrationSchema(sequelize) };
     expect(await databaseStatus(sequelize, migrations)).toMatchObject({ baseline: '2.4.0', applied: 1, pending: 1, validation: 'Passed', legacy: 'Complete' });
-    expect({ history: await readMigrationHistory(sequelize), schema: await inspectMigrationSchema(sequelize) }).toEqual(before);
+    expect({ history: await readHistorySnapshot(sequelize), schema: await inspectMigrationSchema(sequelize) }).toEqual(before);
     await migrateDatabase(database, migrations);
     const status = await databaseStatus(sequelize, migrations);
     expect(status).toMatchObject({ applied: 2, pending: 0, state: 'Up to date' });
@@ -68,9 +74,9 @@ describe.each(dialects)('database diagnostics (%s)', dialect => {
   it('reports the remaining legacy chain without adopting or executing it', async () => withDatabase(dialect, async ({ sequelize, database, migrations }) => {
     const raw = createDatabaseMigrator(database);
     await raw.up({ to: '20260810000000-baseline-core.js' });
-    const before = await readMigrationHistory(sequelize);
+    const before = await readHistorySnapshot(sequelize);
     expect(await databaseStatus(sequelize, migrations)).toMatchObject({ baseline: 'Pre-2.4 (recognized checkpoint)', applied: 1, pending: 72, legacy: '71 historical migrations required; baseline adoption required', validation: 'Passed' });
-    expect(await readMigrationHistory(sequelize)).toEqual(before);
+    expect(await readHistorySnapshot(sequelize)).toEqual(before);
   }));
 
   it('retains counts and explains incomplete migration failures without replay', async () => withDatabase(dialect, async ({ sequelize, database, migrations }) => {
@@ -110,12 +116,12 @@ it('reads a live WAL database without changing its database, journal or tracking
   await sequelize.query('PRAGMA wal_autocheckpoint = 0');
   await migrateDatabase(database);
   const storage = path.join(directory, 'db.sqlite');
-  const before = { main: await readFile(storage), wal: await readFile(storage + '-wal'), history: await readMigrationHistory(sequelize) };
+  const before = { main: await readFile(storage), wal: await readFile(storage + '-wal'), history: await readHistorySnapshot(sequelize) };
   const result = await execute(process.execPath, [cli, '--json'], { env: { ...process.env, DB_DIALECT: 'sqlite', DB_STORAGE: storage } });
   expect(JSON.parse(result.stdout)).toMatchObject({ state: 'Up to date', validation: 'Passed', pending: 0 });
   expect(await readFile(storage)).toEqual(before.main);
   expect(await readFile(storage + '-wal')).toEqual(before.wal);
-  expect(await readMigrationHistory(sequelize)).toEqual(before.history);
+  expect(await readHistorySnapshot(sequelize)).toEqual(before.history);
   expect((await sequelize.query('PRAGMA journal_mode'))[0][0].journal_mode).toBe('wal');
 }));
 

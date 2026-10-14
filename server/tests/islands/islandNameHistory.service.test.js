@@ -4,7 +4,9 @@ import db from '../../models/index.js';
 import { disambiguateDuplicateIslandNamesForUser, normalizeIslandName } from '../../services/islands/islandNameDisambiguation.js';
 
 const evidenceState = row => {
-  const { label: _label, updatedAt: _updatedAt, ...state } = row.toJSON();
+  const state = row.toJSON();
+  delete state.label;
+  delete state.updatedAt;
   return state;
 };
 
