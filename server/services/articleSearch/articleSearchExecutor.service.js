@@ -108,10 +108,10 @@ export const buildArticleSearchQuery = ({
 
   // Handles the case where needs interest score is available.
   if (needsInterestScore) {
-    queryAttributes.push('interestScore', 'interestScoredAt');
+    queryAttributes.push('interestScore', 'semanticAffinityScore', 'interestScoredAt');
   }
   if (sortRecommended || sortTopStories || onEligibilityStage) queryAttributes.push('hotInd');
-  if (onEligibilityStage && !needsInterestScore) queryAttributes.push('interestScore', 'interestScoredAt');
+  if (onEligibilityStage && !needsInterestScore) queryAttributes.push('interestScore', 'semanticAffinityScore', 'interestScoredAt');
 
   // Builds the article query assembled while building article search query.
   const articleQuery = {

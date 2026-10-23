@@ -1,14 +1,8 @@
-// Computes personalized recommendation scores from interest, freshness, Quality, and corroboration.
+// Computes Recommended from persisted personalization, freshness, corroboration and configured boosts.
+import { RECOMMENDED_WEIGHTS } from '../../config/recommended.js';
 import { computeQuality } from '../articles/articleQuality.js';
 import { clamp01, computeEventRankingMetrics } from './eventRankingMetrics.js';
 
-const RECOMMENDED_WEIGHTS = Object.freeze({
-  positiveInterest: 0.60,
-  freshness: 0.17,
-  quality: 0.13,
-  corroboration: 0.10,
-  negativeInterest: 0.30
-});
 const RULE_TAG_BOOST = 0.08;
 const HOT_ARTICLE_BOOST = 0.07;
 
@@ -29,6 +23,7 @@ export function computeRecommendedBreakdown(article) {
   const interestScore = normalizeInterestScore(article?.interestScore ?? 0);
   const positiveInterest = Math.max(interestScore, 0);
   const negativeInterest = Math.max(-interestScore, 0);
+  const affinity = article?.semanticAffinityScore ?? 0;
   const freshness = clamp01(article?.freshness ?? 0.5);
   const quality = computeQuality(article);
   const eventMetrics = computeEventRankingMetrics(article);
@@ -37,6 +32,7 @@ export function computeRecommendedBreakdown(article) {
   // Keep the established upper cap without discarding negative preference totals.
   const recommended = Math.min(1,
     RECOMMENDED_WEIGHTS.positiveInterest * positiveInterest +
+    RECOMMENDED_WEIGHTS.affinity * affinity +
     RECOMMENDED_WEIGHTS.freshness * freshness +
     RECOMMENDED_WEIGHTS.quality * quality +
     RECOMMENDED_WEIGHTS.corroboration * eventMetrics.corroboration -
@@ -49,6 +45,7 @@ export function computeRecommendedBreakdown(article) {
     interestScore,
     positiveInterest,
     negativeInterest,
+    affinity,
     freshness,
     quality,
     ...eventMetrics,
@@ -72,7 +69,7 @@ export function buildRecommendationPresentation(article, { interestIsland = null
   const tags = article?.get?.('Tags') ?? article?.get?.('tags') ?? article?.Tags ?? article?.tags ?? [];
   const reasons = [];
 
-  if (breakdown.positiveInterest > 0) {
+  if (breakdown.positiveInterest > 0 && RECOMMENDED_WEIGHTS.positiveInterest > 0) {
     reasons.push({
       code: 'interest_match',
       value: serializeRecommendationValue(breakdown.positiveInterest),
@@ -83,7 +80,15 @@ export function buildRecommendationPresentation(article, { interestIsland = null
     });
   }
 
-  if (breakdown.corroboration > 0) {
+  if (breakdown.affinity > 0 && RECOMMENDED_WEIGHTS.affinity > 0) {
+    reasons.push({
+      code: 'semantic_affinity',
+      value: serializeRecommendationValue(breakdown.affinity),
+      contribution: serializeRecommendationValue(RECOMMENDED_WEIGHTS.affinity * breakdown.affinity)
+    });
+  }
+
+  if (breakdown.corroboration > 0 && RECOMMENDED_WEIGHTS.corroboration > 0) {
     reasons.push({
       code: 'source_diversity',
       value: serializeRecommendationValue(breakdown.corroboration),
@@ -112,7 +117,7 @@ export function buildRecommendationPresentation(article, { interestIsland = null
     });
   }
 
-  if (breakdown.freshness > 0) {
+  if (breakdown.freshness > 0 && RECOMMENDED_WEIGHTS.freshness > 0) {
     reasons.push({
       code: 'freshness',
       value: serializeRecommendationValue(breakdown.freshness),
@@ -122,7 +127,7 @@ export function buildRecommendationPresentation(article, { interestIsland = null
     });
   }
 
-  if (breakdown.quality > 0) {
+  if (breakdown.quality > 0 && RECOMMENDED_WEIGHTS.quality > 0) {
     reasons.push({
       code: 'quality',
       value: serializeRecommendationValue(breakdown.quality),

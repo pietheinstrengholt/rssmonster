@@ -31,6 +31,24 @@ describe('articleSearch recommended include wiring', () => {
   });
 
   it.each([
+    { sort: 'recommended' },
+    { search: 'sort:recommended', smartFolderSearch: true }
+  ])('ranks persisted affinity without Quality through search: %j', async selection => {
+    Article.findAll.mockResolvedValue([
+      { id: 1, feedId: 1, interestScore: 0, freshness: 0, semanticAffinityScore: null,
+        qualityScore: 100, toneScore: 100, advertisementScore: 100 },
+      { id: 2, feedId: 1, interestScore: 0, freshness: 0, semanticAffinityScore: 0.3,
+        qualityScore: 0, toneScore: 0, advertisementScore: 0 },
+      { id: 3, feedId: 1, interestScore: 0.1, freshness: 0, semanticAffinityScore: null,
+        qualityScore: 0, toneScore: 0, advertisementScore: 0 }
+    ]);
+    const result = await searchArticles({ userId: 1, status: '%', ...selection });
+    expect(result.itemIds).toEqual([3, 2, 1]);
+    expect(Article.findAll.mock.calls[0][0].attributes)
+      .toEqual(expect.arrayContaining(['interestScore', 'semanticAffinityScore']));
+  });
+
+  it.each([
     { sort: 'recommended', search: 'limit:3' },
     { search: 'sort:recommended limit:3', smartFolderSearch: true }
   ])('balances Recommended sources before limiting the ID collection: %j', async selection => {

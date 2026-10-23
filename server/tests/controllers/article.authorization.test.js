@@ -281,6 +281,33 @@ describe('article ownership authorization', () => {
     expect(response.body[0].recommendation.score).toBeCloseTo(-0.3, 3);
   });
 
+  it('orders Recommended and Smart Folder results by persisted personalization while preserving Quality sorting and minimums', async () => {
+    const owner = await createUser(uniqueName('personalized-ranking-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    await Setting.create({ userId: owner.id, minAdvertisementScore: 0, minToneScore: 0,
+      minOverallQualityScore: 0, minQualityScore: 0 });
+    const common = { userId: owner.id, feedId: feed.id, status: 'unread',
+      publishedAt: article.publishedAt, interestScoredAt: new Date(), aiAnalysisStatus: 'complete',
+      qualityScore: 0, toneScore: 0, advertisementScore: 0 };
+    await article.update({ ...common, qualityScore: 100, toneScore: 100, advertisementScore: 100 });
+    const affinity = await Article.create({ ...common, title: 'Semantic affinity',
+      semanticAffinityScore: 0.3 });
+    const established = await Article.create({ ...common, title: 'Established interest', interestScore: 0.1 });
+    const get = query => request(app).get('/api/articles').set('Authorization', authHeaderFor(owner))
+      .query({ status: 'unread', grouping: 'none', ...query });
+    for (const query of [{ sort: 'recommended' }, { search: 'sort:recommended' }]) {
+      const result = await get(query);
+      expect(result.status).toBe(200);
+      expect(result.body.itemIds.map(Number)).toEqual([established.id, affinity.id, article.id]);
+    }
+    const quality = await get({ sort: 'quality' });
+    expect(Number(quality.body.itemIds[0])).toBe(article.id);
+    await Setting.update({ minQualityScore: 50 }, { where: { userId: owner.id } });
+    const filtered = await get({ sort: 'recommended' });
+    expect(filtered.body.itemIds.map(Number)).toEqual([article.id]);
+    expect((await affinity.reload()).semanticAffinityScore).toBeCloseTo(0.3, 6);
+  });
+
   it('returns structured authors and finds secondary authors without exposing other users', async () => {
     const owner = await createUser(uniqueName('authors-owner'));
     const foreignUser = await createUser(uniqueName('authors-foreign'));
@@ -372,10 +399,10 @@ describe('article ownership authorization', () => {
     expect(response.body[0].recommendation.score).toEqual(expect.any(Number));
     expect(response.body[0].recommendation.reasons.map(reason => reason.code)).toEqual([
       'interest_match',
+      'semantic_affinity',
       'source_diversity',
       'rule_match',
-      'freshness',
-      'quality'
+      'freshness'
     ]);
     expect(response.body[0].recommendation.reasons).toEqual(expect.arrayContaining([
       expect.objectContaining({

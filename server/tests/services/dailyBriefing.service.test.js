@@ -199,7 +199,7 @@ describe('dailyBriefing.service', () => {
     });
   });
 
-  // Promotes trusted representative sources in the summary only when the Briefing preference is active.
+  // Recommended summary ordering retains Hot boosts without directly weighting source trust.
   it.each([0, 1])('includes Hot status %s in morning summary recommendation ranking', async hotInd => {
     const generatedAt = new Date('2026-07-31T12:00:00Z');
     mocked.articleFindAll
@@ -260,11 +260,11 @@ describe('dailyBriefing.service', () => {
     });
 
     expect(result.filters.prioritizeHighTrust).toBe(true);
-    expect(result.morningSummary.items.map(item => item.eventId)).toEqual(hotInd ? [1, 2] : [2, 1]);
+    expect(result.morningSummary.items.map(item => item.eventId)).toEqual([1, 2]);
   });
 
-  // Preserves the canonical article-quality components when summary events use Recommended ordering.
-  it.each([0, 1])('uses current interest and canonical quality despite a cached interest of %s', async cachedInterest => {
+  // Uses current interest and persisted affinity; Quality does not affect Recommended summary ordering.
+  it.each([0, 1])('uses current interest and persisted affinity despite a cached interest of %s', async cachedInterest => {
     const generatedAt = new Date('2026-07-31T12:00:00Z');
     mocked.articleFindAll
       .mockResolvedValueOnce([
@@ -279,6 +279,7 @@ describe('dailyBriefing.service', () => {
           publishedAt: generatedAt,
           freshness: 0.5,
           interestScore: cachedInterest,
+          semanticAffinityScore: 0.4,
           qualityScore: 0,
           toneScore: 0,
           advertisementScore: 0,
@@ -326,7 +327,9 @@ describe('dailyBriefing.service', () => {
       prioritizeHighTrust: true
     });
 
-    expect(result.morningSummary.items.map(item => item.eventId)).toEqual([2, 1]);
+    expect(result.morningSummary.items.map(item => item.eventId)).toEqual([1, 2]);
+    expect(mocked.articleFindAll.mock.calls[1][0].attributes)
+      .toEqual(expect.arrayContaining(['semanticAffinityScore']));
   });
 
   // Selects the independently configured developing article for morning-summary content.

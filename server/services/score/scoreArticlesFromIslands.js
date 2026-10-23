@@ -42,6 +42,8 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
   const summary = { userId, implicitScoredCount: 0, fallbackScoredCount: 0, behavioralScoredCount: 0, updatedCount: 0, candidatesRescored: 0, interestScoresChanged: 0 };
   Object.assign(summary, { scannedCount: 0, scopeSkippedCount: 0, positiveCount: 0, negativeCount: 0,
     neutralCount: 0, unchangedCount: 0, recordedEvaluationCount: 0, zeroReasons: {}, islandMatches: { zero: 0, one: 0, multiple: 0 },
+    semanticAffinityScoresChanged: 0, semanticAffinityScores: { positive: 0, zero: 0, null: 0 },
+    storedSemanticAffinityScores: { positive: 0, zero: 0, null: 0 },
     scope: createdAtFrom ? 'created_since' : relatedVectors ? 'related_feedback' : 'all_unread',
     createdAtFrom: createdAtFrom || null });
   // One owned aggregate explains rows outside the scan without loading their vectors.
@@ -61,7 +63,7 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
     const batch = await Article.findAll({ where: {
       userId, status: 'unread', ...unfilteredCanonicalArticleWhere(), filteredInd: false, id: { [Op.gt]: afterId },
       ...(createdAtFrom ? { createdAt: { [Op.gte]: createdAtFrom } } : {})
-    }, attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'embedding_model', 'interestScore', 'positiveInd', 'negativeInd', 'savedInd', 'openedOriginalCount', 'attentionBucket'],
+    }, attributes: ['title', 'description', 'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'id', 'articleVector', 'embedding_model', 'interestScore', 'semanticAffinityScore', 'positiveInd', 'negativeInd', 'savedInd', 'openedOriginalCount', 'attentionBucket'],
     order: [['id', 'ASC']], limit: ARTICLE_BATCH_SIZE, transaction });
     if (!batch.length) break;
     summary.scannedCount += batch.length;
@@ -73,10 +75,14 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
     const { results } = await explainArticleInterests(userId, articles, { ...options, context });
     // Validity starts when evidence was read, not when a possibly long scan ends.
     const evaluatedAt = new Date(context.now);
+    const notNewer = { [Op.or]: [{ interestScoredAt: null }, { interestScoredAt: { [Op.lte]: evaluatedAt } }] };
     const unchangedIds = [];
+    const affinityOnlyUpdates = new Map();
     for (const article of articles) {
       const result = results.get(String(article.id));
       summary.candidatesRescored++;
+      summary.semanticAffinityScores[result.semanticAffinityScore > 0 ? 'positive' : 'zero']++;
+      summary.storedSemanticAffinityScores[article.semanticAffinityScore == null ? 'null' : article.semanticAffinityScore > 0 ? 'positive' : 'zero']++;
       summary[result.score > 0 ? 'positiveCount' : result.score < 0 ? 'negativeCount' : 'neutralCount']++;
       const matches = result.diagnostics.qualifyingIslands;
       summary.islandMatches[matches === 0 ? 'zero' : matches === 1 ? 'one' : 'multiple']++;
@@ -88,14 +94,21 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
       // MySQL FLOAT stores single precision; compare at that exact storage precision.
       const unchanged = stored === result.score || (db.sequelize.getDialect() === 'mysql'
         && Math.fround(stored) === Math.fround(result.score));
+      const affinityUnchanged = article.semanticAffinityScore != null && (Number(article.semanticAffinityScore) === result.semanticAffinityScore
+        || (db.sequelize.getDialect() === 'mysql' && Math.fround(Number(article.semanticAffinityScore)) === Math.fround(result.semanticAffinityScore)));
+      if (unchanged) summary.unchangedCount++;
       if (!unchanged) {
-        const [changed] = await Article.update({ interestScore: result.score, interestScoredAt: evaluatedAt }, {
-          where: { id: article.id, userId, status: 'unread', ...unfilteredCanonicalArticleWhere(), filteredInd: false }, transaction
+        const [changed] = await Article.update({ interestScore: result.score, semanticAffinityScore: result.semanticAffinityScore, interestScoredAt: evaluatedAt }, {
+          where: { id: article.id, userId, status: 'unread', ...unfilteredCanonicalArticleWhere(), filteredInd: false, ...notNewer }, transaction
         });
         summary.interestScoresChanged += Number(changed);
+        if (!affinityUnchanged) summary.semanticAffinityScoresChanged += Number(changed);
         summary.recordedEvaluationCount += Number(changed);
+      } else if (!affinityUnchanged) {
+        const key = JSON.stringify([result.score, result.semanticAffinityScore]);
+        if (!affinityOnlyUpdates.has(key)) affinityOnlyUpdates.set(key, { scores: { interestScore: result.score, semanticAffinityScore: result.semanticAffinityScore }, ids: [] });
+        affinityOnlyUpdates.get(key).ids.push(article.id);
       } else {
-        summary.unchangedCount++;
         unchangedIds.push(article.id);
       }
       if (result.score !== 0) {
@@ -106,10 +119,18 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
       }
       if (ISLAND_DEBUG && result.paths.length) console.log('[ISLAND INTEREST]', JSON.stringify({ articleId: article.id, ...result }));
     }
+    // In particular, initialize neutral null affinity in one write per batch, not per Article.
+    for (const { scores, ids } of affinityOnlyUpdates.values()) {
+      const [recorded] = await Article.update({ ...scores, interestScoredAt: evaluatedAt }, {
+        where: { userId, id: ids, status: 'unread', ...unfilteredCanonicalArticleWhere(), filteredInd: false, ...notNewer }, transaction, silent: true
+      });
+      summary.semanticAffinityScoresChanged += Number(recorded);
+      summary.recordedEvaluationCount += Number(recorded);
+    }
     // One metadata write per unchanged batch; never stamp skipped or newly ineligible rows.
     if (unchangedIds.length) {
       const [recorded] = await Article.update({ interestScoredAt: evaluatedAt }, {
-        where: { userId, id: unchangedIds, status: 'unread', ...unfilteredCanonicalArticleWhere() }, transaction, silent: true
+        where: { userId, id: unchangedIds, status: 'unread', ...unfilteredCanonicalArticleWhere(), filteredInd: false, ...notNewer }, transaction, silent: true
       });
       summary.recordedEvaluationCount += Number(recorded);
     }

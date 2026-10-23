@@ -17,10 +17,11 @@ whether an article is allowed to exist or be read.
 | Overall article quality (`articleQuality`) | Article content quality, independent of source trust and personal interest. | Overall quality badge and article-quality thresholds, including `quality:` expressions. |
 | FeedTrust | Recent source value in the user's account. | Source contribution to Quality & source trust ranking. |
 | Personal interest (`interestScore`) | Signed relevance to the user. | Personalization contribution to Recommended. |
+| Semantic affinity (`semanticAffinityScore`) | Continuous confidence-adjusted affinity to the strongest positive Interest Island. | Independent stored signal; Recommended weight 0.10 by default. |
 
 **Quality & source trust** ranking combines 70% articleQuality with 30% FeedTrust.
-Recommended uses that combined ranking signal alongside personal interest and
-other signals. These ranking combinations do not change Overall quality badges
+Recommended has no direct Quality contribution by default; quality sorting and
+eligibility remain separate. These ranking combinations do not change Overall quality badges
 or Article-only quality thresholds. A high-quality article may come from an
 inconsistent source or cover a subject the user dislikes.
 
@@ -76,7 +77,8 @@ Other visibility rules still apply. This analysis-state policy is separate from
 numeric fallback values.
 
 The existing source-aware ranking remains separate: its menu label is
-**Quality & source trust**. Recommended and Top Stories weights are unchanged.
+**Quality & source trust**. Top Stories retains its Quality weight; Recommended
+has no direct Quality contribution by default.
 “High overall quality” uses the article-only score, never the Recommended score.
 
 ### FeedTrust
@@ -167,15 +169,43 @@ source trust. Query preview chips label the filter **Overall quality** and the
 sort **Quality & source trust**; the `quality` and `sort:quality` identifiers
 remain unchanged.
 
+### Semantic affinity
+
+`semanticAffinityScore` measures the strongest positive Island contribution using the
+quadratic contribution:
+`q = clamp(positivePreferenceStrength × islandConfidence × max(0, cosineSimilarity)², 0, 1)`; `semanticAffinityScore = round4(max(q1, ..., qN))`.
+It is threshold-free and excludes Article-to-Article fallback. It uses every eligible
+positive Island. One positive Island can produce affinity. With no
+supported positive contribution, the evaluated result is zero. The nullable FLOAT
+starts null and is cleared by duplicate invalidation or semantic reset. All computed
+values are finite in [0,1]; they are confidence-adjusted signals, not probabilities.
+Affinity excludes freshness, Feed trust or Article quality.
+
+Normal scoring, expiry refresh and explicit recalculation persist both scores
+atomically per update with their existing shared evaluation clock. An explicitly
+requested `recommendations:recalculate -- --userId=1 --allHistory` refreshes read,
+unread and saved history in bounded batches without regenerating embeddings or
+rebuilding Islands. This mode skips unsupported embeddings, leaving their existing
+scores untouched; a skipped affinity remains null rather than claiming a successful
+zero. Checkpoints support resumption with the same evidence and evaluation clock.
+See [maintenance commands]({% link npm-commands.md %}) for scope and restart rules.
+There is no automatic startup backfill.
+
 ### Recommended
+
+Recommended consumes the two stored personalized signals independently:
+`interestScore` supplies established signed preference and behavioral evidence,
+`semanticAffinityScore` supplies continuous strongest positive affinity.
+Their calculation and storage are unchanged. Affinity does not change
+Briefing eligibility, Smart Folder query semantics or learned-preference labels.
 
 Recommended is personalized. Its bounded base score combines:
 
 ```text
 Recommended =
     0.60 × positiveInterest
+  + 0.10 × semanticAffinityScore
   + 0.17 × freshness
-  + 0.13 × Quality
   + 0.10 × corroboration
   - 0.30 × negativeInterest
   + ruleMatchBoost
@@ -187,7 +217,8 @@ nonfinite. Then `positiveInterest = max(interestScore, 0)`,
 `negativeInterest = max(-interestScore, 0)`, and a matching rule contributes
 `0.08` once regardless of how many rule tags match. The final result retains
 negative totals and is capped at `1`. With these normalized inputs and weights,
-the range is `-0.30`–`1`.
+the range is `-0.30`–`1`. Null affinity contributes zero without changing
+the stored values; no normalization by Island count or total ranking weight occurs.
 Recommended sorting and API serialization preserve the sign; the presentation label
 uses the same signed score on a percentage scale, not a probability.
 
@@ -206,7 +237,8 @@ coverage**, while personalization coverage may legitimately be sparse.
 | Interest | Optional; zero when missing or nonfinite. |
 | Event/corroboration | Optional; zero without an Event. |
 | Island, embedding | Optional; not Recommended prerequisites. |
-| Article quality components | Unavailable/nonfinite article components default to 70. |
+| Semantic affinity | Optional persisted values; null/missing contributes zero. |
+| Article quality components | No default ranking contribution; Quality metadata/rollback retain the existing fallback of 70. |
 | FeedTrust | Unavailable trust (missing, null, or nonfinite) uses the neutral prior 0.75; finite estimated values, including zero, remain meaningful. |
 | Freshness | Article model uses zero for missing publication time; a plain object without freshness uses 0.5. |
 | Matching rule tags | Optional; no boost without a match. |
@@ -215,10 +247,39 @@ Recommended is computed at runtime. The separate interest updater processes
 canonical, unfiltered, unread Articles; that update scope does not restrict runtime
 Recommended ranking to unread or Island-matched Articles.
 
-Because Quality & source trust already contains a bounded FeedTrust contribution, Recommended
-does not add FeedTrust again as an independent raw boost. Event coverage,
+Quality has no direct default Recommended weight, and FeedTrust adds no separate
+raw boost. This gives personalization, freshness and corroboration control of
+Recommended while retaining **Quality & source trust** as the dedicated quality
+sort. Quality metadata, query quality filters and configured minimum-score gates
+remain unchanged. Quality may still affect eligibility; it does not re-enter
+through freshness, corroboration, rule/Hot boosts or Feed balancing. Existing
+user Actions can still set rule/Hot status independently of the ranking formula. Event coverage,
 cross-source evidence, and event size are not separate Recommended terms;
 corroboration is its only Event-derived contribution.
+
+### Recommended configuration and rollback
+
+Coefficients are read once at process startup from server environment variables.
+Each accepts a finite number in `[0,1]`, including zero; missing, blank or invalid
+values fall back independently to the defaults below. Weights are not normalized.
+Restart the server and workers after changing them.
+
+| Variable | Default |
+| --- | ---: |
+| `RECOMMENDED_INTEREST_WEIGHT` | 0.60 |
+| `RECOMMENDED_AFFINITY_WEIGHT` | 0.10 |
+| `RECOMMENDED_FRESHNESS_WEIGHT` | 0.17 |
+| `RECOMMENDED_CORROBORATION_WEIGHT` | 0.10 |
+| `RECOMMENDED_NEGATIVE_INTEREST_WEIGHT` | 0.30 |
+| `RECOMMENDED_QUALITY_WEIGHT` | 0.00 |
+
+Rollback to the previous formula by setting `RECOMMENDED_QUALITY_WEIGHT=0.13`,
+`RECOMMENDED_AFFINITY_WEIGHT=0`, retaining
+the other defaults. This restores the existing Quality calculation (including
+FeedTrust) without changing any persisted scores or requiring a migration.
+Rule and Hot bonuses remain 0.08 and 0.07; the final upper cap remains 1 and
+negative totals remain signed. Configurable weights also govern API explanation
+contributions; zero-weight signals are omitted from promotion reasons.
 
 ### Top Stories
 
@@ -266,3 +327,9 @@ and search filters determine eligibility before runtime ranking is applied.
 
 See the [Search Guide]({% link search.md %}) for the supported sort expressions and
 [Smart Folders]({% link smart-folders.md %}) for reusable filtered views.
+
+The forward-only `20261021000000-remove-multi-island-score.mjs` migration retires
+the experimental additional-Island coverage column. Its former 0.05 ranking weight
+is removed without redistribution. The two remaining stored scores are preserved;
+no history rescore or embedding regeneration is needed. Previously applied add-column
+migrations remain in the migration history.

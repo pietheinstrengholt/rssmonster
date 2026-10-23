@@ -85,7 +85,8 @@ describe('recommendation evaluation and recalculation', () => {
     expect(row.breakdown.hotBoost).toBe(0.07);
     expect(row.breakdown.corroboration).toBeGreaterThan(0);
     const loaded = await db.Article.findByPk(held.id, { include: [db.Feed, db.Tag, { model: db.Event, as: 'event' }] });
-    const expected = computeRecommendedBreakdown({ ...loaded.get({ plain: true }), interestScore: row.interestScore });
+    const expected = computeRecommendedBreakdown({ ...loaded.get({ plain: true }), interestScore: row.interestScore,
+      semanticAffinityScore: row.semanticAffinityScore });
     expect(row.recommended).toBe(expected.recommended);
     expect(Number((await held.reload()).interestScore)).toBeCloseTo(-0.4);
     const beforeWrite = await db.Article.findByPk(held.id, { raw: true });
@@ -93,7 +94,7 @@ describe('recommendation evaluation and recalculation', () => {
     expect(recalculated.rows[0].interestScore).toBe(row.interestScore);
     expect(Number((await held.reload()).interestScore)).toBeCloseTo(row.interestScore);
     const afterWrite = await db.Article.findByPk(held.id, { raw: true });
-    for (const field of ['interestScore', 'interestScoredAt']) { delete beforeWrite[field]; delete afterWrite[field]; }
+    for (const field of ['interestScore', 'semanticAffinityScore', 'interestScoredAt']) { delete beforeWrite[field]; delete afterWrite[field]; }
     expect(afterWrite).toEqual(beforeWrite);
     expect((await island.reload()).get({ plain: true })).toEqual(snapshot);
     expect((await run(user.id, { limit: 2 })).rows.find(row => row.id === source.id).supportingIslandIds).toEqual([island.id]);
@@ -126,5 +127,48 @@ describe('recommendation evaluation and recalculation', () => {
       await expect(runRecommendationScores(options)).rejects.toThrow();
     }
     await expect(runRecommendationScores({ userId: 2147483647 })).rejects.toThrow('does not exist');
+  });
+
+  it('resumes bounded all-history recalculation, skips unsupported embeddings and preserves Article state', async () => {
+    const { user, values } = await fixture();
+    const other = await fixture();
+    await db.Island.create({ userId: user.id, label: 'Concerts', weight: 1,
+      islandVector: [1, 0], embedding_model: 'test-model', lastBehaviorAt: new Date(now) });
+    const articles = await db.Article.bulkCreate(Array.from({ length: 1003 }, (_, index) => ({
+      ...values, status: index % 2 ? 'read' : 'unread', savedInd: index % 3 === 0 ? 1 : 0,
+      publishedAt: new Date(now - index * 1000)
+    })));
+    const missing = await db.Article.create({ ...values, articleVector: null });
+    const incompatible = await db.Article.create({ ...values, embedding_model: 'other-model' });
+    const excluded = await db.Article.bulkCreate([{ ...values, filteredInd: true },
+      { ...values, duplicateOfArticleId: articles[0].id }, { ...values, status: 'duplicate' }, other.values]);
+    const unchanged = await db.Article.findAll({ where: { id: [...excluded.map(a => a.id), missing.id, incompatible.id] }, raw: true });
+    const before = await db.Article.findByPk(articles[0].id, { raw: true });
+    let checkpoint;
+    await expect(runRecommendationScores({ userId: user.id, mode: 'recalculate', allHistory: true }, async () => {}, async value => {
+      checkpoint = value;
+      await articles[250].update({ interestScore: 0.9, semanticAffinityScore: 0.95, interestScoredAt: new Date(now + 1000) });
+      throw new Error('Interrupted after committed batch');
+    })).rejects.toThrow('Interrupted');
+    expect(checkpoint.afterId).toBe(articles[199].id);
+    const firstTime = (await articles[0].reload()).interestScoredAt;
+    const rows = [];
+    const resumed = await runRecommendationScores({ userId: user.id, mode: 'recalculate', allHistory: true, resume: checkpoint }, row => rows.push(row));
+    expect(resumed).toMatchObject({ limit: null, processedCount: 805, evaluatedCount: 803,
+      persistedCount: 802, skippedNewerCount: 1, skippedUnsupportedCount: 2, skippedEmbeddings: { missing_embedding: 1, incompatible_embedding: 1 } });
+    expect(new Set(rows.map(row => row.id)).size).toBe(805);
+    expect((await articles[0].reload()).interestScoredAt).toEqual(firstTime);
+    expect((await articles[250].reload()).semanticAffinityScore).toBeCloseTo(0.95);
+    expect(rows.find(row => row.id === missing.id)).toMatchObject({ writeStatus: 'skipped_missing_embedding', semanticAffinityScore: null });
+    expect(await db.Article.findAll({ where: { id: unchanged.map(a => a.id) }, raw: true })).toEqual(unchanged);
+    const after = await db.Article.findByPk(articles[0].id, { raw: true });
+    expect(after.semanticAffinityScore).toBeGreaterThan(0);
+    for (const field of ['interestScore', 'semanticAffinityScore', 'interestScoredAt']) { delete before[field]; delete after[field]; }
+    expect(after).toEqual(before);
+    const replay = await runRecommendationScores({ userId: user.id, mode: 'recalculate', allHistory: true, resume: checkpoint });
+    expect(replay).toMatchObject({ persistedCount: 0, skippedNewerCount: 803 });
+    await expect(runRecommendationScores({ userId: other.user.id, allHistory: true, resume: checkpoint })).rejects.toThrow('checkpoint');
+    await db.Island.update({ weight: 0.5 }, { where: { userId: user.id } });
+    await expect(runRecommendationScores({ userId: user.id, mode: 'recalculate', allHistory: true, resume: checkpoint })).rejects.toThrow('evidence');
   });
 });

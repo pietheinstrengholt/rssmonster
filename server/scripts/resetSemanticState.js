@@ -94,6 +94,8 @@ export async function resetSemanticStateForUser(userId, options = {}) {
     // 5. Events (FK eventId on articles — clear first)
     const articleResetValues = {
       eventId: null,
+      // All Islands are removed, so previous coverage no longer has supporting state.
+      semanticAffinityScore: null,
       ...(clearArticleVectors
         ? { articleVector: null, embedding_model: null }
         : {}),

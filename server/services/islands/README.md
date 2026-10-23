@@ -32,14 +32,16 @@ No behavioral signal uses this timestamp.
 
 The diagnostics regression cases reproduce the known target-specific fallback loss
 and verify that duplicate-name cleanup preserves both preference signs and held-out
-scores. Similarity thresholds, capacity and Recommended weights are unchanged.
+scores. Similarity thresholds and capacity are unchanged. Recommended consumes
+persisted interest and affinity with the configurable ranking weights in
+[scoring](../../../docs/scoring.md#recommended); Island evaluation does not set those weights.
 
 Interest Islands are the authoritative user-specific personalization representation.
 Events identify occurrences; Islands represent signed behavioral preferences.
 
 ```text
 canonical Articles + behavior → behavioral profiles → persisted Interest Islands
-candidate Article vector → direct Island comparison → interestScore → Recommended
+candidate Article vector → direct Island comparison → interest / affinity → Recommended
 ```
 
 ## Services and persistence
@@ -134,14 +136,33 @@ continues to record calibration runs and is not used as ranking evidence.
 Recommended coverage is separate from interest coverage. The caller must supply
 an authorized, visible article eligible for the requested view. No Event,
 Island, embedding, or nonzero interest is required by Recommended calculation.
-Missing interest means zero; missing Event means zero corroboration. Existing
-quality defaults remain 70 for unavailable article quality components and 0.5 for
-feed trust. A missing plain-object freshness signal keeps the existing 0.5
+Missing interest and affinity mean zero; missing Event means zero corroboration.
+Quality metadata and optional ranking rollback retain defaults of 70 for unavailable
+article quality components and 0.75 for FeedTrust. Default Recommended has no direct
+Quality contribution. A missing plain-object freshness signal keeps the existing 0.5
 fallback; the Article model reports zero freshness when publication time is absent.
 Required identity/ownership data is never synthesized to make an article eligible.
-Recommended remains a runtime score; its existing weights are unchanged.
+Recommended remains a runtime score with coefficients configured separately from Island evaluation.
 
 ## Confidence-aware interest
+
+### Threshold-free strongest semantic affinity
+
+The same Article-to-Island comparison computes
+`semanticAffinityScore = round4(max(clamp(preferenceStrength * islandConfidence * max(0, cosineSimilarity) ** 2)))`
+across all eligible positive Islands. Missing positive contributions give zero. This
+uses the strongest contribution, excludes behavioral fallback and does not change signed interest.
+It uses no additional queries, embedding inference or cosine calculations.
+Apply `20261018220000-add-semantic-affinity-score.mjs` before updated workers/server
+processes. The user-owned Article FLOAT is nullable (unevaluated) with evaluated
+zero distinct from null. Normal scoring, expiry refresh and explicit recalculation
+persist both scores with `interestScoredAt`; affinity-only changes are written.
+Duplicate invalidation and semantic resets clear affinity to null. Calibration and
+mute/unmute retain their existing scoring scope/eventual lifecycle. Recommended
+uses affinity at a default weight of 0.10. Briefing eligibility
+and Smart Folder query semantics remain unchanged.
+
+### Existing signed interest
 
 `islandInterestConfidence.js` is the shared evaluator used by scoring, API Island
 attribution and regression explanations. Recent semantic changes improve the

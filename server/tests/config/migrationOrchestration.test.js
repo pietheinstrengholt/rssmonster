@@ -82,7 +82,7 @@ describe.each(dialects)('version-aware migrations (%s)', dialect => {
         expect((await database.sequelize.query('SELECT url FROM feeds WHERE userId = 41 AND url = :url', { replacements: { url } }))[0]).toEqual([{ url }]);
       }
       await expect(query.bulkInsert('feeds', [{ userId: 41, categoryId: 42, feedName: 'Duplicate', url: 'https://example.test/Feed.xml', feedTags: '[]', createdAt: now, updatedAt: now }])).rejects.toThrow();
-      expect(await history(database.sequelize)).toEqual([BASELINE_24, '20261013010000-align-feed-url-collation.mjs', '20261013011000-normalize-sqlite-migration-dates.mjs']);
+      expect(await history(database.sequelize)).toEqual([BASELINE_24, '20261013010000-align-feed-url-collation.mjs', '20261013011000-normalize-sqlite-migration-dates.mjs', '20261018080000-add-multi-island-score.mjs', '20261018220000-add-semantic-affinity-score.mjs', '20261021000000-remove-multi-island-score.mjs']);
     });
   });
 

@@ -307,7 +307,7 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
     Event membership, Island matches, embeddings, and nonzero interest must not be prerequisites.
 
 28. **A missing personalization signal MUST NOT imply a zero-value Article.**
-    Quality, freshness, source evidence, and other defined ranking inputs remain applicable without personalization.
+    Freshness, source evidence, and other defined ranking inputs remain applicable without personalization. Quality remains available for dedicated sorting and eligibility, with no direct default Recommended contribution.
 
 29. **Crawl enrichment MUST supply available ranking inputs without making successful AI enrichment a prerequisite for recommendation.**
     Each ranking input MUST have a documented missing-value fallback. Missing analysis MUST remain distinguishable from an observed zero or negative value. Recommended is a ranking score, not a probability. Normal runtime ranking may reflect current source metadata, including a corrected publication date. Independently triggered time-based or behavioral personalization refreshes remain permitted; publisher revisions MUST NOT initiate those refreshes.
@@ -317,6 +317,14 @@ Articles are the behavioral evidence unit. Events organize content. Islands repr
 
 31. **Quality, personal interest, source trust, and Event evidence MUST remain distinct scoring concepts.**
     A disliked Article is not necessarily low quality, and strong corroboration does not establish personal interest.
+
+    Default Recommended combines 0.60 × positive interest, 0.10 × semantic affinity,
+    0.17 × freshness, 0.10 × corroboration, and
+    −0.30 × negative interest, plus the existing rule/Hot bonuses and final upper cap.
+    It consumes the two persisted personalized Article scores without recalculating
+    them. Missing affinity contributes zero without changing stored nulls.
+    Quality has a configurable zero default weight for rollback; it is not redistributed.
+    See [scoring and rollback](../scoring.md#recommended-configuration-and-rollback).
 
 32. **Derived scores MUST NOT become new interaction evidence.**
     Recommendation scores, interest scores, embeddings, generated summaries, and labels must not recursively reinforce the preferences that produced them.

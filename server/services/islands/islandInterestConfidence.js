@@ -171,6 +171,7 @@ export function bestPositiveIslandAffinity(article, islands, threshold) {
 // One path per Island; strongest positive and strongest negative survive without correlated summation.
 export function evaluateArticleInterest(article, context, threshold = 0.62) {
   const paths = [];
+  let strongestPositiveAffinity = 0;
   const implicitEvidence = context.implicitEvidence || [];
   const diagnostics = { threshold, islandsConsidered: context.islands.length,
     fallbackSourcesConsidered: context.fallbackEvidence.length,
@@ -181,6 +182,12 @@ export function evaluateArticleInterest(article, context, threshold = 0.62) {
     expiredOrUndatedFallbackSignals: 0 };
   for (const island of context.islands) {
     const sim = similarity(article.articleVector, island.islandVector, article.embedding_model, island.embedding_model);
+    // loadIslandEvidence supplies only owned, active, unmuted Islands.
+    if (island.preferenceStrength > 0 && Number.isFinite(sim) && sim > 0) {
+      // Attenuate weak affinity without introducing an Article-to-Island matching gate.
+      const q = clamp(island.preferenceStrength * island.islandConfidence * Math.max(0, sim) ** 2);
+      if (Number.isFinite(q) && q > 0) strongestPositiveAffinity = Math.max(strongestPositiveAffinity, q);
+    }
     const direct = normalizedRelationship(sim, threshold);
     if (Number.isFinite(sim)) diagnostics.compatibleComparisons++;
     if (direct > 0) diagnostics.qualifyingIslands++;
@@ -254,5 +261,6 @@ export function evaluateArticleInterest(article, context, threshold = 0.62) {
     : !context.islands.length && !context.fallbackEvidence.length && !implicitEvidence.length ? 'no_eligible_evidence'
     : (diagnostics.expiredOrUndatedFallbackSignals + diagnostics.expiredOrUndatedImplicitSignals) > 0 && !context.islands.length ? 'no_recent_fallback_signal'
     : 'no_compatible_vector';
-  return { score, seedSelf: isBehavioralEvidence(article), paths: selectedPaths, diagnostics };
+  const semanticAffinityScore = Number(strongestPositiveAffinity.toFixed(4));
+  return { score, semanticAffinityScore, seedSelf: isBehavioralEvidence(article), paths: selectedPaths, diagnostics };
 }

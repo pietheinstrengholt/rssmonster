@@ -9,6 +9,7 @@ import { up as addInteractionClocks } from '../../migrations/pre-2.4/20260914001
 import { renameReadingStateColumns } from '../../migrations/pre-2.4/20261012000000-standardize-saved-opened-original.mjs';
 import { up as standardizeToneScore } from '../../migrations/pre-2.4/20261012002000-standardize-tone-score.mjs';
 import { up as addInterestScoredAt } from '../../migrations/pre-2.4/20260915001000-add-interest-scored-at.mjs';
+import { up as addSemanticAffinityScore } from '../../migrations/20261018220000-add-semantic-affinity-score.mjs';
 import { up as addPersonalizationRefreshedAt } from '../../migrations/pre-2.4/20260915002000-add-personalization-refreshed-at.mjs';
 import { up as addAnalysisProvenance } from '../../migrations/pre-2.4/20260917000000-add-article-analysis-provenance.mjs';
 import { up as addIslandBehaviorTime } from '../../migrations/pre-2.4/20260917001000-add-island-behavior-time.mjs';
@@ -67,6 +68,7 @@ async function installHistoricalSchema() {
   });
   await addEmbeddingModels(qi, db.Sequelize);
   await addInterestScoredAt(qi, db.Sequelize);
+  await addSemanticAffinityScore(qi, db.Sequelize);
   await addPersonalizationRefreshedAt(qi, db.Sequelize);
   await addAnalysisProvenance(qi, db.Sequelize);
   await addIslandBehaviorTime(qi, db.Sequelize);

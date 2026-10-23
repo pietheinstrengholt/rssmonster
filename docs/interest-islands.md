@@ -257,10 +257,19 @@ No trustworthy path means `interestScore = 0`. Every eligible article still rece
 a runtime Recommended score from its other signals; personalization coverage may
 be much lower than Recommended coverage. See [Scoring]({% link scoring.md %}).
 
-Interest scores influence `sort:recommended`, where positive scores boost and
-negative scores penalize an article. They also support Daily Briefing
-eligibility and semantic filtering. The score is derived output: it does not
-become new behavioral evidence and does not itself change an Island.
+
+The independent `semanticAffinityScore` measures continuous strongest positive Island
+affinity: `round4(max(clamp(positivePreferenceStrength × islandConfidence × max(0, cosineSimilarity)², 0, 1)))`.
+It has no matching threshold or behavioral fallback. Preference strength and Island
+confidence attenuate uncertain matches. Null means unevaluated; zero means evaluated
+without supported positive affinity. Recommended uses affinity at weight 0.10 by default.
+Normal scoring, expiry refresh and explicit recalculation store interest and affinity
+with their shared `interestScoredAt`. Explicit all-history recalculation skips unsupported
+embeddings and reports them; removing experimental coverage requires no recalculation.
+Briefing eligibility and Smart Folder semantics remain unchanged.
+
+Signed interest scores boost or penalize `sort:recommended` and support Daily Briefing
+eligibility and semantic filtering. Scores are derived output and never new behavioral evidence.
 
 ## Inspecting Your Islands
 
@@ -382,7 +391,8 @@ The migration does not backfill unknown times with today. Missing, invalid or fu
 fall back to a valid, non-future publication time until that signal is recorded
 again. If neither date is usable, the signal contributes zero recency weight and
 cannot create or extend active Island participation. Raw signal weights, explicit fallback windows, intent
-handling and final Recommended weights are unchanged.
+handling are unchanged by timestamp migration. Final Recommended weights are
+configured separately; see [Scoring]({% link scoring.md %}#recommended).
 See [the service contract](../server/services/islands/README.md#interaction-timestamps-and-legacy-behavior).
 
 ### Decay examples and configuration migration

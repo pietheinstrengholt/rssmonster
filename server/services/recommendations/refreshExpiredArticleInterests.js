@@ -18,6 +18,7 @@ export async function refreshExpiredArticleInterests(userId, articles, now = Dat
   const evaluationTime = article => islandBehaviorTime(article.interestScoredAt, now) ?? 0;
   const evaluationValues = result => ({
     interestScore: mysql ? Math.fround(result.score) : result.score,
+    semanticAffinityScore: mysql ? Math.fround(result.semanticAffinityScore) : result.semanticAffinityScore,
     interestScoredAt: evaluatedAt
   });
   const applyValues = (article, values) => {
@@ -70,7 +71,7 @@ export async function refreshExpiredArticleInterests(userId, articles, now = Dat
       const rows = await db.Article.findAll({
         where: { userId, id: batch.map(article => article.id), ...unfilteredCanonicalArticleWhere(), filteredInd: false },
         attributes: ['id', 'title', 'description', 'articleVector', 'embedding_model',
-          'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'interestScore', 'interestScoredAt'],
+          'advertisementScore', 'aiAnalysisCompletedAt', 'advertisementScoreActionOverrideInd', 'interestScore', 'semanticAffinityScore', 'interestScoredAt'],
         raw: true, transaction, lock: transaction.LOCK.UPDATE
       });
       // A competing refresh may have completed while this request waited for the lock.
@@ -82,6 +83,7 @@ export async function refreshExpiredArticleInterests(userId, articles, now = Dat
         if (!result) {
           values.set(String(row.id), {
             interestScore: row.interestScore,
+            semanticAffinityScore: row.semanticAffinityScore,
             interestScoredAt: row.interestScoredAt == null ? null : new Date(row.interestScoredAt)
           });
           continue;
@@ -90,11 +92,12 @@ export async function refreshExpiredArticleInterests(userId, articles, now = Dat
         values.set(String(row.id), refreshed);
         // Never overwrite a newer evaluation, including ambiguous same-second writes.
         if (row.interestScoredAt != null && new Date(row.interestScoredAt).getTime() >= evaluatedAt.getTime()) continue;
-        if (!groups.has(refreshed.interestScore)) groups.set(refreshed.interestScore, []);
-        groups.get(refreshed.interestScore).push(row.id);
+        const key = JSON.stringify([refreshed.interestScore, refreshed.semanticAffinityScore]);
+        if (!groups.has(key)) groups.set(key, { scores: refreshed, ids: [] });
+        groups.get(key).ids.push(row.id);
       }
-      for (const [interestScore, ids] of groups) {
-        await db.Article.update({ interestScore, interestScoredAt: evaluatedAt }, {
+      for (const { scores, ids } of groups.values()) {
+        await db.Article.update(scores, {
           where: { userId, id: ids, ...unfilteredCanonicalArticleWhere(), filteredInd: false }, transaction, silent: true
         });
       }

@@ -193,13 +193,34 @@ command merely because an incremental run created no assignments.
 | Command | Arguments | What it does and when to use it |
 | --- | --- | --- |
 | `npm run feedtrust` | None | Recalculates each feed's user-specific trust score from article quality, exposed engagement, deterministic originality, and negative feedback. Use it after importing behavioral history or changing feed-trust logic. |
-| `npm run recommendations:evaluate` | Required `--userId=<id>`; optional `--limit=<count>`, `--status=all\|unread\|read`, `--output=<directory>` | Calculate recommendation scores and write local `summary.json` and `articles.jsonl` reports without persisting scores. Uses the latest 1,000 eligible articles by default. |
-| `npm run recommendations:recalculate` | Same options as `recommendations:evaluate` | Calculate and persist `interestScore` and `interestScoredAt` for the selected user's eligible articles. Review the evaluation report and scope first. |
+| `npm run recommendations:evaluate` | Required `--userId=<id>`; optional `--limit=<count>`, `--status=all\|unread\|read`, `--allHistory`, `--resume=<checkpoint.json>`, `--output=<directory>` | Calculate recommendation scores and write local `summary.json` and `articles.jsonl` reports without persisting scores. Uses the latest 1,000 eligible articles by default. |
+| `npm run recommendations:recalculate` | Same options as `recommendations:evaluate` | Calculate and persist `interestScore`, `semanticAffinityScore` and `interestScoredAt` for the selected user's eligible articles. Review the evaluation report and scope first. |
 | `npm run seed:island-taxonomy` | Sequelize seed options | Applies only the `20260520104500-island-taxonomy.js` seed. Use it to create the built-in Interest Island taxonomy. This changes database data. |
 | `npm run seed:undo:island-taxonomy` | Sequelize seed options | **Destructive.** Undoes only the built-in Interest Island taxonomy seed. Use it only when intentionally removing that seeded taxonomy. |
 | `npm run seed:official-sources` | `--userId=<integer-id>` or `--userId <integer-id>` | Creates or updates built-in official-source rules for every user by default, or one user when specified. Use it after installing the official-source schema, adding a user that needs the defaults, or changing the built-in rules. |
 | `npm run hotlinks` | None | Reconciles recent article hotlink indicators and counts from retained observations and clears aged-out state. Use it to repair hotlink state after logic changes or inconsistent derived data. |
 | `npm run repair-duplicates` | None | Recalculates every canonical article's `duplicateCount` from stored duplicate relationships. Use it to repair inconsistent counts; it does not perform duplicate detection itself. |
+
+`--allHistory` explicitly selects all owned, unfiltered canonical non-duplicate
+Articles, including read and saved history, in ID order with 200-row transactions.
+It cannot be combined with a limit or a non-all status. Missing, invalid and
+incompatible embeddings are reported and left untouched. No embeddings or Islands
+are regenerated. Normal bounded commands retain their existing neutral-vector behavior.
+Each completed batch publishes `checkpoint.json` after committing its database writes
+and flushing its report. Resume with the same user/mode and a **new** output directory:
+
+```bash
+npm run recommendations:recalculate -- --userId=1 --allHistory --output=reports/recommendations/history-1
+npm run recommendations:recalculate -- --userId=1 --allHistory --resume=reports/recommendations/history-1/checkpoint.json --output=reports/recommendations/history-1-resumed
+```
+
+The checkpoint fixes the maximum Article ID, evaluation clock, evidence fingerprint
+and completed cursor. Changed evidence/algorithm/threshold rejects resumption; start
+a new full run instead. Replaying the last committed batch is safe. Newer and
+ambiguous same-second evaluations are preserved. Partial report rows may repeat
+a committed batch after failure; combine report segments by Article ID. This is
+current personalization applied to history, not a historical training replay.
+Each user must be requested explicitly; there is no implicit cross-user operation.
 
 ### Semantic Regression Fixtures
 

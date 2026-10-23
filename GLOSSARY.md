@@ -328,6 +328,13 @@ subsequent participation. Neither toggle immediately rescores existing articles.
 magnitude of signed weight on a 0–100 scale, not recommendation confidence.
 Evidence bars compare counts within an interest, not their scoring weights.
 
+**Semantic affinity** (`semanticAffinityScore`) is the continuous strongest positive
+Interest Island contribution, using the same preference/confidence-weighted squared
+positive cosine similarity. It has no matching threshold, behavioral
+fallback or distinct-Island selection. One positive Island can produce affinity;
+null means unevaluated and zero means evaluated without supported positive affinity.
+Recommended weights it at 0.10 by default; it does not change Briefing eligibility.
+
 ### More like this, Not Interested, and mute Feed
 
 **More like this** records explicit positive recommendation feedback.
@@ -338,8 +345,9 @@ not a synonym for either negative feedback or permanently disabling a Feed.
 ### Recommended and related recommendations
 
 **Recommended** (`sort:recommended`) is personalized ordering from the server's
-combined interest, freshness, source-aware quality, coverage, rule, and Hot
-signals. An eligible Article can have a finite score without an Event, Island,
+combined signed interest, semantic affinity, freshness,
+corroboration, rule, and Hot signals. Quality has no direct default weight;
+dedicated Quality sorting and eligibility filters remain available. An eligible Article can have a finite score without an Event, Island,
 or interest match. The displayed percentage is a signed score scale, not a
 probability. Explanation reasons describe contributions, not a new score
 computed by the client. Reader **recommendations** are a separate fetched list

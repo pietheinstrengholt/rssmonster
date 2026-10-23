@@ -378,13 +378,26 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: false
       },
-      // Stores the predicted user-interest affinity, with zero representing no match.
+      // Personalized signed affinity for this Article's owner, in [-1, 1], rounded to four decimals.
+      // Combines the strongest positive and strongest negative evidence paths from threshold-based
+      // Island matching and eligible Article-to-Article behavioral evidence. Island paths are
+      // weighted by preference strength, Island confidence and threshold-normalized similarity.
+      // Positive values support interest; negative values express dislike; zero is neutral and
+      // also the unevaluated default (check interestScoredAt). Feeds into Recommended ranking.
       interestScore: {
         type: DataTypes.FLOAT,
         allowNull: false,
         defaultValue: 0
       },
-      // Last successful interest evaluation, including neutral and unchanged results.
+      // Continuous strongest positive Island affinity, in [0, 1], rounded to four decimals.
+      // q = clamp(positivePreferenceStrength * islandConfidence * max(0, cosineSimilarity) ** 2, 0, 1).
+      // semanticAffinityScore = round4(max(q)) across eligible positive Islands, without a matching gate.
+      // No positive Island contribution means zero; null means not yet evaluated for this
+      // semantic state. Excludes behavioral fallback, freshness, Feed trust and Article quality.
+      // Independent of signed interestScore; Recommended consumes its persisted value.
+      semanticAffinityScore: { type: DataTypes.FLOAT, allowNull: true, defaultValue: null },
+      // Shared timestamp for successful evaluation of both personalization scores, including neutral
+      // and unchanged results. Normal scoring, expiry refresh and explicit recalculation update it.
       // Null means no recorded evaluation; legacy history is unknown.
       interestScoredAt: { type: DataTypes.DATE, allowNull: true, defaultValue: null },
       // Attention estimate from eligible time with readable article content (0–4).

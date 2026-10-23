@@ -38,7 +38,7 @@ boundary. Unknown current lifecycle clocks use the Island update time for invali
 only; technical timestamps never grant active participation.
 
 Detail endpoints apply the same correction. Successful corrections persist only
-`interestScore` and `interestScoredAt`, without changing Article `updatedAt`, user
+`interestScore`, `semanticAffinityScore` and `interestScoredAt`, without changing Article `updatedAt`, user
 behavior or Island state. Bounded transactions lock eligible owned targets and protect
 newer evaluations, including ambiguous same-second writes. Later requests reuse the
 recorded scores until another lifecycle boundary invalidates them. The diagnostic
@@ -239,8 +239,9 @@ Event grouping.
 
 Daily Briefing always uses `sort:recommended` and event grouping, regardless of
 sort or grouping supplied by a caller. Recommended is personalized by signed
-interest, freshness, Quality, corroboration, and matching rule tags. Top Stories
-is non-personalized and uses event importance, freshness, and Quality. Both use
+interest, semantic affinity, freshness, corroboration, matching
+rule tags and Hot status. Quality has no direct default Recommended weight. Top Stories
+is non-personalized and uses event importance, freshness, and Quality. Top Stories uses
 Quality's fixed article-quality and feed-trust weights; neither adds a separate
 raw feed-trust preference boost. The generic Unread `prioritizeHighTrust`
 preference still affects the chronological Newest and Oldest sorts. These
@@ -546,8 +547,9 @@ Supported ranking concepts include:
 - Quality order, prioritizing higher-quality articles.
 - Legacy Attention order, retained for existing manually authored expressions.
 
-Recommended ranks signed personal interest most strongly, with smaller freshness,
-Quality, corroboration, and rule-match contributions. Top Stories deliberately
+Recommended ranks signed personal interest most strongly, with smaller affinity, freshness,
+corroboration, rule-match and Hot contributions. Quality sorting and gates remain
+independent of Recommended. Top Stories deliberately
 ignores personal interest and ranks event importance alongside freshness and
 Quality. Both are product-level judgments rather than synonyms for recency.
 

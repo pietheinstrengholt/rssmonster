@@ -136,7 +136,8 @@ export async function markArticleAsDuplicate(article, canonicalArticleOrId, opti
     duplicateOfArticleId: canonicalArticleId,
     status: DUPLICATE_ARTICLE_STATUS,
     eventId: null,
-    interestScore: 0
+    interestScore: 0,
+    semanticAffinityScore: null
   };
 
   // Handles the case where article is function.

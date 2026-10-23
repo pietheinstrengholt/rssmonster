@@ -92,6 +92,8 @@ describe('two-batch semantic simulation', () => {
       expect(snapshot.metrics['Articles eligible for Recommended']).toBe((index + 1) * 1000);
       expect(snapshot.metrics['Articles with Recommended score']).toBe((index + 1) * 1000);
       expect(snapshot.rows.every(a => Number.isFinite(a.recommended))).toBe(true);
+      expect(snapshot.rows.filter(a => a.status === 'unread').every(a =>
+        Number.isFinite(a.semanticAffinityScore) && a.semanticAffinityScore >= 0 && a.semanticAffinityScore <= 1)).toBe(true);
       expect(snapshot.metrics['Recommended coverage (%)']).toBe(100);
       expect(snapshot.islands.activeIslands).toBeGreaterThan(0);
       expect(snapshot.islands.activeIslands).toBeLessThanOrEqual(DEFAULT_MAX_ISLANDS_PER_USER);

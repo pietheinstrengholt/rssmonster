@@ -3,14 +3,15 @@
 ```text
 Article → embedding → semantic duplicate handling → Event
 behavioral Article evidence → Interest Island
-candidate Article vector → direct Island evidence → interestScore → Recommended
+candidate Article vector → direct Island evidence → interest / affinity → Recommended
 ```
 
 Articles preserve content identity, revisions and user behavior. Events group
 reports about one real-world occurrence. Interest Islands are persistent,
 user-specific behavioral preferences; an Event association alone is not a
 personal preference. Recommended combines optional personalization with existing
-freshness, quality, FeedTrust and Event-derived signals.
+freshness and Event corroboration. Quality has no direct default Recommended
+weight; dedicated Quality sorting and eligibility gates remain separate.
 
 ## Processing and ownership
 
@@ -67,7 +68,7 @@ Strongest positive and strongest negative paths combine without correlated sums.
 
 Every eligible canonical visible Article receives a finite runtime Recommended
 score. No Event, Island, vector or nonzero interest is required. Unmatched interest
-is zero; absent Event corroboration is zero. Final Recommended weights are unchanged.
+is zero; absent Event corroboration is zero. Recommended consumes persisted interest, semantic affinity with configurable weights; see the formula and rollback below.
 See [scoring](../../docs/scoring.md), [search](articleSearch/README.md), and
 [semantic validation](../tests/semantic/README.md).
 
@@ -76,7 +77,7 @@ See [scoring](../../docs/scoring.md), [search](articleSearch/README.md), and
 `npm run recommendations:evaluate -- --userId=1` runs a read-only evaluation of
 the latest 1,000 eligible Articles by `publishedAt DESC, id DESC`.
 `npm run recommendations:recalculate -- --userId=1` uses the same selection and
-persists only `interestScore` and `interestScoredAt`. Recommended itself remains
+persists only `interestScore`, `semanticAffinityScore` and `interestScoredAt`. Recommended itself remains
 a runtime value. Both commands use the current active Islands and production
 behavioral fallbacks without calibration, Event repair, labeling or embedding calls.
 
@@ -90,7 +91,8 @@ interest. A required positive `--userId` prevents accidental cross-user runs.
 Reports are streamed to ignored `server/reports/recommendations/<run>/` when run
 from `server/`; `--output=directory` selects another directory. `summary.json`
 records completion/failure, selection, current Island IDs/confidence, score counts
-and zero reasons. `articles.jsonl` records stored/recomputed interest, Island-only
+and zero reasons, including positive/zero/null affinity distributions.
+`articles.jsonl` records stored/recomputed interest and semantic affinity, Island-only
 interest, Recommended breakdowns, supporting Island IDs and full scoring diagnostics.
 No vectors are exported. Island-only results are diagnostic; recalculation always
 persists the full production interest result. Before/after Recommended values use
@@ -104,6 +106,16 @@ Article ID are excluded. This is a live maintenance scan, not a database-wide sn
 concurrent publication/status edits can change eligibility between batches. Evidence
 is loaded once for the run. Reports describe today's memory applied to old Articles,
 including possible training sources, not a held-out historical backtest.
+
+`--allHistory` explicitly removes the 1,000-row default for all owned canonical,
+unfiltered non-duplicate history, including read/saved Articles. It uses bounded
+ID-ordered batches, preserves unsupported-vector scores and reports their skip
+reasons. The callback/CLI checkpoint records a committed cursor, maximum ID,
+evaluation clock and evidence/algorithm fingerprint. Resume with `--resume=...`
+in a new output directory; changed evidence rejects the checkpoint. No automatic
+history backfill accompanies schema migration. Affinity and quadratic coverage
+remain independent stored signals. Recommended combines them at runtime; Briefing
+eligibility still uses established interest behavior.
 
 Use the existing incremental, recent-repair and historical-backfill services.
 Do not build parallel reconciliation pipelines or perform production rebuilds as

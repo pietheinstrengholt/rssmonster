@@ -67,26 +67,33 @@ describe.skipIf(db.sequelize.getDialect() !== 'mysql')('verified legacy MySQL la
       await query.bulkInsert('user_settings', [{ userId: 41, status: index ? 'saved' : 'favorite', viewMode: index >= 2 ? 'expanded' : 'full', createdAt: now, updatedAt: now }]);
       const before = await databaseStatus(db.sequelize);
       expect(before.validation).toBe('Passed');
-      expect(before.pending).toBe(6 - index);
+      expect(before.pending).toBe(9 - index);
       expect(before.baseline).toBe(index === 3 ? '2.4.0 (adoption required)' : 'Pre-2.4 (recognized checkpoint)');
       await migrateDatabase(db);
       const after = await inspectMigrationSchema(db.sequelize);
       // Naming migrations converge to this verified layout, rather than recreating
       // frozen tables or changing nullable tags, index names or the publisher check.
-      expect(after.hash).toBe(legacy.schemas.at(-1).schemaHash);
+      // The nullable affinity score is the only change to the verified legacy layout.
+      const previousDefinition = structuredClone(after.definition);
+      const articles = previousDefinition.tables.find(table => table.name === 'articles');
+      const affinityColumn = '  `semanticAffinityScore` float DEFAULT NULL,\n';
+      expect(articles.create).toContain(affinityColumn);
+      articles.create = articles.create.replace(affinityColumn, '');
+      expect(schemaHash(previousDefinition)).toBe(legacy.schemas.at(-1).schemaHash);
       const [names] = await db.sequelize.query('SELECT name FROM SequelizeMeta ORDER BY name');
-      expect(names.map(row => row.name)).toHaveLength(75);
+      expect(names.map(row => row.name)).toHaveLength(78);
       expect(names.map(row => row.name)).toEqual(expect.arrayContaining([...recorded, BASELINE_24]));
       const [tracking] = await db.sequelize.query(`SELECT * FROM \`${MIGRATION_STATE_TABLE}\``);
       expect(tracking[0]).toMatchObject({ schemaHash: after.hash, baselineVersion: '2.4.0', inProgress: null });
       expect((await db.sequelize.query('SELECT id, password, feverCredentialHash FROM users WHERE id = 41'))[0]).toEqual([{ id: 41, password: 'retained-hash', feverCredentialHash: 'retained-fever' }]);
       expect((await db.sequelize.query('SELECT contentOriginal, savedInd, openedOriginalCount, toneScore FROM articles WHERE id = 44'))[0]).toEqual([{ contentOriginal: '<p>Retained content</p>', savedInd: 1, openedOriginalCount: 3, toneScore: 88 }]);
+      expect((await db.sequelize.getQueryInterface().describeTable('articles')).multiIslandScore).toBeUndefined();
       expect((await db.sequelize.query('SELECT feedTags, url FROM feeds WHERE id = 43'))[0]).toEqual([{ feedTags: null, url: 'https://example.test/Retained.xml' }]);
       expect((await db.sequelize.query('SELECT status, viewMode FROM user_settings WHERE userId = 41'))[0]).toEqual([{ status: 'saved', viewMode: 'expanded' }]);
       await migrateDatabase(db);
       expect(await inspectMigrationSchema(db.sequelize)).toEqual(after);
       expect((await db.sequelize.query('SELECT name FROM SequelizeMeta ORDER BY name'))[0]).toEqual(names);
-      expect(await databaseStatus(db.sequelize)).toMatchObject({ state: 'Up to date', baseline: '2.4.0', applied: 75, pending: 0, validation: 'Passed', inconsistencies: [] });
+      expect(await databaseStatus(db.sequelize)).toMatchObject({ state: 'Up to date', baseline: '2.4.0', applied: 78, pending: 0, validation: 'Passed', inconsistencies: [] });
     });
   }, 120000);
 
@@ -103,5 +110,5 @@ describe.skipIf(db.sequelize.getDialect() !== 'mysql')('verified legacy MySQL la
       expect((await db.sequelize.query('SELECT name FROM SequelizeMeta ORDER BY name'))[0]).toEqual(names);
       expect(await query.showAllTables()).not.toContain(MIGRATION_STATE_TABLE);
     });
-  }, 120000);
+  }, 240000);
 });

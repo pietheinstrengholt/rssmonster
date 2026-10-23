@@ -58,19 +58,6 @@ describe.each(dialects)('baseline 2.4 (%s)', dialect => {
       expect((await sequelize.query('SELECT name FROM SequelizeMeta'))[0]).toEqual([{ name: BASELINE_24 }]);
       expect((await sequelize.query('SELECT identity, displayName, categoryName, description, status FROM island_taxonomy'))[0]).toEqual(initialData);
 
-      // Every initialized model can select all its persisted attributes, without
-      // sync/alter masking missing migration columns or tables.
-      for (const model of Object.values(db).filter(value => value?.rawAttributes)) {
-        const columns = Object.values(model.rawAttributes).filter(attribute => attribute.type.key !== 'VIRTUAL').map(attribute => query.quoteIdentifier(attribute.field));
-        await sequelize.query(`SELECT ${columns.join(', ')} FROM ${query.quoteIdentifier(model.tableName)} LIMIT 1`);
-        if (sequelize === db.sequelize) await model.findAll({ limit: 1 });
-        const persisted = dialect === 'sqlite'
-          ? Object.fromEntries((await sequelize.query(`PRAGMA table_info(${query.quoteIdentifier(model.tableName)})`))[0].map(column => [column.name, { allowNull: !column.notnull && !column.pk }]))
-          : await query.describeTable(model.tableName);
-        for (const attribute of Object.values(model.rawAttributes).filter(attribute => attribute.type.key !== 'VIRTUAL')) {
-          expect(persisted[attribute.field].allowNull, `${model.tableName}.${attribute.field} nullability`).toBe(attribute.primaryKey ? false : attribute.allowNull ?? true);
-        }
-      }
       const now = new Date();
       await query.bulkInsert('users', [{ username: 'baseline-owner', feverCredentialHash: 'baseline-hash', lastLogin: now, createdAt: now, updatedAt: now }]);
       await expect(query.bulkInsert('users', [{ username: 'baseline-owner', lastLogin: now, createdAt: now, updatedAt: now }])).rejects.toThrow();
@@ -88,6 +75,19 @@ describe.each(dialects)('baseline 2.4 (%s)', dialect => {
       // A real initialized model registry and Express startup must work against
       // the baseline, without the global test setup's model sync hiding drift.
       await migrateDatabase(database); // Then validate current models/startup with all root increments.
+      // Every initialized model can select all its persisted attributes, without
+      // sync/alter masking missing migration columns or tables.
+      for (const model of Object.values(db).filter(value => value?.rawAttributes)) {
+        const columns = Object.values(model.rawAttributes).filter(attribute => attribute.type.key !== 'VIRTUAL').map(attribute => query.quoteIdentifier(attribute.field));
+        await sequelize.query(`SELECT ${columns.join(', ')} FROM ${query.quoteIdentifier(model.tableName)} LIMIT 1`);
+        if (sequelize === db.sequelize) await model.findAll({ limit: 1 });
+        const persisted = dialect === 'sqlite'
+          ? Object.fromEntries((await sequelize.query(`PRAGMA table_info(${query.quoteIdentifier(model.tableName)})`))[0].map(column => [column.name, { allowNull: !column.notnull && !column.pk }]))
+          : await query.describeTable(model.tableName);
+        for (const attribute of Object.values(model.rawAttributes).filter(attribute => attribute.type.key !== 'VIRTUAL')) {
+          expect(persisted[attribute.field].allowNull, `${model.tableName}.${attribute.field} nullability`).toBe(attribute.primaryKey ? false : attribute.allowNull ?? true);
+        }
+      }
       await execute(process.execPath, ['--input-type=module', '-e', `
         import assert from 'node:assert/strict';
         import db from './models/index.js';

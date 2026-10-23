@@ -18,7 +18,9 @@ run incremental Event assignment, calibrate Islands and score again.
 There is no semantic reset, third unread load, separate expansion load, or
 auxiliary user in this command. The production incremental scope performs Event
 work; Island calibration includes confidence-aware interest scoring.
-Thresholds, community limits, models and Recommended weights are unchanged.
+Thresholds, community limits and models remain fixed. Recommended uses the
+configured production ranking formula; explicitly requested ranking changes are
+compared separately from stored preference scores and memberships.
 
 ## Runner and test database
 

@@ -13,6 +13,7 @@ export async function longitudinalSnapshot(userId, name) {
     status: a.status, duplicateOfArticleId: a.duplicateOfArticleId, savedInd: a.savedInd,
     negativeInd: a.negativeInd, openedOriginalCount: a.openedOriginalCount,
     interestScore: Number(a.interestScore || 0), recommended: computeRecommended(a),
+    semanticAffinityScore: a.semanticAffinityScore == null ? null : Number(a.semanticAffinityScore),
     neutralRecommended: computeRecommended({ ...a.get({ plain: true }), interestScore: 0 }),
     corroboration: computeRecommendedBreakdown(a).corroboration,
     recommendedEligible: a.status !== 'duplicate' && !a.filteredInd,

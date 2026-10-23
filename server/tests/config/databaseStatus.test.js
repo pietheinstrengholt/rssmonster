@@ -56,7 +56,7 @@ describe.each(dialects)('database diagnostics (%s)', dialect => {
       const beforeCli = await readHistorySnapshot(sequelize);
       const beforeFile = dialect === 'sqlite' ? await readFile(path.join(directory, 'db.sqlite')) : null;
       const result = await execute(process.execPath, [cli, '--json'], { env: { ...process.env, DB_DIALECT: dialect, ...(dialect === 'sqlite' ? { DB_STORAGE: path.join(directory, 'db.sqlite') } : {}) } });
-      expect(JSON.parse(result.stdout)).toMatchObject({ state: 'Pending migrations', applied: 1, pending: 2, validation: 'Passed' });
+      expect(JSON.parse(result.stdout)).toMatchObject({ state: 'Pending migrations', applied: 1, pending: 5, validation: 'Passed' });
       expect(await readHistorySnapshot(sequelize)).toEqual(beforeCli);
       if (beforeFile) expect(await readFile(path.join(directory, 'db.sqlite'))).toEqual(beforeFile);
     }

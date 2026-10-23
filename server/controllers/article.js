@@ -172,6 +172,7 @@ const loadArticleDetails = async (userId, articlesArray, personalization = creat
       'toneScore',
       'qualityScore',
       'interestScore',
+      'semanticAffinityScore',
       'interestScoredAt',
       'attentionBucket',
       'publishedAt',
@@ -547,6 +548,9 @@ const getArticle = async (req, res, _next) => {
       article.setDataValue('interestDiagnostics', { ...current,
         storedScore: Number(article.interestScore), scoredAt: article.interestScoredAt,
         matchesStoredScore: Math.abs(current.score - Number(article.interestScore)) <= 0.00015,
+        storedSemanticAffinityScore: article.semanticAffinityScore == null ? null : Number(article.semanticAffinityScore),
+        matchesStoredSemanticAffinityScore: article.semanticAffinityScore == null ? null
+          : Math.abs(current.semanticAffinityScore - Number(article.semanticAffinityScore)) <= 0.00015,
         evidenceAsOf: new Date().toISOString() });
     }
     await refreshExpiredArticleInterests(userId, [article]);

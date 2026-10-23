@@ -16,12 +16,16 @@ describe('recommendation CLI arguments', () => {
     expect(parseRecommendationArgs(['evaluate', '--userId=1', '--status=all', '--limit=1000', '--output=reports/example']))
       .toMatchObject({ limit: 1000, output: 'reports/example' });
     expect(parseRecommendationArgs(['evaluate', '--help'])).toMatchObject({ help: true });
+    expect(parseRecommendationArgs(['recalculate', '--userId=1', '--allHistory', '--resume=reports/previous/checkpoint.json']))
+      .toMatchObject({ allHistory: true, resume: 'reports/previous/checkpoint.json' });
   });
   it.each([
     ['evaluate'], ['write', '--userId=1'], ['recalculate', '--userId=0'], ['evaluate', '--userId=1x'],
     ['evaluate', '--userId=1', '--limit=-1'], ['evaluate', '--userId=1', '--limit=2.5'],
     ['evaluate', '--userId=1', '--status=everything'], ['evaluate', '--userId=1', '--force'],
-    ['evaluate', '--userId=1', '--userId=2']
+    ['evaluate', '--userId=1', '--userId=2'], ['recalculate', '--userId=1', '--allHistory', '--limit=1000'],
+    ['recalculate', '--userId=1', '--allHistory', '--status=unread'], ['recalculate', '--userId=1', '--resume=checkpoint.json'],
+    ['recalculate', '--userId=1', '--allHistory', '--allHistory']
   ])('rejects unsafe or ambiguous arguments: %j', (...args) => {
     expect(() => parseRecommendationArgs(args)).toThrow();
   });
@@ -46,6 +50,20 @@ describe('recommendation CLI arguments', () => {
         expect(row).not.toHaveProperty('articleVector');
         expect(Number((await article.reload()).interestScore)).toBeCloseTo(mode === 'evaluate' ? 0.7 : 0);
       }
+      const historical = path.join(output, 'history');
+      const execute = promisify(execFile);
+      const environment = { cwd: fileURLToPath(new URL('../../', import.meta.url)), env: { ...process.env, NODE_ENV: 'test' } };
+      await execute(process.execPath, ['scripts/runRecommendationsCommand.js', 'recalculate',
+        `--userId=${user.id}`, '--allHistory', `--output=${historical}`], environment);
+      const checkpoint = JSON.parse(await readFile(path.join(historical, 'checkpoint.json'), 'utf8'));
+      expect(checkpoint).toMatchObject({ userId: user.id, afterId: article.id, mode: 'recalculate' });
+      expect(JSON.parse(await readFile(path.join(historical, 'summary.json'), 'utf8')))
+        .toMatchObject({ skippedUnsupportedCount: 1, persistedCount: 0 });
+      const resumed = path.join(output, 'resumed');
+      await execute(process.execPath, ['scripts/runRecommendationsCommand.js', 'recalculate',
+        `--userId=${user.id}`, '--allHistory', `--resume=${path.join(historical, 'checkpoint.json')}`, `--output=${resumed}`], environment);
+      expect(JSON.parse(await readFile(path.join(resumed, 'summary.json'), 'utf8')))
+        .toMatchObject({ runStatus: 'complete', processedCount: 0 });
     } finally {
       await rm(output, { recursive: true, force: true });
     }

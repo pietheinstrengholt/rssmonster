@@ -8,12 +8,16 @@ import {
 
 const articleWith = ({
   interestScore = 0,
+  semanticAffinityScore = 0,
+  hotInd = 0,
   freshness = 0.5,
   quality = 0.5,
   event = null,
   tags = []
 } = {}) => ({
   interestScore,
+  semanticAffinityScore,
+  hotInd,
   freshness,
   qualityScore: quality * 100,
   toneScore: quality * 100,
@@ -32,6 +36,59 @@ const strongEvent = {
 };
 
 describe('computeRecommended', () => {
+  it('treats null affinity as neutral without changing Article state', () => {
+    const article = { ...articleWith({ freshness: 0 }), semanticAffinityScore: null };
+    const before = structuredClone(article);
+    expect(computeRecommended(article)).toBe(0);
+    expect(computeRecommended({ ...article, semanticAffinityScore: 0 })).toBe(0);
+    expect(article).toEqual(before);
+  });
+
+  it('keeps Quality sorting and explicit quality gates separate from Recommended', () => {
+    const articles = [
+      { id: 1, ...articleWith({ freshness: 0, quality: 1 }), quality: 1 },
+      { id: 2, ...articleWith({ freshness: 0, quality: 0 }), quality: 0,
+        semanticAffinityScore: 0.9 }
+    ];
+    expect(sortArticles(articles, { sortRecommended: true }).map(a => a.id)).toEqual([2, 1]);
+    expect(sortArticles(articles, { sortQuality: true }).map(a => a.id)).toEqual([1, 2]);
+    expect(sortArticles(articles, { sortRecommended: true,
+      qualityFilter: { operator: '>=', value: 0.7 } }).map(a => a.id)).toEqual([1]);
+  });
+
+  it('keeps publication-date and ID tie-breaking after the new contributions', () => {
+    const articles = [
+      { id: 1, publishedAt: '2026-10-18', semanticAffinityScore: 0.5 },
+      { id: 2, publishedAt: '2026-10-19', semanticAffinityScore: 0.5 },
+      { id: 3, publishedAt: '2026-10-19', semanticAffinityScore: 0.5 }
+    ];
+    expect(sortArticles(articles, { sortRecommended: true }).map(a => a.id)).toEqual([3, 2, 1]);
+  });
+
+  it('preserves negative penalties even when positive affinity offsets a mild dislike', () => {
+    const article = { ...articleWith({ interestScore: -0.2, freshness: 0 }),
+      semanticAffinityScore: 0.8 };
+    expect(computeRecommended(article)).toBeCloseTo(0.02, 12);
+    expect(computeRecommended({ ...article, interestScore: -1 })).toBeCloseTo(-0.22, 12);
+  });
+
+  it('exposes only active personalization contributions in API explanations', () => {
+    const result = buildRecommendationPresentation({ ...articleWith({ freshness: 0 }),
+      semanticAffinityScore: 0.3 });
+    expect(result).toMatchObject({ score: 0.03, reasons: [
+      { code: 'semantic_affinity', value: 0.3, contribution: 0.03 },
+    ] });
+  });
+
+  it('combines persisted affinity with signed interest, freshness and corroboration, excluding Quality', () => {
+    const article = { ...articleWith({ interestScore: 0.4, freshness: 0.5, quality: 1,
+      event: strongEvent, tags: [{ tagType: 'rule' }] }), semanticAffinityScore: 0.3,
+    hotInd: 1 };
+    expect(computeRecommended(article)).toBeCloseTo(0.605, 12);
+    expect(computeRecommended({ ...article, qualityScore: 0, toneScore: 0,
+      advertisementScore: 0, Feed: { feedTrust: 0 } })).toBeCloseTo(0.605, 12);
+  });
+
   it('adds a flat Hot bonus without scaling by hotlink count', () => {
     const article = articleWith();
     const base = computeRecommended(article);
@@ -52,14 +109,14 @@ describe('computeRecommended', () => {
     expect(computeRecommended({
       ...articleWith({ interestScore: 1, freshness: 1, quality: 1,
         event: { articleCount: 64, sourceCount: 8, sourceDiversityScore: Math.log(9) } }),
-      hotInd: 1
+      semanticAffinityScore: 1, hotInd: 1
     })).toBe(1);
   });
 
   it('scores articles with no optional semantic evidence using neutral interest', () => {
     const noSemanticEvidence = articleWith();
     expect(computeRecommendedBreakdown(noSemanticEvidence)).toMatchObject({ interestScore: 0, corroboration: 0 });
-    expect(computeRecommended(noSemanticEvidence)).toBeCloseTo(0.15);
+    expect(computeRecommended(noSemanticEvidence)).toBeCloseTo(0.085);
     expect(Number.isFinite(computeRecommended({}))).toBe(true);
     for (const interestScore of [0, 0.8, -0.8]) {
       expect(Number.isFinite(computeRecommended(articleWith({ interestScore })))).toBe(true);
@@ -95,12 +152,12 @@ describe('computeRecommended', () => {
     expect(fresh - stale).toBeCloseTo(0.17, 6);
   });
 
-  it('uses Quality as a secondary signal that does not dominate interest', () => {
+  it('keeps Quality and FeedTrust metadata out of default Recommended', () => {
     const highQuality = computeRecommended(articleWith({ quality: 1 }));
     const lowQuality = computeRecommended(articleWith({ quality: 0 }));
     const interested = computeRecommended(articleWith({ quality: 0, interestScore: 1 }));
 
-    expect(highQuality - lowQuality).toBeCloseTo(0.13, 6);
+    expect(highQuality).toBe(lowQuality);
     expect(interested).toBeGreaterThan(highQuality);
   });
 
@@ -136,7 +193,7 @@ describe('computeRecommended', () => {
     const preferenceEnabled = computeRecommended(highTrust, { prioritizeHighTrust: true });
 
     expect(preferenceEnabled).toBe(ordinary);
-    expect(ordinary - computeRecommended(lowTrust)).toBeCloseTo(0.0195, 6);
+    expect(ordinary - computeRecommended(lowTrust)).toBeCloseTo(0, 6);
   });
 
   it('preserves the negative lower bound and established upper cap', () => {
@@ -144,6 +201,8 @@ describe('computeRecommended', () => {
       .toBe(-0.30);
     expect(computeRecommended(articleWith({
       interestScore: 5,
+      hotInd: 1,
+      semanticAffinityScore: 1,
       freshness: 5,
       quality: 1,
       event: strongEvent,
@@ -198,11 +257,10 @@ describe('computeRecommended', () => {
       'interest_match',
       'source_diversity',
       'rule_match',
-      'freshness',
-      'quality'
+      'freshness'
     ]);
-    expect(presentation.score).toBeCloseTo(0.853, 4);
-    expect(presentation.reasons.map(({ contribution }) => contribution)).toEqual([0.42, 0.1, 0.08, 0.136, 0.117]);
+    expect(presentation.score).toBeCloseTo(0.736, 4);
+    expect(presentation.reasons.map(({ contribution }) => contribution)).toEqual([0.42, 0.1, 0.08, 0.136]);
     expect(presentation.reasons[0]).toMatchObject({
       island: { id: 7, name: 'Software development' }
     });

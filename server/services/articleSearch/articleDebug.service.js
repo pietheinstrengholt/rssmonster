@@ -1,6 +1,7 @@
 // Provides development-only diagnostics for recommended article rankings.
 // The helpers compact event metadata and log score components without affecting production behavior.
 import { computeRecommendedBreakdown } from '../recommendations/recommendedScore.js';
+import { RECOMMENDED_WEIGHTS } from '../../config/recommended.js';
 
 // Normalizes long event names for compact debug-table output.
 function compactEventName(name) {
@@ -48,9 +49,11 @@ export function debugRecommendedScores(scored) {
       : 0;
 
     console.log(
-      '[RECOMMENDED DEBUG] Formula: 0.60*positiveInterest + 0.17*freshness + ' +
-      '0.13*quality + ' +
-      '0.10*corroboration - 0.30*negativeInterest + ruleBoost + hotBoost'
+      `[RECOMMENDED DEBUG] Formula: ${RECOMMENDED_WEIGHTS.positiveInterest}*positiveInterest + ` +
+      `${RECOMMENDED_WEIGHTS.affinity}*affinity + ` +
+      `${RECOMMENDED_WEIGHTS.freshness}*freshness + ${RECOMMENDED_WEIGHTS.quality}*quality + ` +
+      `${RECOMMENDED_WEIGHTS.corroboration}*corroboration - ` +
+      `${RECOMMENDED_WEIGHTS.negativeInterest}*negativeInterest + ruleBoost + hotBoost`
     );
     console.log(
       `[RECOMMENDED DEBUG] articles=${totalArticles} ` +
@@ -70,6 +73,7 @@ export function debugRecommendedScores(scored) {
           interest: Number(bd.interestScore.toFixed(4)),
           positiveInterest: Number(bd.positiveInterest.toFixed(4)),
           negativeInterest: Number(bd.negativeInterest.toFixed(4)),
+          affinity: Number((bd.affinity ?? 0).toFixed(4)),
           quality: Number(bd.quality.toFixed(4)),
           coverage: Number(bd.coverage.toFixed(4)),
           crossSource: Number(bd.crossSource.toFixed(4)),
