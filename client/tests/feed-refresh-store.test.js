@@ -209,7 +209,8 @@ describe('feed refresh store', () => {
     expect(store.completionStatus).toBe('error');
     expect(store.error).toEqual({ message: fallbackError.message });
     expect(notifications).toEqual([{
-      message: 'Could not fetch new articles from feeds. Please try again.'
+      message: 'Could not fetch new articles from feeds. Please try again.',
+      diagnostics: expect.any(String)
     }]);
     expect(console.error).toHaveBeenCalledWith(
       'Error refreshing feeds after stream fallback:',

@@ -380,7 +380,16 @@ export default {
       const unavailable = new Set((event.detail.sent || []).filter(action => event.detail.results?.some(result => result.actionId === action.actionId && result.errorCode === 'ARTICLE_UNAVAILABLE')).map(action => String(action.articleId)));
       const records = new Map((event.detail.articles || []).map(article => [String(article.id), article]));
       const articles = await articleStateActions.overlay(this.articles.filter(article => !unavailable.has(String(article.id))).map(article => ({ ...article, ...records.get(String(article.id)), feed: { ...article.feed, ...records.get(String(article.id))?.feed } }))).catch(error => {
-        if (sessionId === this.offlineReadingStore.sessionId) notifyActionError('Could not reconcile local article changes.', error);
+        if (sessionId === this.offlineReadingStore.sessionId) notifyActionError('Could not reconcile local article changes.', error, undefined, {
+          operation: 'reconcile-local-article-changes',
+          articleCount: this.articles.length,
+          receivedArticleCount: records.size,
+          remote: Boolean(event.detail.remote),
+          local: Boolean(event.detail.local),
+          readOnly: this.offlineReadingStore.readOnly,
+          viewMode: this.selectionStore.currentSelection.viewMode,
+          requestChanged: requestId !== this.activeRequestId
+        });
         return null;
       });
       if (!articles || requestId !== this.activeRequestId || sessionId !== this.offlineReadingStore.sessionId) return;

@@ -1,8 +1,9 @@
 <template>
-  <aside class="action-error-notice" :class="{ 'action-error-notice--success': success }" :role="success ? 'status' : 'alert'" aria-atomic="true">
+  <aside v-show="!detailsOpen" class="action-error-notice" :class="{ 'action-error-notice--success': success }" :role="success ? 'status' : 'alert'" aria-atomic="true">
     <BootstrapIcon class="action-error-notice__icon" :icon="success ? 'check-circle-fill' : 'exclamation-circle-fill'" aria-hidden="true" />
     <div class="action-error-notice__messages">
-      <p>{{ message }}</p>
+      <button v-if="!success && diagnostics" type="button" class="action-error-notice__details" aria-haspopup="dialog" @click="openDetails">{{ message }}<span>View error details</span></button>
+      <p v-else>{{ message }}</p>
       <p v-if="acknowledgment" class="action-error-notice__acknowledgment" role="status">{{ acknowledgment }}</p>
     </div>
     <button v-if="!success && retryAvailable" type="button" class="app-button app-button--secondary app-button--compact" :disabled="retrying" @click="$emit('retry')">{{ retrying ? 'Retrying…' : 'Retry' }}</button>
@@ -15,13 +16,32 @@
       <BootstrapIcon icon="x-lg" aria-hidden="true" />
     </button>
   </aside>
+  <Teleport to="body">
+    <BaseDialog v-if="detailsOpen" show-close size="lg" @close="detailsOpen = false">
+      <template #title>Error details</template>
+      <template #description>Copy these details and share them when reporting this error.</template>
+      <label class="action-error-details__label" for="action-error-report">Diagnostic report</label>
+      <textarea id="action-error-report" class="app-form-control action-error-details__report" readonly :value="openedDiagnostics" @focus="$event.target.select()"></textarea>
+      <p v-if="copyStatus" role="status">{{ copyStatus }}</p>
+      <template #footer>
+        <button type="button" class="app-button app-button--secondary" @click="detailsOpen = false">Close</button>
+        <button type="button" class="app-button app-button--primary" @click="copyDetails">Copy details</button>
+      </template>
+    </BaseDialog>
+  </Teleport>
 </template>
 
 <script>
+import BaseDialog from '../dialogs/BaseDialog.vue';
+
 export default {
   name: 'ActionErrorNotice',
+  components: { BaseDialog },
   emits: ['dismiss', 'retry'],
+  // Keep the report available until the reader explicitly closes or dismisses it.
+  data() { return { detailsOpen: false, openedDiagnostics: '', copyStatus: '' }; },
   props: {
+    diagnostics: { type: String, default: '' },
     acknowledgment: { type: String, default: '' },
     retryAvailable: { type: Boolean, default: false },
     retrying: { type: Boolean, default: false },
@@ -29,6 +49,19 @@ export default {
     message: {
       type: String,
       required: true
+    }
+  },
+  methods: {
+    // Keep the selected report stable even if another background failure arrives while it is open.
+    openDetails() { this.openedDiagnostics = this.diagnostics; this.copyStatus = ''; this.detailsOpen = true; },
+    // Readers can still select the report manually when browser clipboard access is unavailable.
+    async copyDetails() {
+      try {
+        await navigator.clipboard.writeText(this.openedDiagnostics);
+        this.copyStatus = 'Details copied.';
+      } catch {
+        this.copyStatus = 'Could not copy automatically. Select the report above and copy it manually.';
+      }
     }
   }
 };
@@ -63,6 +96,32 @@ export default {
   flex: 1;
   min-width: 0;
 }
+
+.action-error-notice__details {
+  background: var(--color-transparent);
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--font-size-ui-default);
+  line-height: 1.4;
+  padding: 0;
+  text-align: start;
+}
+
+.action-error-notice__details span {
+  display: block;
+  text-decoration: underline;
+  color: var(--text-secondary);
+}
+
+.action-error-notice__details:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.action-error-details__label { display: block; margin-bottom: 8px; }
+.action-error-details__report { width: 100%; min-height: 40vh; resize: vertical; font-family: monospace; }
 
 .action-error-notice p {
   font-size: var(--font-size-ui-default);

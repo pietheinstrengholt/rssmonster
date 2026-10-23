@@ -25,7 +25,8 @@ describe('action notification service', () => {
     expect(notifyActionError()).toBe(true);
     expect(listener).toHaveBeenCalledOnce();
     expect(listener.mock.calls[0][0].detail).toEqual({
-      message: 'Could not complete that action. Please try again.'
+      message: 'Could not complete that action. Please try again.',
+      diagnostics: expect.any(String)
     });
   });
 });

@@ -1,3 +1,5 @@
+import { createActionErrorDiagnostics } from './actionErrorDiagnostics.js';
+
 export const ACTION_ERROR_EVENT = 'app:action-error';
 export const ACTION_SUCCESS_EVENT = 'app:action-success';
 
@@ -18,14 +20,19 @@ export const isFatalActionError = (error) => {
 };
 
 // This function shows a concise notification for a recoverable action failure.
-export const notifyActionError = (message, error, retry) => {
+export const notifyActionError = (message, error, retry, context) => {
   if (error?.code === 'ERR_CANCELED' || isFatalActionError(error)) {
     return false;
   }
 
+  // Retain the same shareable report in the notification and browser console.
+  const displayMessage = message || 'Could not complete that action. Please try again.';
+  const diagnostics = createActionErrorDiagnostics(displayMessage, error, context);
+  console.error('Action failed:', diagnostics);
   window.dispatchEvent(new CustomEvent(ACTION_ERROR_EVENT, {
     detail: {
-      message: message || 'Could not complete that action. Please try again.',
+      message: displayMessage,
+      diagnostics,
       ...(typeof retry === 'function' ? { retry } : {})
     }
   }));

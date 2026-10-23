@@ -77,8 +77,8 @@
     />
     <action-error-notice
       v-if="actionErrorMessage"
-      :key="actionErrorId"
       :message="actionErrorMessage"
+      :diagnostics="actionErrorDiagnostics"
       :success="actionNoticeSuccess"
       :acknowledgment="actionAcknowledgment"
       :retry-available="Boolean(actionErrorRetry)"
@@ -430,6 +430,7 @@ export default {
     return {
       actionErrorId: 0,
       actionErrorMessage: '',
+      actionErrorDiagnostics: '',
       actionNoticeSuccess: false,
       actionAcknowledgment: '',
       actionErrorRetry: null,
@@ -540,6 +541,7 @@ export default {
     // This function handles recoverable action error events.
     handleActionError(event) {
       this.showActionError(event.detail?.message);
+      this.actionErrorDiagnostics = event.detail?.diagnostics || '';
       this.actionErrorRetry = typeof event.detail?.retry === 'function' ? event.detail.retry : null;
     },
     // Success messages share the existing dismissal and timeout lifecycle.
@@ -661,6 +663,7 @@ export default {
     },
     // Recoverable failures remain visible until explicitly dismissed or successfully retried.
     showActionError(message) {
+      this.actionErrorDiagnostics = '';
       this.actionNoticeSuccess = false;
       this.actionAcknowledgment = '';
       this.actionErrorRetry = null;
@@ -689,6 +692,7 @@ export default {
     },
     // This function dismisses the current recoverable action error.
     dismissActionError() {
+      this.actionErrorDiagnostics = '';
       this.actionErrorMessage = '';
       this.actionErrorRetry = null;
 

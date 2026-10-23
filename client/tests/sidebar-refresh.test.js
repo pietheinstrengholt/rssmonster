@@ -202,7 +202,8 @@ describe('Sidebar feed refresh', () => {
 
     expect(triggerCrawl).toHaveBeenCalledOnce();
     expect(notifications).toEqual([{
-      message: 'Could not fetch new articles from feeds. Please try again.'
+      message: 'Could not fetch new articles from feeds. Please try again.',
+      diagnostics: expect.any(String)
     }]);
     expect(wrapper.find('.sidebar-refresh-progress-panel').exists()).toBe(true);
     expect(wrapper.text()).not.toContain(fallbackFailure.message);

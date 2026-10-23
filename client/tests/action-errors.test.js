@@ -113,7 +113,8 @@ describe('recoverable action errors', () => {
     });
 
     await expect(notification).resolves.toEqual({
-      message: 'Could not update the article status. Please try again.'
+      message: 'Could not update the article status. Please try again.',
+      diagnostics: expect.any(String)
     });
     expect(context.pendingReadStatusArticleIds.size).toBe(0);
     expect(console.error).toHaveBeenCalledWith('Error toggling article read status:', error);

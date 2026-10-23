@@ -268,7 +268,8 @@ describe('Sidebar navigation and action coverage', () => {
       error
     );
     expect(notifications.at(-1)).toEqual({
-      message: 'Could not mark these articles as read. Please try again.'
+      message: 'Could not mark these articles as read. Please try again.',
+      diagnostics: expect.any(String)
     });
     window.removeEventListener(ACTION_ERROR_EVENT, handleNotification);
   });
