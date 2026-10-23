@@ -2,6 +2,7 @@ import { API_BASE_URL } from '../api/client.js';
 import { fetchArticlePage } from '../api/articles.js';
 import { offlineDatabase } from './offlineDatabase.js';
 import { withOfflineAccountLease } from './offlineCoordination.js';
+import { randomUUID } from '../utils/uuid.js';
 
 export const OFFLINE_ARTICLE_LIMITS = Object.freeze([100, 250, 1000, 2500, 5000]);
 export const offlineApiOrigin = () => new URL(API_BASE_URL, window.location.origin).origin;
@@ -22,7 +23,7 @@ export const createOfflineReadingService = (database = offlineDatabase, fetchPag
     const job = coordinate(account, async lease => {
       const profile = await getProfile(account);
       if (!profile?.enabled) return profile;
-      const generation = crypto.randomUUID();
+      const generation = randomUUID();
       if (!await database.beginGeneration(account, profile, generation)) return null;
       const articles = [];
       const seen = new Set();

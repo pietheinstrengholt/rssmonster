@@ -1,4 +1,5 @@
 import { offlineDatabase } from './offlineDatabase.js';
+import { randomUUID } from '../utils/uuid.js';
 
 export const OFFLINE_STATE_EVENT = 'offline:state-changed';
 export const OFFLINE_SESSION_EVENT = 'offline:session-ended';
@@ -15,7 +16,7 @@ export const sameOfflineAccount = (left, right) => Boolean(left && right && left
 
 // Both snapshot downloads and replay use the same renewable, fenced account lease.
 export const withOfflineAccountLease = async (account, work, database = offlineDatabase, waitMilliseconds = 0) => {
-  const owner = crypto.randomUUID();
+  const owner = randomUUID();
   const deadline = Date.now() + waitMilliseconds;
   let lease = await database.acquireLease(account, owner);
   while (!lease && Date.now() < deadline) {

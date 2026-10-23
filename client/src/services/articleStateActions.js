@@ -1,5 +1,6 @@
 import { offlineDatabase, actionField, actionValue, overlayPendingActions } from './offlineDatabase.js';
 import { withOfflineAccountLease, publishOfflineChange } from './offlineCoordination.js';
+import { randomUUID } from '../utils/uuid.js';
 
 export const createArticleStateActions = (database = offlineDatabase, publish = publishOfflineChange) => {
   let session = null;
@@ -12,7 +13,7 @@ export const createArticleStateActions = (database = offlineDatabase, publish = 
       if (!session) throw new Error('Sign in to save article changes.');
       const current = session;
       const unique = [...new Map(articles.map(article => [Number(article.id), article])).values()];
-      const actions = unique.map(article => ({ actionId: crypto.randomUUID(), articleId: Number(article.id), kind, value,
+      const actions = unique.map(article => ({ actionId: randomUUID(), articleId: Number(article.id), kind, value,
         baseValue: article[actionField(kind)] }));
       await database.enqueueActions(current.account, actions, current.epoch);
       if (session !== current) throw new Error('Your account changed before the action completed.');
