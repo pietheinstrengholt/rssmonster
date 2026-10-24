@@ -85,7 +85,7 @@
     "mysql2": "3.24.5",
     "nodemailer": "^10.1.0",
     "openid-client": "6.8.8",
-    "sanitize-html": "^2.18.0",
+    "sanitize-html": "^2.18.1",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
     "sqlite3": "^6.0.1",
