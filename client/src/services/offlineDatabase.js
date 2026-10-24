@@ -54,22 +54,37 @@ export const openOfflineDatabase = () => new Promise((resolve, reject) => {
 const accountKey = account => [account.apiOrigin, account.userId];
 
 // Queue requests inside the transaction; resolve only once persistence has completed.
-const transaction = async (mode, queue) => {
+const runTransaction = async (mode, queue) => {
   const database = await openOfflineDatabase();
-  return new Promise((resolve, reject) => {
-    const tx = database.transaction(['profiles', 'articles', 'pendingActions', 'syncAccounts'], mode);
-    let result;
-    tx.oncomplete = () => { database.close(); resolve(result); };
-    tx.onabort = () => { database.close(); reject(tx.error || new Error('Offline storage transaction aborted.')); };
-    tx.onerror = () => {};
-    try {
-      queue(tx, value => { result = value; });
-    } catch (error) {
-      tx.abort();
-      database.close();
-      reject(error);
-    }
-  });
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = database.transaction(['profiles', 'articles', 'pendingActions', 'syncAccounts'], mode);
+      let result;
+      tx.oncomplete = () => resolve(result);
+      tx.onabort = () => reject(tx.error || new Error('Offline storage transaction aborted.'));
+      tx.onerror = () => {};
+      try {
+        queue(tx, value => { result = value; });
+      } catch (error) {
+        tx.abort();
+        reject(error);
+      }
+    });
+  } finally {
+    database.close();
+  }
+};
+
+const transaction = async (mode, queue) => {
+  try {
+    return await runTransaction(mode, queue);
+  } catch (error) {
+    // WebKit can lose its backing transaction when an iOS page is suspended.
+    // Retry reads once on a fresh connection; never replay writes or hide a persistent failure.
+    if (mode !== 'readonly' || error?.name !== 'UnknownError' ||
+      !/without an in-progress transaction|connection to indexed database server lost/i.test(error.message)) throw error;
+    return runTransaction(mode, queue);
+  }
 };
 
 const deleteArticles = (tx, account, keepGeneration = null) => {
