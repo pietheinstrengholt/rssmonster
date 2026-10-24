@@ -5,7 +5,7 @@ import AppShell from '../src/AppShell.vue';
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
 import { articleStateActions } from '../src/services/articleStateActions.js';
 import { ACTION_ERROR_EVENT, notifyActionError } from '../src/services/actionNotifications.js';
-import { createActionErrorDiagnostics } from '../src/services/actionErrorDiagnostics.js';
+import { createActionErrorDiagnostics, recordOfflineDiagnostic } from '../src/services/actionErrorDiagnostics.js';
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.innerHTML = ''; });
 
@@ -26,8 +26,33 @@ describe('shareable action error diagnostics', () => {
     const report = listener.mock.calls[0][0].detail.diagnostics;
     expect(JSON.parse(report).context).toMatchObject({ operation: 'reconcile-local-article-changes', articleCount: 1, receivedArticleCount: 1, viewMode: 'full', requestChanged: false });
     expect(JSON.parse(report).error).toMatchObject({ name: 'UnknownError', message: 'Storage interrupted' });
+    expect(JSON.parse(report).context).toMatchObject({ attempt: 1, deferred: false, visibilityAtStart: 'visible', pendingChanges: 0 });
+    expect(JSON.parse(report).recentOfflineEvents).toContainEqual(expect.objectContaining({ event: 'reconciliation-failed', attempt: 1 }));
     expect(report).not.toContain('Private article title');
     expect(report).not.toContain('userId');
+  });
+
+  it('keeps a bounded visibility and recovery history in the shareable report', () => {
+    let visibility = 'hidden';
+    vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
+    for (let index = 0; index < 25; index++) {
+      document.dispatchEvent(new Event('visibilitychange'));
+      recordOfflineDiagnostic('reconciliation-queued-hidden', { queueLength: index + 1 });
+    }
+    visibility = 'visible';
+    document.dispatchEvent(new Event('visibilitychange'));
+    window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    const report = JSON.parse(createActionErrorDiagnostics('Reconciliation failed', new Error('Storage failed')));
+    expect(report.diagnosticsVersion).toBe(2);
+    expect(report.lifecycle).toHaveLength(20);
+    expect(report.recentOfflineEvents).toHaveLength(20);
+    expect(report.lifecycle.slice(-3)).toMatchObject([
+      { event: 'visibilitychange', visibility: 'hidden' },
+      { event: 'visibilitychange', visibility: 'visible' },
+      { event: 'pageshow', visibility: 'visible', persisted: true }
+    ]);
+    expect(report.recentOfflineEvents.at(-1)).toMatchObject({ event: 'reconciliation-queued-hidden', queueLength: 25 });
+    expect(report.browser.pageTimeMs).toBeGreaterThanOrEqual(0);
   });
   // The report preserves the failure while excluding transport payloads and credentials.
   it('captures browser and storage errors without request bodies, URL parameters or credentials', () => {

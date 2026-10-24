@@ -49,6 +49,7 @@ import {
   readingContentArea
 } from './feed/visibilityTracking.js';
 import { notifyActionError } from '../../services/actionNotifications.js';
+import { diagnosticError, recordOfflineDiagnostic } from '../../services/actionErrorDiagnostics.js';
 import { isArticleKeyboardEventEligible } from '../../services/articleKeyboardCommands.js';
 import { useMediaQuery } from '../../composables/useMediaQuery.js';
 import { hasReachedArticleCollectionEnd } from '../../services/articleCollectionState.js';
@@ -366,7 +367,10 @@ export default {
       if (!sameOfflineAccount(event.detail?.account, this.offlineReadingStore.account)) return;
       // The initiating control owns its optimistic count delta. Broadcast/replay patches never repeat it.
       if (event.detail.local && !event.detail.remote) return;
-      this.pendingOfflineChanges.push({ event, requestId: this.activeRequestId, sessionId: this.offlineReadingStore.sessionId });
+      const deferred = document.visibilityState !== 'visible';
+      this.pendingOfflineChanges.push({ event, requestId: this.activeRequestId, sessionId: this.offlineReadingStore.sessionId,
+        queuedAt: performance.now(), attempts: 0, deferred });
+      if (deferred) recordOfflineDiagnostic('reconciliation-queued-hidden', { queueLength: this.pendingOfflineChanges.length });
       await this.flushOfflineChanges();
     },
     async flushOfflineChanges() {
@@ -376,7 +380,11 @@ export default {
         // Reconcile in notification order so an older overlay cannot overwrite a newer patch.
         while (this.pendingOfflineChanges.length && document.visibilityState === 'visible') {
           const change = this.pendingOfflineChanges.shift();
-          if (change.requestId !== this.activeRequestId || change.sessionId !== this.offlineReadingStore.sessionId) continue;
+          if (change.requestId !== this.activeRequestId || change.sessionId !== this.offlineReadingStore.sessionId) {
+            recordOfflineDiagnostic('reconciliation-stale', { requestChanged: change.requestId !== this.activeRequestId,
+              sessionChanged: change.sessionId !== this.offlineReadingStore.sessionId });
+            continue;
+          }
           await this.applyOfflineChange(change);
         }
       } finally {
@@ -385,6 +393,11 @@ export default {
     },
     async applyOfflineChange(change) {
       const { event, requestId, sessionId } = change;
+      const started = performance.now();
+      const visibilityAtStart = document.visibilityState;
+      change.attempts++;
+      const timing = { attempt: change.attempts, deferred: change.deferred, queueWaitMs: Math.round(started - change.queuedAt) };
+      recordOfflineDiagnostic('reconciliation-started', { ...timing, queueLength: this.pendingOfflineChanges.length });
       const records = new Map((event.detail.articles || []).map(article => [String(article.id), article]));
       try {
         if (event.detail.discarded) {
@@ -399,6 +412,7 @@ export default {
             const stored = storedArticles.get(String(article.id));
             return stored ? { ...next, status: stored.status, savedInd: stored.savedInd } : next;
           });
+          recordOfflineDiagnostic('reconciliation-complete', { ...timing, elapsedMs: Math.round(performance.now() - started) });
           return;
         }
         const unavailable = new Set((event.detail.sent || []).filter(action => event.detail.results?.some(result => result.actionId === action.actionId && result.errorCode === 'ARTICLE_UNAVAILABLE')).map(action => String(action.articleId)));
@@ -406,11 +420,15 @@ export default {
         if (requestId !== this.activeRequestId || sessionId !== this.offlineReadingStore.sessionId) return;
         this.articles = articles;
         this.container = this.container.filter(id => !unavailable.has(String(id)));
+        recordOfflineDiagnostic('reconciliation-complete', { ...timing, elapsedMs: Math.round(performance.now() - started) });
       } catch (error) {
+        recordOfflineDiagnostic('reconciliation-failed', { ...timing, elapsedMs: Math.round(performance.now() - started),
+          visibilityAtStart, error: diagnosticError(error) });
         if (requestId !== this.activeRequestId || sessionId !== this.offlineReadingStore.sessionId) return;
         // A read already in progress can be aborted when iOS suspends the page.
         // Retain its server patch and retry only when the page becomes visible again.
         if (document.visibilityState !== 'visible') {
+          change.deferred = true;
           this.pendingOfflineChanges.unshift(change);
           return;
         }
@@ -423,7 +441,11 @@ export default {
           local: Boolean(event.detail.local),
           readOnly: this.offlineReadingStore.readOnly,
           viewMode: this.selectionStore.currentSelection.viewMode,
-          requestChanged: requestId !== this.activeRequestId
+          requestChanged: requestId !== this.activeRequestId,
+          ...timing,
+          elapsedMs: Math.round(performance.now() - started),
+          visibilityAtStart,
+          pendingChanges: this.pendingOfflineChanges.length
         });
       }
     },

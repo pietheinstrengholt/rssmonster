@@ -9,6 +9,7 @@ import api, { setOfflineReadOnly } from '../src/api/client.js';
 import { articleStateActions } from '../src/services/articleStateActions.js';
 import { OFFLINE_STATE_EVENT } from '../src/services/offlineCoordination.js';
 import { ACTION_ERROR_EVENT } from '../src/services/actionNotifications.js';
+import { createActionErrorDiagnostics } from '../src/services/actionErrorDiagnostics.js';
 
 let pinia;
 let wrapper;
@@ -129,6 +130,13 @@ describe('article reconciliation across page suspension', () => {
       await flushPromises();
       expect(wrapper.text()).toContain('Recovered article');
       expect(errors).not.toHaveBeenCalled();
+      const report = JSON.parse(createActionErrorDiagnostics('Recovery history', null));
+      expect(report.recentOfflineEvents).toContainEqual(expect.objectContaining({
+        event: 'reconciliation-failed', attempt: 1, visibilityAtStart: 'visible', visibility: 'hidden'
+      }));
+      expect(report.recentOfflineEvents).toContainEqual(expect.objectContaining({
+        event: 'reconciliation-complete', attempt: 2, deferred: true, visibility: 'visible'
+      }));
     } finally {
       window.removeEventListener(ACTION_ERROR_EVENT, errors);
     }

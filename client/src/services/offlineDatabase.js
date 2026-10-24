@@ -1,4 +1,5 @@
 import { canonicalArticleState, canonicalArticleActionKind } from './migrations/articleStateMigration.js';
+import { diagnosticError, recordOfflineDiagnostic, rememberStorageFailure } from './actionErrorDiagnostics.js';
 
 export const OFFLINE_DATABASE_NAME = 'rssmonster-offline';
 export const OFFLINE_DATABASE_VERSION = 4;
@@ -54,18 +55,37 @@ export const openOfflineDatabase = () => new Promise((resolve, reject) => {
 const accountKey = account => [account.apiOrigin, account.userId];
 
 // Queue requests inside the transaction; resolve only once persistence has completed.
-const runTransaction = async (mode, queue) => {
+const runTransaction = async (mode, queue, diagnostic) => {
+  const opening = performance.now();
   const database = await openOfflineDatabase();
   try {
+    diagnostic.openElapsedMs = Math.round(performance.now() - opening);
+    diagnostic.databaseVersion = database.version;
+    diagnostic.phase = 'create-transaction';
+    diagnostic.visibilityAtTransactionStart = document.visibilityState;
     return await new Promise((resolve, reject) => {
       const tx = database.transaction(['profiles', 'articles', 'pendingActions', 'syncAccounts'], mode);
+      diagnostic.phase = 'requests';
       let result;
-      tx.oncomplete = () => resolve(result);
-      tx.onabort = () => reject(tx.error || new Error('Offline storage transaction aborted.'));
-      tx.onerror = () => {};
+      tx.oncomplete = () => { diagnostic.phase = 'complete'; resolve(result); };
+      tx.onabort = () => {
+        diagnostic.phase = 'abort';
+        diagnostic.transactionError = diagnosticError(tx.error);
+        reject(tx.error || new Error('Offline storage transaction aborted.'));
+      };
+      tx.onerror = event => {
+        // Request errors bubble before abort; Safari may subsequently leave tx.error empty.
+        // Preserve the first failure before cancelled sibling requests report AbortError.
+        if (diagnostic.requestError) return;
+        diagnostic.requestError = diagnosticError(event.target?.error);
+        const source = event.target?.source;
+        diagnostic.requestStore = source?.objectStore?.name || source?.name;
+        diagnostic.requestIndex = source?.objectStore ? source.name : undefined;
+      };
       try {
         queue(tx, value => { result = value; });
       } catch (error) {
+        diagnostic.explicitAbort = true;
         tx.abort();
         reject(error);
       }
@@ -75,15 +95,31 @@ const runTransaction = async (mode, queue) => {
   }
 };
 
-const transaction = async (mode, queue) => {
-  try {
-    return await runTransaction(mode, queue);
-  } catch (error) {
-    // WebKit can lose its backing transaction when an iOS page is suspended.
-    // Retry reads once on a fresh connection; never replay writes or hide a persistent failure.
-    if (mode !== 'readonly' || error?.name !== 'UnknownError' ||
-      !/without an in-progress transaction|connection to indexed database server lost/i.test(error.message)) throw error;
-    return runTransaction(mode, queue);
+const transaction = async (mode, queue, operation) => {
+  const attempts = [];
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const started = performance.now();
+    const diagnostic = { operation, mode, attempt, phase: 'open', startedAt: new Date().toISOString(),
+      visibilityAtStart: document.visibilityState, requestError: null };
+    attempts.push(diagnostic);
+    try {
+      const result = await runTransaction(mode, queue, diagnostic);
+      if (attempt > 1) recordOfflineDiagnostic('storage-recovered', { operation, mode, attempt });
+      return result;
+    } catch (error) {
+      Object.assign(diagnostic, { elapsedMs: Math.round(performance.now() - started),
+        failedAt: new Date().toISOString(), visibilityAtFailure: document.visibilityState, error: diagnosticError(error) });
+      recordOfflineDiagnostic('storage-failed', { ...diagnostic });
+      // WebKit can lose its backing transaction when an iOS page is suspended.
+      // Retry reads once on a fresh connection; never replay writes or hide a persistent failure.
+      if (attempt === 1 && mode === 'readonly' && error?.name === 'UnknownError' &&
+        /without an in-progress transaction|connection to indexed database server lost/i.test(error.message)) {
+        recordOfflineDiagnostic('storage-retry', { operation, mode, attempt: attempt + 1 });
+        continue;
+      }
+      rememberStorageFailure(error, attempts);
+      throw error;
+    }
   }
 };
 
@@ -127,7 +163,7 @@ export const offlineDatabase = {
   getProfile: account => transaction('readonly', (tx, done) => {
     const request = tx.objectStore('profiles').get(accountKey(account));
     request.onsuccess = () => done(request.result || null);
-  }),
+  }, 'getProfile'),
   updateProfile: (account, changes) => transaction('readwrite', (tx, done) => {
     const profiles = tx.objectStore('profiles');
     const request = profiles.get(accountKey(account));
@@ -137,7 +173,7 @@ export const offlineDatabase = {
       profiles.put(profile);
       done(profile);
     };
-  }),
+  }, 'updateProfile'),
   beginGeneration: (account, expected, generation) => transaction('readwrite', (tx, done) => {
     const profiles = tx.objectStore('profiles');
     const request = profiles.get(accountKey(account));
@@ -147,7 +183,7 @@ export const offlineDatabase = {
       profiles.put({ ...profile, pendingGeneration: generation, status: 'preparing', error: null });
       done(true);
     };
-  }),
+  }, 'beginGeneration'),
   // A deleted/disabled/reconfigured profile cannot be resurrected by an old job or another tab.
   writeGeneration: (account, generation, articles, activate = false, lease = null) => transaction('readwrite', (tx, done) => {
     const profiles = tx.objectStore('profiles');
@@ -170,7 +206,7 @@ export const offlineDatabase = {
         } else done(true);
       };
     };
-  }),
+  }, 'writeGeneration'),
   failGeneration: (account, generation, error) => transaction('readwrite', (tx, done) => {
     const profiles = tx.objectStore('profiles');
     const request = profiles.get(accountKey(account));
@@ -182,7 +218,7 @@ export const offlineDatabase = {
       deleteArticles(tx, account, profile.activeGeneration);
       done(next);
     };
-  }),
+  }, 'failGeneration'),
   loadSnapshot: account => transaction('readonly', (tx, done) => {
     const request = tx.objectStore('profiles').get(accountKey(account));
     request.onsuccess = () => {
@@ -203,19 +239,19 @@ export const offlineDatabase = {
         cursor.continue();
       };
     };
-  }),
+  }, 'loadSnapshot'),
   clearSnapshot: account => transaction('readwrite', tx => {
     tx.objectStore('profiles').delete(accountKey(account));
     deleteArticles(tx, account);
-  }),
+  }, 'clearSnapshot'),
   getSyncState: account => transaction('readonly', (tx, done) => {
     const request = accountState(tx, account);
     request.onsuccess = () => done(request.result || { ...account, epoch: 0, lastSync: null });
-  }),
+  }, 'getSyncState'),
   getActions: account => transaction('readonly', (tx, done) => {
     const request = accountActions(tx, account);
     request.onsuccess = () => done(request.result);
-  }),
+  }, 'getActions'),
   // The queue is the durable overlay. Generations contain disposable server snapshots.
   enqueueActions: (account, actions, epoch) => transaction('readwrite', (tx, done) => {
     const state = accountState(tx, account);
@@ -244,7 +280,7 @@ export const offlineDatabase = {
         done(queued);
       };
     };
-  }),
+  }, 'enqueueActions'),
   acquireLease: (account, owner, duration = 60000) => transaction('readwrite', (tx, done) => {
     const request = accountState(tx, account);
     request.onsuccess = () => {
@@ -254,7 +290,7 @@ export const offlineDatabase = {
       tx.objectStore('syncAccounts').put({ ...state, leaseOwner: owner, leaseUntil: Date.now() + duration });
       done(lease);
     };
-  }),
+  }, 'acquireLease'),
   renewLease: (account, lease, duration = 60000) => transaction('readwrite', (tx, done) => {
     const request = accountState(tx, account);
     request.onsuccess = () => {
@@ -262,7 +298,7 @@ export const offlineDatabase = {
       tx.objectStore('syncAccounts').put({ ...request.result, leaseUntil: Date.now() + duration });
       done(true);
     };
-  }),
+  }, 'renewLease'),
   releaseLease: (account, lease) => transaction('readwrite', tx => {
     const request = accountState(tx, account);
     request.onsuccess = () => {
@@ -270,7 +306,7 @@ export const offlineDatabase = {
         tx.objectStore('syncAccounts').put({ ...request.result, leaseOwner: null, leaseUntil: 0 });
       }
     };
-  }),
+  }, 'releaseLease'),
   invalidateSession: account => transaction('readwrite', (tx, done) => {
     const request = accountState(tx, account);
     request.onsuccess = () => {
@@ -278,7 +314,7 @@ export const offlineDatabase = {
       tx.objectStore('syncAccounts').put(state);
       done(state);
     };
-  }),
+  }, 'invalidateSession'),
   dispatchActions: (account, lease, force = false) => transaction('readwrite', (tx, done) => {
     const state = accountState(tx, account);
     state.onsuccess = () => {
@@ -296,14 +332,14 @@ export const offlineDatabase = {
         done(ready);
       };
     };
-  }),
+  }, 'dispatchActions'),
   retryActions: (account, lease, actions, nextAttemptAt, errorCode) => transaction('readwrite', tx => {
     const state = accountState(tx, account);
     state.onsuccess = () => {
       if (!ownsLease(state.result, lease)) return;
       for (const action of actions) tx.objectStore('pendingActions').put({ ...action, state: 'dispatched', nextAttemptAt, errorCode: String(errorCode).slice(0, 128) });
     };
-  }),
+  }, 'retryActions'),
   acknowledgeActions: (account, lease, sent, response) => transaction('readwrite', (tx, done) => {
     const state = accountState(tx, account);
     state.onsuccess = () => {
@@ -340,7 +376,7 @@ export const offlineDatabase = {
         done(true);
       };
     };
-  }),
+  }, 'acknowledgeActions'),
   reconcileArticles: (account, epoch, articles) => transaction('readwrite', (tx, done) => {
     const state = accountState(tx, account);
     state.onsuccess = () => {
@@ -353,7 +389,7 @@ export const offlineDatabase = {
         done(true);
       };
     };
-  }),
+  }, 'reconcileArticles'),
   completeSynchronization: (account, lease) => transaction('readwrite', (tx, done) => {
     const state = accountState(tx, account);
     state.onsuccess = () => {
@@ -365,7 +401,7 @@ export const offlineDatabase = {
         done(true);
       };
     };
-  }),
+  }, 'completeSynchronization'),
   discardActions: account => transaction('readwrite', (tx, done) => {
     const request = accountActions(tx, account);
     request.onsuccess = () => {
@@ -386,5 +422,5 @@ export const offlineDatabase = {
         done([...first.values()]);
       };
     };
-  })
+  }, 'discardActions')
 };
