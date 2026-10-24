@@ -106,7 +106,9 @@ export default {
       scrollResetFrameId: null,
       scrollResetTimeoutId: null,
       showSmartFoldersOverview: false,
-      pendingSavedArticleIds: new Set()
+      pendingSavedArticleIds: new Set(),
+      pendingOfflineChanges: [],
+      reconcilingOfflineChanges: false
     };
   },
 
@@ -326,6 +328,7 @@ export default {
   // Starts scroll handling and article observers after mounting.
   mounted() {
     window.addEventListener(OFFLINE_STATE_EVENT, this.reconcileOfflineState);
+    document.addEventListener('visibilitychange', this.flushOfflineChanges);
     this.connectScrollContainer(this.scrollRoot);
     window.addEventListener("scroll", this.handleScroll, { passive: true });
     window.addEventListener("keydown", this.handleGlobalShortcut);
@@ -335,6 +338,8 @@ export default {
   // Finalize while the old layout and article context still exist.
   beforeUnmount() {
     window.removeEventListener(OFFLINE_STATE_EVENT, this.reconcileOfflineState);
+    document.removeEventListener('visibilitychange', this.flushOfflineChanges);
+    this.pendingOfflineChanges = [];
     this.activeRequestId += 1;
     this.teardownObservers();
   },
@@ -361,26 +366,56 @@ export default {
       if (!sameOfflineAccount(event.detail?.account, this.offlineReadingStore.account)) return;
       // The initiating control owns its optimistic count delta. Broadcast/replay patches never repeat it.
       if (event.detail.local && !event.detail.remote) return;
-      const requestId = this.activeRequestId;
-      const sessionId = this.offlineReadingStore.sessionId;
-      if (event.detail.discarded) {
-        const cached = await this.offlineReadingStore.loadSnapshot().catch(() => null);
-        if (!cached || requestId !== this.activeRequestId || sessionId !== this.offlineReadingStore.sessionId) return;
-        const records = new Map(cached.map(article => [String(article.id), article]));
-        this.articles = this.articles.map(article => {
-          const next = { ...article };
-          for (const action of event.detail.discardedActions || []) {
-            if (String(action.articleId) === String(article.id) && action.baseValue !== undefined) next[action.kind === 'set-status' ? 'status' : 'savedInd'] = action.baseValue;
-          }
-          const stored = records.get(String(article.id));
-          return stored ? { ...next, status: stored.status, savedInd: stored.savedInd } : next;
-        });
-        return;
+      this.pendingOfflineChanges.push({ event, requestId: this.activeRequestId, sessionId: this.offlineReadingStore.sessionId });
+      await this.flushOfflineChanges();
+    },
+    async flushOfflineChanges() {
+      if (this.reconcilingOfflineChanges || document.visibilityState !== 'visible') return;
+      this.reconcilingOfflineChanges = true;
+      try {
+        // Reconcile in notification order so an older overlay cannot overwrite a newer patch.
+        while (this.pendingOfflineChanges.length && document.visibilityState === 'visible') {
+          const change = this.pendingOfflineChanges.shift();
+          if (change.requestId !== this.activeRequestId || change.sessionId !== this.offlineReadingStore.sessionId) continue;
+          await this.applyOfflineChange(change);
+        }
+      } finally {
+        this.reconcilingOfflineChanges = false;
       }
-      const unavailable = new Set((event.detail.sent || []).filter(action => event.detail.results?.some(result => result.actionId === action.actionId && result.errorCode === 'ARTICLE_UNAVAILABLE')).map(action => String(action.articleId)));
+    },
+    async applyOfflineChange(change) {
+      const { event, requestId, sessionId } = change;
       const records = new Map((event.detail.articles || []).map(article => [String(article.id), article]));
-      const articles = await articleStateActions.overlay(this.articles.filter(article => !unavailable.has(String(article.id))).map(article => ({ ...article, ...records.get(String(article.id)), feed: { ...article.feed, ...records.get(String(article.id))?.feed } }))).catch(error => {
-        if (sessionId === this.offlineReadingStore.sessionId) notifyActionError('Could not reconcile local article changes.', error, undefined, {
+      try {
+        if (event.detail.discarded) {
+          const cached = await this.offlineReadingStore.loadSnapshot();
+          if (!cached || requestId !== this.activeRequestId || sessionId !== this.offlineReadingStore.sessionId) return;
+          const storedArticles = new Map(cached.map(article => [String(article.id), article]));
+          this.articles = this.articles.map(article => {
+            const next = { ...article };
+            for (const action of event.detail.discardedActions || []) {
+              if (String(action.articleId) === String(article.id) && action.baseValue !== undefined) next[action.kind === 'set-status' ? 'status' : 'savedInd'] = action.baseValue;
+            }
+            const stored = storedArticles.get(String(article.id));
+            return stored ? { ...next, status: stored.status, savedInd: stored.savedInd } : next;
+          });
+          return;
+        }
+        const unavailable = new Set((event.detail.sent || []).filter(action => event.detail.results?.some(result => result.actionId === action.actionId && result.errorCode === 'ARTICLE_UNAVAILABLE')).map(action => String(action.articleId)));
+        const articles = await articleStateActions.overlay(this.articles.filter(article => !unavailable.has(String(article.id))).map(article => ({ ...article, ...records.get(String(article.id)), feed: { ...article.feed, ...records.get(String(article.id))?.feed } })));
+        if (requestId !== this.activeRequestId || sessionId !== this.offlineReadingStore.sessionId) return;
+        this.articles = articles;
+        this.container = this.container.filter(id => !unavailable.has(String(id)));
+      } catch (error) {
+        if (requestId !== this.activeRequestId || sessionId !== this.offlineReadingStore.sessionId) return;
+        // A read already in progress can be aborted when iOS suspends the page.
+        // Retain its server patch and retry only when the page becomes visible again.
+        if (document.visibilityState !== 'visible') {
+          this.pendingOfflineChanges.unshift(change);
+          return;
+        }
+        if (event.detail.discarded) return;
+        notifyActionError('Could not reconcile local article changes.', error, undefined, {
           operation: 'reconcile-local-article-changes',
           articleCount: this.articles.length,
           receivedArticleCount: records.size,
@@ -390,11 +425,7 @@ export default {
           viewMode: this.selectionStore.currentSelection.viewMode,
           requestChanged: requestId !== this.activeRequestId
         });
-        return null;
-      });
-      if (!articles || requestId !== this.activeRequestId || sessionId !== this.offlineReadingStore.sessionId) return;
-      this.articles = articles;
-      this.container = this.container.filter(id => !unavailable.has(String(id)));
+      }
     },
     ...articleFeedPaginationMethods,
     ...articleFeedVisibilityMethods,
@@ -403,6 +434,7 @@ export default {
 
     // Resets each helper-owned state group before pagination installs a new collection.
     resetCollectionState() {
+      this.pendingOfflineChanges = [];
       this.resetVisibilityTracking();
       this.resetReadTracking();
       this.resetPaginationState();

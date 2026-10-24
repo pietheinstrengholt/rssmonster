@@ -18,6 +18,7 @@ describe('shareable action error diagnostics', () => {
     window.addEventListener(ACTION_ERROR_EVENT, listener, { once: true });
     const account = { apiOrigin: 'https://reader.example', userId: 1 };
     await ArticleFeed.methods.reconcileOfflineState.call({
+      ...ArticleFeed.methods, pendingOfflineChanges: [], reconcilingOfflineChanges: false,
       articles: [{ id: 41, title: 'Private article title' }], activeRequestId: 1,
       offlineReadingStore: { account, sessionId: 1, readOnly: false },
       selectionStore: { currentSelection: { viewMode: 'full' } }
