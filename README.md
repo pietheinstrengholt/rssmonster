@@ -238,6 +238,10 @@ other machines, follow [configuration and reverse-proxy guidance](docs/configura
 and configure HTTPS. See [Getting Started](docs/getting-started.md) for complete
 installation instructions, health checks, logs, and production setup.
 
+## One-click deploy
+
+[![Deploy on RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/RSSMonster/)
+
 ## Documentation
 
 Use the [documentation index](docs/index.md) to explore the complete guides.
