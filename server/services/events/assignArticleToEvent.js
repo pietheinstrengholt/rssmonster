@@ -165,7 +165,7 @@ function resolveArticleVector(record) {
 }
 
 // This function finds persisted recent articles that can corroborate the current article.
-async function findCandidateArticles({ article, articleEventVector }) {
+async function findCandidateArticles({ article, articleEventVector, similarityThreshold }) {
   // Derives the article ts required while finding candidate articles.
   const articleTs = articleEventTimestamp(article) ?? Date.now();
   // Normalizes the cutoff used while finding candidate articles.
@@ -194,7 +194,8 @@ async function findCandidateArticles({ article, articleEventVector }) {
   const evaluatedSignals = candidates.map(candidate => evaluateCandidateSignal({
     article,
     candidate,
-    articleEventVector
+    articleEventVector,
+    similarityThreshold
   }));
 
   // Tracks distinct accepted id while finding candidate articles.
@@ -218,7 +219,8 @@ function findCandidateArticlesFromCache({
   article,
   articleEventVector,
   normalizedArticleEventVector,
-  articleCandidateCache
+  articleCandidateCache,
+  similarityThreshold
 }) {
   // Finds the nearby while finding candidate articles from cache.
   const candidates = articleCandidateCache.findNearby(article);
@@ -227,7 +229,8 @@ function findCandidateArticlesFromCache({
     article,
     candidate,
     articleEventVector,
-    normalizedArticleEventVector
+    normalizedArticleEventVector,
+    similarityThreshold
   }));
 
   // Tracks distinct accepted id while finding candidate articles from cache.
@@ -304,7 +307,7 @@ function recordNewEvent(runContext, eventId) {
 }
 
 // This function finds corroborating candidates from articles already seen in the current run.
-function findCandidateArticlesFromContext({ article, articleEventVector, runContext }) {
+function findCandidateArticlesFromContext({ article, articleEventVector, runContext, similarityThreshold }) {
   // Derives the article ts required while finding candidate articles from context.
   const articleTs = articleEventTimestamp(article) ?? Date.now();
   // Derives the max gap ms required while finding candidate articles from context.
@@ -335,7 +338,8 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
     article,
     candidate,
     articleEventVector,
-    normalizedArticleEventVector: runContext?.normalizedArticleEventVector || null
+    normalizedArticleEventVector: runContext?.normalizedArticleEventVector || null,
+    similarityThreshold
   }));
 
   // Tracks distinct accepted id while finding candidate articles from context.
@@ -419,23 +423,27 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   }
 
   // Discover both paths before deciding; an early centroid winner could hide ambiguity.
+  const similarityThreshold = await articleEventSimilarityThreshold(article);
   // Selects the candidate result based on whether article candidate cache is available.
   const candidateResult = articleCandidateCache
     ? findCandidateArticlesFromCache({
       article,
       articleEventVector,
       normalizedArticleEventVector,
-      articleCandidateCache
+      articleCandidateCache,
+      similarityThreshold
     })
     : runContext
     ? findCandidateArticlesFromContext({
       article,
       articleEventVector,
-      runContext
+      runContext,
+      similarityThreshold
     })
     : await findCandidateArticles({
       article,
-      articleEventVector
+      articleEventVector,
+      similarityThreshold
     });
   const candidateArticles = candidateResult.acceptedCandidates;
   // Keeps the assigned candidates entries eligible while assigning article to event.
@@ -448,7 +456,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   const unassignedCandidates = candidateArticles.filter(candidate => {
     if (candidate.eventId != null) return false;
     seedCandidateCount++;
-    const signal = evaluateCandidateSignal({ article, candidate, articleEventVector, normalizedArticleEventVector, enforceOccurrence: true });
+    const signal = evaluateCandidateSignal({ article, candidate, articleEventVector, normalizedArticleEventVector, enforceOccurrence: true, similarityThreshold });
     if (eventDiagnosticsEnabled() && seedDiagnostics.length < 5) {
       seedDiagnostics.push({ candidateArticleId: candidate.id, ...candidateDiagnostic({
         evidence: signal, score: signal.score, evidenceScore: signal.evidenceScore,
@@ -489,7 +497,6 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     memberSignalsByEvent.set(id, signals);
   }
   const now = Date.now();
-  const similarityThreshold = eventsById.size ? await articleEventSimilarityThreshold(article) : undefined;
   const decisions = [...eventsById.values()].map(event => {
     const memberSignals = memberSignalsByEvent.get(Number(event.id)) || [];
     return {

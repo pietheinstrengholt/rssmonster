@@ -77,6 +77,92 @@ describe('Event occurrence assignment', () => {
     });
   });
 
+  describe.each(['database', 'candidate-cache', 'run-context', 'commit'])('new Event category thresholds through %s', path => {
+    it.each([
+      ['aggressive', 0.80, true], ['aggressive', 0.77, false],
+      ['moderate', 0.85, true], ['moderate', 0.83, false],
+      ['conservative', 0.90, true], ['conservative', 0.88, false],
+      [null, 0.85, true], [null, 0.83, false]
+    ])('%s accepts similarity %s: %s', async (clusteringBehavior, similarity, accepted) => {
+      const g = await graph();
+      await g.category.update({ clusteringBehavior });
+      const neighbor = await makeArticle(g, 0);
+      const incoming = await makeArticle(g, 1, {
+        title: 'Acme compiler gains improved diagnostics',
+        articleVector: [similarity, Math.sqrt(1 - similarity ** 2)]
+      });
+      let result;
+      if (path === 'commit') {
+        result = await createAndAssignEvent({ article: incoming, candidateArticles: [neighbor] });
+      } else if (path === 'candidate-cache') {
+        result = (await assign(g, incoming, [], [neighbor])).id;
+      } else {
+        const context = path === 'run-context' ? { records: [neighbor.toJSON()], stats: {} } : null;
+        result = await assignArticleToEvent(incoming.id, new EventCache([]), null, context);
+      }
+      await incoming.reload();
+      await neighbor.reload();
+      if (accepted) {
+        expect(result).toBeTruthy();
+        expect(incoming.eventId).toBe(result);
+        expect(neighbor.eventId).toBe(result);
+        expect((await Event.findByPk(result)).articleCount).toBe(2);
+      } else {
+        expect(result).toBeNull();
+        expect(incoming.eventId).toBeNull();
+        expect(neighbor.eventId).toBeNull();
+        expect(await Event.count({ where: { userId: g.user.id } })).toBe(0);
+      }
+    });
+  });
+
+  it('rechecks the persisted seed category instead of a stale preloaded preference', async () => {
+    const g = await graph();
+    await g.category.update({ clusteringBehavior: 'aggressive' });
+    const neighbor = await makeArticle(g, 0);
+    const incoming = await makeArticle(g, 1, {
+      title: 'Acme compiler gains improved diagnostics', articleVector: [0.8, 0.6]
+    });
+    const stale = await Article.findByPk(incoming.id, { include: [eventClusteringFeedInclude] });
+    await g.category.update({ clusteringBehavior: 'conservative' });
+    expect(await createAndAssignEvent({ article: stale, candidateArticles: [neighbor] })).toBeNull();
+    expect((await incoming.reload()).eventId).toBeNull();
+    expect((await neighbor.reload()).eventId).toBeNull();
+  });
+
+  it.each([
+    ['aggressive', 'conservative', 0.80, true],
+    ['conservative', 'aggressive', 0.88, false]
+  ])('uses the incoming %s category for creation with %s corroborating coverage', async (behavior, otherBehavior, similarity, accepted) => {
+    const g = await graph();
+    await g.category.update({ clusteringBehavior: behavior });
+    const otherCategory = await Category.create({ userId: g.user.id, name: 'Other', clusteringBehavior: otherBehavior });
+    const otherFeed = await Feed.create({ userId: g.user.id, categoryId: otherCategory.id, feedName: 'Other', url: `https://example.com/${randomUUID()}` });
+    const neighbor = await makeArticle(g, 0, { feedId: otherFeed.id });
+    const incoming = await makeArticle(g, 1, {
+      title: 'Acme compiler gains improved diagnostics',
+      articleVector: [similarity, Math.sqrt(1 - similarity ** 2)]
+    });
+    const { id } = await assign(g, incoming, [], [neighbor]);
+    expect(Boolean(id)).toBe(accepted);
+    expect((await neighbor.reload()).eventId).toBe(id);
+    expect(incoming.eventId).toBe(id);
+  });
+
+  it('uses the aggressive threshold for member support during discovery and the locked attachment check', async () => {
+    const g = await graph();
+    await g.category.update({ clusteringBehavior: 'aggressive' });
+    const { event, member } = await makeEvent(g);
+    await member.update({ articleVector: [0.8, 0.6] });
+    await makeArticle(g, 0, { eventId: event.id, articleVector: [0, 1] });
+    await event.update({ articleCount: 2, eventVector: [0.4, 0.8] });
+    const incoming = await makeArticle(g, 1, { title: 'Acme compiler gains improved diagnostics' });
+    const { id } = await assign(g, incoming, [], [member]);
+    expect(id).toBe(event.id);
+    expect(incoming.eventId).toBe(event.id);
+    expect((await event.reload()).articleCount).toBe(3);
+  });
+
   it.each(['no-vector', 'insufficient', 'ambiguous', 'seed-rejected', 'join-rejected'])(
     'preserves a concurrent committed assignment after a stale %s proposal', async outcome => {
       const g = await graph();

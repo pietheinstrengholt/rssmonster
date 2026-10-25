@@ -1,6 +1,6 @@
 // Defines the semantic granularity enforced by this service.
 export const SEMANTIC_GRANULARITY = {
-  // Minimum cosine similarity for attaching an article to an existing event.
+  // Default minimum cosine similarity for Event discovery, creation and attachment.
   // Higher value = stricter event matching (fewer merges, more fragmentation).
   eventSimilarityThreshold: Number.parseFloat(process.env.EVENT_SIM_THRESHOLD || '0.84'),
 
@@ -57,7 +57,7 @@ export const SEMANTIC_GRANULARITY = {
 // Defines the event sim threshold enforced by this service.
 export const EVENT_SIM_THRESHOLD = SEMANTIC_GRANULARITY.eventSimilarityThreshold;
 
-// Category preferences affect attachment to existing Events, not candidate discovery or creation.
+// Category preferences apply to Event discovery, creation and attachment.
 export function getEventSimilarityThreshold(clusteringBehavior) {
   switch (clusteringBehavior) {
     case 'aggressive': return 0.78;

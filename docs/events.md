@@ -62,8 +62,12 @@ of the following:
 - overlap between names and other entities; or
 - particularly strong near-duplicate headline evidence.
 
-By default, an article must reach a semantic similarity of `0.84` to join an
-Event through the normal matching path. Similarity alone does not guarantee a
+By default, an article must reach a semantic similarity of `0.84` to form or join an
+Event through the normal matching path. Its feed category's clustering preference
+uses `0.78` for Aggressive, `0.84` for Moderate, or `0.89` for Conservative during
+candidate discovery, creation and attachment. A new Event uses the incoming seed
+article's preference, rechecked before membership is committed.
+Similarity alone does not guarantee a
 match. The Event window is limited to 24 hours by default, preventing stories
 that discuss the same subject at very different times from being merged into
 one occurrence.
@@ -235,7 +239,7 @@ quality can tune these server environment variables:
 
 | Variable | Default | Effect |
 | --- | ---: | --- |
-| `EVENT_SIM_THRESHOLD` | `0.84` | Minimum semantic similarity for the normal existing-Event match. Higher values reduce merging and may create more fragmentation. |
+| `EVENT_SIM_THRESHOLD` | `0.84` | Default minimum semantic similarity for Event discovery, creation and attachment when a category has no preference. Higher values reduce merging and may create more fragmentation. |
 | `EVENT_MAX_GAP_HOURS` | `24` | Hard maximum span for one Event's article coverage. |
 | `EVENT_RECENCY_HALF_LIFE_HOURS` | `18` | Controls how quickly older Event candidates lose matching weight. |
 | `EVENT_MIN_HEADLINE_SIM` | `0.22` | Minimum headline overlap that can corroborate a semantic match. |

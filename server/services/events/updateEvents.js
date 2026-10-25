@@ -162,19 +162,20 @@ export async function assignArticleToExistingEvent({
   const normalizedArticleEventVector = normalizeVector(articleEventVector);
   lockedArticle.tokenSet = tokenSet(lockedArticle.title);
   lockedArticle.entitySet = extractEntitySet(lockedArticle);
+  const similarityThreshold = await articleEventSimilarityThreshold(lockedArticle);
   const incomingTime = articleEventTimestamp(lockedArticle);
   const memberSignals = eventArticles.slice().sort((left, right) =>
     Math.abs(articleEventTimestamp(left) - incomingTime) - Math.abs(articleEventTimestamp(right) - incomingTime) ||
     Number(left.id) - Number(right.id)
   ).slice(0, MAX_CANDIDATES).map(candidate => evaluateCandidateSignal({
-    article: lockedArticle, candidate, articleEventVector, normalizedArticleEventVector
+    article: lockedArticle, candidate, articleEventVector, normalizedArticleEventVector, similarityThreshold
   }));
   const decision = evaluateArticleAgainstEvent(lockedArticle, {
     userId: lockedEvent.userId, name: lockedEvent.name,
     ...currentProjection
   }, {
     articleEventVector, normalizedArticleEventVector, memberSignals,
-    similarityThreshold: await articleEventSimilarityThreshold(lockedArticle),
+    similarityThreshold,
     eventOccurrenceFeatures: aggregateOccurrenceFeatures(eventArticles.slice(0, MAX_OCCURRENCE_MEMBERS).map(extractOccurrenceFeatures))
   });
   if (eventDiagnosticsEnabled()) emitEventDiagnostic(lockedArticle, 'commit_check', {

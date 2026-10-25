@@ -47,17 +47,17 @@ Sidebar configuration.
 
 An Event groups coverage of one occurrence, such as several reports about the
 same announcement. **Event clustering** controls how permissive the normal
-semantic match is when an article from this category is considered for an
+semantic match is when an article from this category is considered for a new or
 existing Event.
 
 | Option | Recommended use | Effect |
 | --- | --- | --- |
 | **Server default** | Follow the administrator's configuration. | Uses the server's existing matching threshold. This is the default for new and existing categories without an explicit preference. |
-| **Aggressive** | High-volume news. | More permissive matching; articles are more likely to join existing Events. |
+| **Aggressive** | High-volume news. | More permissive matching; articles are more likely to form or join Events. |
 | **Moderate** | Sports, gaming, and technology. | Uses a fixed middle setting. |
-| **Conservative** | Blogs and niche feeds. | Stricter matching; articles are less likely to join existing Events. |
+| **Conservative** | Blogs and niche feeds. | Stricter matching; articles are less likely to form or join Events. |
 
-Lower thresholds allow more articles to join existing Events and tend to reduce
+Lower thresholds allow more articles to form or join Events and tend to reduce
 fragmentation. Higher thresholds require closer similarity and can leave more
 articles standalone or spread coverage across more Events. Similarity is still
 only part of the decision: existing time, occurrence-identity, supporting-evidence,
@@ -68,10 +68,12 @@ The preference comes from the **incoming article's feed category**, not from the
 categories of articles already in the Event. Categories are not boundaries that
 prevent coverage from different categories from sharing an Event.
 
-The setting applies during subsequent Event attachment decisions, including the
-final membership check. Saving a new preference does not automatically regroup
-previously assigned articles. It does not change candidate retrieval, new-Event
-creation rules, embedding generation, similarity calculations, or Event lifecycle.
+The setting applies during subsequent Event discovery, creation and attachment
+decisions, including the final membership check. For a new Event, the incoming
+seed article's category supplies the threshold for validating the proposed group.
+Saving a new preference does not automatically regroup previously assigned articles.
+It does not change candidate retrieval bounds, embedding generation, similarity
+calculations, or Event lifecycle.
 It also does not change Interest Island, personal-interest, or Recommended scoring
 formulas.
 

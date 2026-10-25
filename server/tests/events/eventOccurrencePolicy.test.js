@@ -4,7 +4,7 @@ import {
 } from '../../services/events/eventOccurrencePolicy.js';
 import { buildCanonicalEventProjection } from '../../services/events/eventProjection.js';
 import { extractOccurrenceFeatures, aggregateOccurrenceFeatures } from '../../services/events/occurrenceFeatures.js';
-import { EVENT_SIM_THRESHOLD, getEventSimilarityThreshold } from '../../services/config/semanticConfig.js';
+import { getEventSimilarityThreshold } from '../../services/config/semanticConfig.js';
 
 const origin = Date.parse('2026-09-10T00:00:00Z');
 const at = hours => new Date(origin + hours * 3600000);
@@ -30,18 +30,18 @@ describe('shared Event occurrence policy', () => {
     }
   });
 
-  it.each(['aggressive', 'conservative'])('keeps %s category preferences out of candidate discovery and Event creation', clusteringBehavior => {
-    for (const offset of [-0.01, 0.01]) {
-      const similarity = EVENT_SIM_THRESHOLD + offset;
+  it.each(['aggressive', 'moderate', 'conservative', null, undefined])('uses the %s threshold for candidate discovery and Event creation', clusteringBehavior => {
+    const similarityThreshold = getEventSimilarityThreshold(clusteringBehavior);
+    for (const offset of [-0.0001, 0.0001]) {
+      const similarity = similarityThreshold + offset;
       const incoming = article(1, {
         title: 'Acme compiler gains improved diagnostics',
-        articleVector: [similarity, Math.sqrt(1 - similarity ** 2)],
-        feed: { category: { clusteringBehavior } }
+        articleVector: [similarity, Math.sqrt(1 - similarity ** 2)]
       });
       const candidate = article(0, { id: 1 });
-      expect(evaluateCandidateSignal({ article: incoming, candidate, articleEventVector: incoming.articleVector }).accepted).toBe(offset > 0);
+      expect(evaluateCandidateSignal({ article: incoming, candidate, articleEventVector: incoming.articleVector, similarityThreshold }).accepted).toBe(offset > 0);
       const members = [incoming, candidate];
-      expect(evaluateEventCreation(members, { ...event(), ...buildCanonicalEventProjection(members) }).decision)
+      expect(evaluateEventCreation(members, { ...event(), ...buildCanonicalEventProjection(members) }, { similarityThreshold }).decision)
         .toBe(offset > 0 ? 'join' : 'reject');
     }
   });
@@ -60,6 +60,17 @@ describe('shared Event occurrence policy', () => {
       eventOccurrenceFeatures: aggregateOccurrenceFeatures([member, member].map(extractOccurrenceFeatures))
     });
     expect(result).toMatchObject({ eligible: false, reasons: expect.arrayContaining([reason]) });
+  });
+
+  it('uses the creation threshold for member witnesses when leave-one-out centroids are weaker', () => {
+    const members = [
+      article(0, { id: 1 }),
+      article(1, { id: 2, title: 'Acme compiler gains improved diagnostics', articleVector: [0.8, 0.6] }),
+      article(2, { id: 3, title: 'Acme compiler improves runtime diagnostics', articleVector: [0.8, -0.6] })
+    ];
+    const proposal = { ...event(), ...buildCanonicalEventProjection(members) };
+    expect(evaluateEventCreation(members, proposal, { similarityThreshold: getEventSimilarityThreshold('aggressive') }).decision).toBe('join');
+    expect(evaluateEventCreation(members, proposal).decision).toBe('reject');
   });
 
   it('uses member consensus rather than a noisy representative or one matching member', () => {

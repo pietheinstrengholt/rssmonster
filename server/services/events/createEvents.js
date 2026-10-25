@@ -13,6 +13,7 @@ import { eventDateFromArticle } from './articleEventTime.js';
 import { buildCanonicalEventProjection } from './eventProjection.js';
 import { evaluateEventCreation } from './eventOccurrencePolicy.js';
 import { wasReadBeforeArticleArrived } from './developingArticlePointer.js';
+import { articleEventSimilarityThreshold, eventClusteringFeedInclude } from './categoryClustering.js';
 
 // Provides the shared dependencies used by this service.
 const { Article, Event } = db;
@@ -150,6 +151,7 @@ export async function createAndAssignEvent({
 
   // Loads the locked articles needed while creating and assign event.
   const lockedArticles = await Article.findAll({
+    include: [eventClusteringFeedInclude],
     where: {
       id: { [Op.in]: eventArticleIds },
       userId: article.userId,
@@ -198,6 +200,8 @@ export async function createAndAssignEvent({
   // proposed span. Validate locked persisted evidence before any membership writes.
   const decision = evaluateEventCreation(lockedArticles, {
     ...projection, name, userId: lockedSeedArticle.userId
+  }, {
+    similarityThreshold: await articleEventSimilarityThreshold(lockedSeedArticle)
   });
   if (eventDiagnosticsEnabled()) emitEventDiagnostic(lockedSeedArticle, 'seed_check', {
     decision: decision.decision, reasons: decision.reasons,

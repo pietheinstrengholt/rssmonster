@@ -310,7 +310,7 @@ export function evaluateArticleAgainstEvent(article, event, evidenceOptions = {}
 }
 
 // Pair matching discovers candidates; it does not authorize joining their Event.
-export function evaluateCandidateSignal({ article, candidate, articleEventVector, normalizedArticleEventVector = null, enforceOccurrence = false }) {
+export function evaluateCandidateSignal({ article, candidate, articleEventVector, normalizedArticleEventVector = null, enforceOccurrence = false, similarityThreshold = EVENT_SIM_THRESHOLD }) {
   const at = articleEventTimestamp(candidate);
   const result = evaluateArticleAgainstEvent(article, {
     userId: candidate.userId,
@@ -322,7 +322,7 @@ export function evaluateCandidateSignal({ article, candidate, articleEventVector
     eventWindowStartAt: at == null ? null : new Date(at),
     eventWindowEndAt: at == null ? null : new Date(at)
   }, {
-    articleEventVector, normalizedArticleEventVector,
+    articleEventVector, normalizedArticleEventVector, similarityThreshold,
     compareOccurrence: enforceOccurrence,
     eventOccurrenceFeatures: extractOccurrenceFeatures(candidate)
   });
@@ -354,7 +354,7 @@ export function selectEventDecision(candidates, minimumMargin = EVENT_MIN_WINNER
 
 // Validate the entire proposal without letting an Article corroborate itself.
 // A leave-one-out centroid and one stable member witness keep this O(n * dimensions).
-export function evaluateEventCreation(articles, event) {
+export function evaluateEventCreation(articles, event, { similarityThreshold = EVENT_SIM_THRESHOLD } = {}) {
   if (articles.length < 2) return { decision: 'reject', reasons: ['insufficient_support'] };
   if (articles.some(article => !compatibleEmbeddingModels(article.embedding_model, event.embedding_model))) {
     return { decision: 'reject', reasons: ['embedding_model_mismatch'] };
@@ -375,11 +375,11 @@ export function evaluateEventCreation(articles, event) {
     const normalizedArticleEventVector = normalizeVector(vector);
     const withoutArticle = event.eventVector.map((mean, index) =>
       (mean * prepared.length - vector[index]) / (prepared.length - 1));
-    const memberSignal = evaluateCandidateSignal({ article, candidate: witness, articleEventVector: vector, normalizedArticleEventVector });
+    const memberSignal = evaluateCandidateSignal({ article, candidate: witness, articleEventVector: vector, normalizedArticleEventVector, similarityThreshold });
     const result = evaluateArticleAgainstEvent(article, {
       ...event, eventVector: withoutArticle
     }, {
-      memberSignals: [memberSignal], normalizedArticleEventVector, now,
+      memberSignals: [memberSignal], normalizedArticleEventVector, now, similarityThreshold,
       eventOccurrenceFeatures: aggregateOccurrenceFeatures(prepared.slice(0, MAX_OCCURRENCE_MEMBERS + 1)
         .filter(member => member.id !== article.id).slice(0, MAX_OCCURRENCE_MEMBERS)
         .map(extractOccurrenceFeatures))
