@@ -81,7 +81,7 @@
     "jsdom": "^30.1.2",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.12.1",
-    "multer": "^2.4.0",
+    "multer": "^2.5.0",
     "mysql2": "3.24.5",
     "nodemailer": "^10.1.0",
     "openid-client": "6.8.8",
