@@ -151,6 +151,12 @@ export const markMoreLikeThis = (articleId) =>
   api.post(`/articles/markmorelikethis/${articleId}`);
 
 /**
+ * Delete article
+ */
+export const deleteArticle = (articleId) =>
+  api.delete(`/articles/${articleId}`);
+
+/**
  * Mark all matching articles as read
  */
 export const markAllAsRead = (currentSelection, snapshotArticleIds) =>

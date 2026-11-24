@@ -19,6 +19,7 @@ router.post('/sync-actions', userMiddleware.isLoggedIn, articleController.syncAc
 router.post('/mark-opened-original', userMiddleware.isLoggedIn, articleController.markOpenedOriginal);
 router.post('/mark-opened-original/:articleId', userMiddleware.isLoggedIn, articleController.markOpenedOriginal);
 router.post('/marknotinterested/:articleId', userMiddleware.isLoggedIn, articleController.markNotInterested);
+router.delete('/:articleId', userMiddleware.isLoggedIn, articleController.deleteArticle);
 router.post('/markmorelikethis/:articleId', userMiddleware.isLoggedIn, articleController.markMoreLikeThis);
 router.post('/details', userMiddleware.isLoggedIn, articleController.articleDetails);
 router.post('/markasseen/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkAsSeen);

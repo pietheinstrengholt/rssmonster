@@ -46,7 +46,7 @@
     </div>
     <div class="article-list-actions">
       <span class="article-list-time">{{ formatDate(publishedAt) }}</span>
-      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :status="status" @toggle-read-status="$emit('toggle-read-status')" :openedOriginalCount="openedOriginalCount" :openedOriginalPending="openedOriginalPending" :savedInd="savedInd" :savedPending="savedPending" @toggle-openedOriginal="$emit('toggle-opened-original')" @toggle-saved="$emit('toggle-saved')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
+      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :status="status" @toggle-read-status="$emit('toggle-read-status')" :openedOriginalCount="openedOriginalCount" :openedOriginalPending="openedOriginalPending" :savedInd="savedInd" :savedPending="savedPending" @toggle-openedOriginal="$emit('toggle-opened-original')" @toggle-saved="$emit('toggle-saved')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @delete-article="$emit('delete-article')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
       <button v-if="!isMobilePortrait" class="article-list-action-button article-list-saved-button" type="button" :aria-label="savedLabel" :title="savedLabel" :disabled="savedPending" @click.stop="$emit('toggle-saved')">
         <BootstrapIcon :icon="savedInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
       </button>
@@ -66,7 +66,7 @@ import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
   components: { ArticleActionsMenu, ArticleDevelopingStoryPopover, ArticlePreviewFallback, ArticleStorySourcesPopover, HighlightedText },
-  emits: ['article-opened-original', 'article-touched', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
+  emits: ['article-opened-original', 'article-touched', 'more-like-this', 'mute-feed', 'delete-article', 'add-tags', 'manage-tags', 'not-interested', 'select-tag', 'swipe-cancel', 'swipe-touch-end', 'swipe-touch-move', 'swipe-touch-start', 'toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'view-duplicate-articles', 'view-event-articles'],
   data() {
     return {
       tagsExpanded: false,

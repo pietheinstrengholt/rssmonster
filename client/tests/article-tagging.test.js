@@ -426,7 +426,7 @@ describe('article tagging integration', () => {
     wrapper = mount(ArticleActionsMenu, { attachTo: document.body });
     await click(document.querySelector('[aria-label="Article actions"]'));
     expect([...document.querySelectorAll('[role="menuitem"]')].map(item => item.textContent.trim())).toEqual([
-      'Save article', 'Mark original as opened', 'Mark as read', 'Add tags', 'Manage tags', 'More like this', 'Not Interested', 'Mute Feed for 7 Days'
+      'Save article', 'Mark original as opened', 'Mark as read', 'Add tags', 'Manage tags', 'More like this', 'Not Interested', 'Mute Feed for 7 Days', 'Delete article'
     ]);
   });
 

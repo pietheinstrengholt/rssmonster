@@ -26,7 +26,7 @@
       <span v-else class="article-link"><HighlightedText :text="title" :terms="highlightTerms" /></span>
     </component>
     <div v-if="!isReaderDetail || !readerToolbar" class="article-header-actions" :class="{ 'article-reader-actions': isReaderDetail }">
-      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :openedOriginalCount="openedOriginalCount" :openedOriginalPending="openedOriginalPending" :savedInd="savedInd" :savedPending="savedPending" :isReaderMode="isReaderMode" :status="status" @toggle-openedOriginal="$emit('toggle-opened-original')" @toggle-saved="$emit('toggle-saved')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
+      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :openedOriginalCount="openedOriginalCount" :openedOriginalPending="openedOriginalPending" :savedInd="savedInd" :savedPending="savedPending" :isReaderMode="isReaderMode" :status="status" @toggle-openedOriginal="$emit('toggle-opened-original')" @toggle-saved="$emit('toggle-saved')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @delete-article="$emit('delete-article')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
       <template v-if="isReaderDetail">
         <button type="button" class="article-reader-saved" :class="{ 'article-reader-saved--active': savedInd === 1 }" :aria-label="savedInd === 1 ? 'Remove from saved' : 'Save article'" :aria-pressed="savedInd === 1" :disabled="savedPending" @click="$emit('toggle-saved')">
           <BootstrapIcon :icon="savedInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
@@ -48,7 +48,7 @@ import { usableHttpUrl } from '../../utils/content.js';
 
 export default {
   components: { ArticleActionsMenu, ArticleDevelopingStoryPopover, HighlightedText },
-  emits: ['article-opened-original', 'toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags'],
+  emits: ['article-opened-original', 'toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'delete-article', 'add-tags', 'manage-tags'],
   props: {
     tagEditingDisabled: { type: Boolean, default: false },
     readerDetail: { type: Boolean, default: false },
