@@ -90,6 +90,17 @@ without changing your account. After a successful import,
 RSSMonster reports how many categories and feeds were added and refreshes the
 Feeds overview.
 
+### Check Nested Folders
+
+If your original OPML has nested folders, check the category names in the
+preview. RSSMonster uses the innermost folder name, so feeds under
+`Technology / News` and `Science / News` can both appear in `News`. To keep
+the groups separate, use the category pencil on each affected subscription to
+assign distinct category names before importing.
+
+After the import, [export a new OPML file](#export-subscriptions) and compare
+its feed addresses and categories with the original.
+
 ## Export Subscriptions
 
 Choose **Export OPML** from **Settings → Feeds**. Your browser downloads a file
