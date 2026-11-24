@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises } from '@vue/test-utils';
 
 import {
+  deleteArticle as deleteArticleAPI,
   markAsSaved,
   markOpenedOriginal,
   markMoreLikeThis,
@@ -14,6 +15,7 @@ import { notifyActionError, notifyActionSuccess } from '../src/services/actionNo
 import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
+  deleteArticle: vi.fn(),
   markAsSaved: vi.fn(),
   markOpenedOriginal: vi.fn(),
   markMoreLikeThis: vi.fn(),
@@ -291,6 +293,50 @@ describe('articleActionMethods', () => {
 
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not mute this feed. Try again.',
+      error,
+      expect.any(Function)
+    );
+  });
+
+  // Verifies declining the delete confirmation leaves the article untouched.
+  it('does not delete an article when confirmation is declined', () => {
+    vi.stubGlobal('confirm', vi.fn(() => false));
+    const context = createContext();
+
+    context.deleteArticle();
+
+    expect(confirm).toHaveBeenCalledWith('Delete this article?');
+    expect(deleteArticleAPI).not.toHaveBeenCalled();
+    expect(context.$emit).not.toHaveBeenCalled();
+  });
+
+  // Verifies deletion calls the API and removes the article from the feed.
+  it('deletes an article after confirmation and emits its removal', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    const context = createContext();
+    deleteArticleAPI.mockResolvedValue();
+
+    context.deleteArticle();
+    await flushPromises();
+
+    expect(deleteArticleAPI).toHaveBeenCalledWith(42);
+    expect(context.$emit).toHaveBeenCalledWith('article-deleted', { id: 42 });
+    expect(notifyActionSuccess).toHaveBeenCalledWith('Article deleted.');
+  });
+
+  // Verifies delete failures are visible and keep the article in the feed.
+  it('reports a delete failure and keeps the article', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    const error = new Error('delete failed');
+    const context = createContext();
+    deleteArticleAPI.mockRejectedValue(error);
+
+    context.deleteArticle();
+    await flushPromises();
+
+    expect(context.$emit).not.toHaveBeenCalled();
+    expect(notifyActionError).toHaveBeenCalledWith(
+      'Could not delete this article. Try again.',
       error,
       expect.any(Function)
     );

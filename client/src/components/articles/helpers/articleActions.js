@@ -1,4 +1,5 @@
 import {
+  deleteArticle as deleteArticleAPI,
   markAsSaved as markArticleAsSavedAPI,
   markOpenedOriginal,
   markMoreLikeThis,
@@ -138,5 +139,20 @@ export const articleActionMethods = {
       });
     }
     return false;
+  },
+
+  // Deletes the article from RSSMonster after confirmation and removes it from the feed.
+  deleteArticle() {
+    if (!confirm('Delete this article?')) return false;
+
+    return deleteArticleAPI(this.id)
+    .then(() => {
+      notifyActionSuccess('Article deleted.');
+      this.$emit('article-deleted', { id: this.id });
+    })
+    .catch(error => {
+      console.error(`Error deleting article ${this.id}:`, error);
+      notifyActionError('Could not delete this article. Try again.', error, () => this.deleteArticle());
+    });
   }
 };

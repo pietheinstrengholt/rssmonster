@@ -17,6 +17,7 @@
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="offlineReadingStore.readOnly" :title="offlineReadingStore.readOnly ? 'Requires a connection to RSSMonster' : undefined" @click="$emit('more-like-this')"><BootstrapIcon icon="hand-thumbs-up-fill" class="recommendation-action-icon recommendation-positive-icon" />More like this</button></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="offlineReadingStore.readOnly" :title="offlineReadingStore.readOnly ? 'Requires a connection to RSSMonster' : undefined" @click="$emit('not-interested')"><BootstrapIcon icon="hand-thumbs-down-fill" class="recommendation-action-icon recommendation-negative-icon" />Not Interested</button></li>
       <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" :disabled="offlineReadingStore.readOnly" :title="offlineReadingStore.readOnly ? 'Requires a connection to RSSMonster' : undefined" @click="$emit('mute-feed')"><BootstrapIcon icon="slash-circle" context="control" class="recommendation-action-icon recommendation-mute-icon" />Mute Feed for 7 Days</button></li>
+      <li role="none"><button class="app-dropdown__item recommendation-action-item" type="button" role="menuitem" @click="$emit('delete-article')"><BootstrapIcon icon="trash" context="control" class="recommendation-action-icon recommendation-delete-icon" />Delete article</button></li>
       </ul>
     </template>
   </AppDropdown>
@@ -29,7 +30,7 @@ import AppDropdown from '../shared/AppDropdown.vue';
 
 export default {
   components: { AppDropdown },
-  emits: ['toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags'],
+  emits: ['toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'delete-article', 'add-tags', 'manage-tags'],
   computed: { ...mapStores(useOfflineReadingStore) },
   methods: {
     openTagDialog(event) {
@@ -127,6 +128,10 @@ export default {
 
 .recommendation-mute-icon {
   color: var(--text-secondary);
+}
+
+.recommendation-delete-icon {
+  color: var(--color-danger);
 }
 
 :global(:root[data-theme='dark'] .article-actions__trigger) {

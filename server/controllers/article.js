@@ -25,6 +25,7 @@ import { markArticlesRead } from '../services/articles/bulkRead.js';
 import { articleStateValues } from '../services/articles/articleInteractionState.js';
 import { validSyncActions, synchronizeArticleActions } from '../services/articles/syncActions.js';
 import { normalizeTagList, normalizeTagName } from '../services/crawl/persistence/tags.js';
+import { prepareArticleEventRemoval } from '../services/events/eventReconciliation.js';
 
 const RELATED_STORY_ARTICLE_LIMIT = 50;
 
@@ -940,6 +941,47 @@ const markNotInterested = async (req, res, _next) => {
   }
 };
 
+// Delete a single article owned by the user
+const deleteArticle = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+    const articleId = req.params.articleId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (!articleId) {
+      return res.status(400).json({ error: "articleId is required" });
+    }
+
+    const deleted = await db.sequelize.transaction(async transaction => {
+      const article = await Article.findOne({
+        where: { id: articleId, userId },
+        attributes: ['id'],
+        transaction
+      });
+
+      if (!article) return false;
+
+      // Repair Event membership/representative FKs before the row is gone.
+      await prepareArticleEventRemoval(userId, { id: article.id }, transaction);
+
+      await Article.destroy({ where: { id: article.id, userId }, transaction });
+      return true;
+    });
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+
+    res.status(200).json({ message: "Article deleted successfully", articleId });
+  } catch (err) {
+    console.error("Error in deleteArticle:", err);
+    return res.status(500).json({ error: 'Unable to delete article' });
+  }
+};
+
 // Mark article as a positive recommendation signal
 const markMoreLikeThis = async (req, res, _next) => {
   try {
@@ -1405,6 +1447,7 @@ export default {
   markOpenedOriginal,
   markNotInterested,
   markMoreLikeThis,
+  deleteArticle,
   articleDetails,
   articleMarkAsSeen,
   articleMarkToUnread,

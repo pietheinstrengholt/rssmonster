@@ -137,7 +137,8 @@ describe('ArticleActionsMenu', () => {
       'Manage tags',
       'More like this',
       'Not Interested',
-      'Mute Feed for 7 Days'
+      'Mute Feed for 7 Days',
+      'Delete article'
     ]);
     expect(items[0].get('.recommendation-saved-icon').attributes('data-icon')).toBe('bookmark-fill');
     expect(items[0].get('.recommendation-saved-icon').attributes('data-context')).toBe('control');
@@ -145,6 +146,7 @@ describe('ArticleActionsMenu', () => {
     expect(items[6].get('.recommendation-negative-icon').attributes('data-icon')).toBe('hand-thumbs-down-fill');
     expect(items[7].get('.recommendation-mute-icon').attributes('data-icon')).toBe('slash-circle');
     expect(items[7].get('.recommendation-mute-icon').attributes('data-context')).toBe('control');
+    expect(items[8].get('.recommendation-delete-icon').attributes('data-icon')).toBe('trash');
     expect(items.every(item => item.element.tagName === 'BUTTON')).toBe(true);
     expect(items.every(item => item.attributes('role') === 'menuitem')).toBe(true);
 
@@ -158,6 +160,7 @@ describe('ArticleActionsMenu', () => {
     expect(wrapper.emitted('not-interested')).toEqual([[]]);
     expect(wrapper.emitted('more-like-this')).toEqual([[]]);
     expect(wrapper.emitted('mute-feed')).toEqual([[]]);
+    expect(wrapper.emitted('delete-article')).toEqual([[]]);
     expect(wrapper.emitted('add-tags')).toEqual([[]]);
     expect(wrapper.emitted('manage-tags')).toEqual([[]]);
   });
@@ -200,7 +203,8 @@ describe('ArticleActionsMenu', () => {
       'Manage tags',
       'More like this',
       'Not Interested',
-      'Mute Feed for 7 Days'
+      'Mute Feed for 7 Days',
+      'Delete article'
     ]);
     expect(items[2].get('.recommendation-status-icon').attributes('data-icon')).toBe('circle-fill');
 

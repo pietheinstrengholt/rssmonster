@@ -31,7 +31,7 @@
       <button type="button" class="reader-article-toolbar__action" :title="expandLabel" :aria-label="expandLabel" :aria-pressed="expanded" @click="$emit('toggle-expanded')">
         <BootstrapIcon :icon="expanded ? 'arrows-angle-contract' : 'arrows-angle-expand'" context="control" aria-hidden="true" />
       </button>
-      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :opened-original-count="openedOriginalCount" :opened-original-pending="openedOriginalPending" :saved-ind="savedInd" :saved-pending="savedPending" is-reader-mode :status="status" @toggle-openedOriginal="$emit('toggle-opened-original')" @toggle-saved="$emit('toggle-saved')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
+      <ArticleActionsMenu :tag-editing-disabled="tagEditingDisabled" :opened-original-count="openedOriginalCount" :opened-original-pending="openedOriginalPending" :saved-ind="savedInd" :saved-pending="savedPending" is-reader-mode :status="status" @toggle-openedOriginal="$emit('toggle-opened-original')" @toggle-saved="$emit('toggle-saved')" @toggle-read-status="$emit('toggle-read-status')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @mute-feed="$emit('mute-feed')" @delete-article="$emit('delete-article')" @add-tags="$emit('add-tags')" @manage-tags="$emit('manage-tags')" />
     </div>
   </nav>
 </template>
@@ -45,7 +45,7 @@ import { useArticleSpeech } from '../../composables/useArticleSpeech.js';
 
 export default {
   components: { ArticleActionsMenu, AppDropdown },
-  emits: ['update-text-size', 'toggle-expanded', 'article-opened-original', 'toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'add-tags', 'manage-tags'],
+  emits: ['update-text-size', 'toggle-expanded', 'article-opened-original', 'toggle-opened-original', 'toggle-saved', 'toggle-read-status', 'not-interested', 'more-like-this', 'mute-feed', 'delete-article', 'add-tags', 'manage-tags'],
   setup(props) {
     return { speech: useArticleSpeech({ articleId: () => props.articleId, getContent: () => props.getReadingContent(), language: () => props.language }) };
   },

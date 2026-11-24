@@ -79,6 +79,7 @@
         @duplicate-articles-loaded="$emit('duplicate-articles-loaded', $event)"
         @duplicate-articles-collapsed="$emit('duplicate-articles-collapsed', $event)"
         @article-not-interested="$emit('article-not-interested', $event)"
+        @article-deleted="$emit('article-deleted', $event)"
         @inspect-interest="$emit('inspect-interest', $event)"
       />
     </div>
@@ -183,6 +184,7 @@ export default {
     'duplicate-articles-loaded',
     'duplicate-articles-collapsed',
     'article-not-interested',
+    'article-deleted',
     'inspect-interest',
     'shortcut-toggle-read',
     'shortcut-toggle-saved',
